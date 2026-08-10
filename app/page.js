@@ -23,60 +23,31 @@ export default function SocialMediaMonitoring() {
     }
   };
 
-  // --- FITUR BARU: AUTO PING SAAT WEB DIBUKA ---
+  // Cek koneksi awal (Simulasi API aktif jika ada API Key)
   useEffect(() => {
-    const checkInitialConnection = async () => {
-      try {
-        const res = await fetch("/api/instagram");
-        if (res.ok) setIsApiOnline(true);
-      } catch (e) {
-        setIsApiOnline(false);
-      }
-    };
-    checkInitialConnection();
-  }, []);
-  // ----------------------------------------------
+    if (apiKey.length > 10) {
+      setIsApiOnline(true);
+    } else {
+      setIsApiOnline(false);
+    }
+  }, [apiKey]);
 
-  const fetchMonitoringData = async (hours) => {
+  const fetchMonitoringData = (hours) => {
     setIsLoading(true);
-    try {
-      const endpointURL = "/api/instagram"; 
-      const response = await fetch(endpointURL, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" }
-      });
-
-      if (!response.ok) throw new Error("Gagal terhubung ke API");
-
-      const rawData = await response.json();
-      const targetUser = rawData.data.data.user;
-      const followers = targetUser.edge_followed_by.count || 0;
-      
-      const videos = targetUser.edge_felix_video_timeline?.edges || {};
-      const totalVideoViews = Object.values(videos).reduce((total, video) => {
-        return total + (video.node.video_view_count || 0);
-      }, 0);
-
-      const liveData = [
-        { id: 1, topik: "Total Followers", volume: followers, desc: targetUser.biography },
-        { id: 2, topik: "Tayangan Video (IGTV)", volume: totalVideoViews, desc: "Total tayangan dari video terakhir di timeline." },
-        { id: 3, topik: "Estimasi Engagement", volume: Math.floor(followers * 0.03), desc: "Perkiraan rata-rata interaksi audiens (3% dari followers)." },
-        { id: 4, topik: "Following Aktif", volume: targetUser.edge_follow.count, desc: "Jumlah akun yang diikuti oleh target." },
-        { id: 5, topik: "Konten Publikasi", volume: targetUser.edge_owner_to_timeline_media.count, desc: "Total seluruh media yang pernah di-publish." },
+    
+    // Simulasi narik data isu publik (Diganti dengan fetch API Keyword Search nanti)
+    setTimeout(() => {
+      const publicIssuesMock = [
+        { id: 1, topik: "Revisi UU Pilkada", volume: Math.floor(Math.random() * 50000) + 100000, desc: "Perdebatan sengit mengenai batas usia pencalonan dan putusan MK yang memicu aksi massa di berbagai daerah." },
+        { id: 2, topik: "Kebijakan Bansos", volume: Math.floor(Math.random() * 30000) + 80000, desc: "Distribusi bansos menjelang periode pemilihan menuai kritik tajam di platform X dan Facebook." },
+        { id: 3, topik: "Keamanan Data Siber", volume: Math.floor(Math.random() * 20000) + 60000, desc: "Kebocoran data terbaru instansi pemerintah menjadi trending topic di Google dan X." },
+        { id: 4, topik: "Kenaikan Pajak", volume: Math.floor(Math.random() * 20000) + 40000, desc: "Wacana pajak baru untuk kelas menengah memicu sentimen negatif masif di Instagram." },
+        { id: 5, topik: "Kasus Korupsi Pejabat", volume: Math.floor(Math.random() * 15000) + 20000, desc: "Penangkapan tokoh publik terkait penggelapan dana proyek infrastruktur daerah." },
       ].sort((a, b) => b.volume - a.volume);
       
-      setIssuesData(liveData);
-      setIsApiOnline(true); 
-
-    } catch (error) {
-      console.error("API Error:", error);
-      setIsApiOnline(false);
-      setIssuesData([
-        { id: 1, topik: "Koneksi API Gagal", volume: 0, desc: "Pastikan file route.js di /api/instagram sudah dibuat dengan benar." }
-      ]);
-    } finally {
+      setIssuesData(publicIssuesMock);
       setIsLoading(false);
-    }
+    }, 1200);
   };
 
   useEffect(() => {
@@ -107,7 +78,7 @@ export default function SocialMediaMonitoring() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">API Key</label>
+                <label className="block text-sm font-medium text-gray-400 mb-1">API Key (Social Vault / Tracker)</label>
                 <input 
                   type="text" 
                   value={apiKey}
@@ -143,14 +114,14 @@ export default function SocialMediaMonitoring() {
               className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 transition-all text-left space-y-2 group"
             >
               <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Update Monitoring 3 Jam</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 3 jam terakhir.</p>
+              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 3 jam terakhir di X, Instagram, Facebook, dan Google.</p>
             </button>
             <button 
               onClick={() => setCurrentPage("6jam")}
               className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 transition-all text-left space-y-2 group"
             >
               <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Update Monitoring 6 Jam</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 6 jam terakhir.</p>
+              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 6 jam terakhir di X, Instagram, Facebook, dan Google.</p>
             </button>
           </div>
         </div>
@@ -172,7 +143,7 @@ export default function SocialMediaMonitoring() {
           <h1 className="text-2xl font-bold text-white">
             Update Monitoring {currentPage === "3jam" ? "3 Jam" : "6 Jam"} Terakhir
           </h1>
-          <p className="text-gray-400 mt-1">Data Live Profile Instagram (Mode Internal / Hemat Credit).</p>
+          <p className="text-gray-400 mt-1">Top 5 Isu Politik, Sosial, dan Hukum di Indonesia.</p>
         </div>
 
         {isLoading ? (
@@ -182,7 +153,7 @@ export default function SocialMediaMonitoring() {
         ) : (
           <>
             <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] h-96">
-              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Analisis Akun</h2>
+              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Volume Pembicaraan</h2>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={issuesData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <XAxis type="number" stroke="#4b5563" />
@@ -194,7 +165,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="space-y-4 pb-10">
-              <h2 className="text-xl font-bold mt-8 text-white">Rincian Data</h2>
+              <h2 className="text-xl font-bold mt-8 text-white">Rincian Isu Kontroversial</h2>
               {issuesData.map((isu, index) => (
                 <div key={isu.id} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 hover:bg-[#1c2128] transition-colors">
                   <div className="flex justify-between items-start mb-2">
