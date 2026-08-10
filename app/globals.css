@@ -13,6 +13,6 @@ body {
   min-height: 100vh;
 }
 
-#root, main, &__next {
+#root, main, #__next {
   width: 100%;
 }
