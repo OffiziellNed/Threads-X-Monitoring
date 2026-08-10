@@ -2,29 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Lock, Unlock, ArrowLeft, Activity, TrendingUp, RefreshCw } from "lucide-react";
+import { ArrowLeft, TrendingUp, RefreshCw } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
-  const [apiKey, setApiKey] = useState("sk_live_google_rss_realtime");
   const [isApiOnline, setIsApiOnline] = useState(true); 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState("");
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleAdminLogin = () => {
-    if (adminPassword === "Ger1594Nxt0y!") {
-      setIsAdmin(true);
-      setAdminPassword("");
-      alert("Akses Admin Dibuka.");
-    } else {
-      alert("Password Admin Salah!");
-    }
-  };
-
-  // FUNGSI TARIK DATA LIVE DARI API INTERNAL KITA
-  const fetchLiveTrends = async (hours) => {
+  const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/news');
@@ -33,11 +19,9 @@ export default function SocialMediaMonitoring() {
       if (result.success && result.data.length > 0) {
         setIssuesData(result.data);
         setIsApiOnline(true);
-      } else {
-        throw new Error("Data kosong");
       }
     } catch (error) {
-      console.error("Gagal memuat tren live:", error);
+      console.error("Gagal memuat tren:", error);
       setIsApiOnline(false);
     } finally {
       setIsLoading(false);
@@ -46,7 +30,7 @@ export default function SocialMediaMonitoring() {
 
   useEffect(() => {
     if (currentPage === "3jam" || currentPage === "6jam") {
-      fetchLiveTrends(currentPage === "3jam" ? 3 : 6);
+      fetchLiveTrends();
     }
   }, [currentPage]);
 
@@ -55,8 +39,8 @@ export default function SocialMediaMonitoring() {
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-4xl space-y-8 mt-10">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-white">Public Trend Radar (Live)</h1>
-            <p className="text-gray-400">Monitoring isu politik, sosial, & hukum terupdate detik ini langsung dari internet.</p>
+            <h1 className="text-4xl font-bold tracking-tight text-white">Public Trend Radar</h1>
+            <p className="text-gray-400">Monitoring isu politik, sosial, & hukum terupdate real-time.</p>
           </div>
 
           <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] space-y-6">
@@ -64,21 +48,9 @@ export default function SocialMediaMonitoring() {
               <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
                 <TrendingUp size={20} className="text-blue-400" /> Status Live Feed
               </h2>
-              <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${isApiOnline ? 'bg-green-900/50 text-green-400 border border-green-800' : 'bg-red-900/50 text-red-400 border border-red-800'}`}>
-                <span className={`w-2 h-2 rounded-full ${isApiOnline ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`}></span>
-                {isApiOnline ? 'Online & Terupdate' : 'Gangguan Koneksi'}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Tracker Engine</label>
-                <input 
-                  type="text" 
-                  value={apiKey}
-                  readOnly
-                  className="w-full p-3 border border-[#30363d] bg-[#0d1117] text-gray-400 rounded-lg outline-none cursor-not-allowed text-sm"
-                />
+              <div className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 bg-green-900/50 text-green-400 border border-green-800">
+                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>
+                Online & Stabil
               </div>
             </div>
           </div>
@@ -89,7 +61,7 @@ export default function SocialMediaMonitoring() {
               className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 transition-all text-left space-y-2 group"
             >
               <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Monitoring 3 Jam Terakhir</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Analisis lonjakan isu kilat berbasis pemberitaan paling fresh.</p>
+              <p className="text-gray-400 text-sm leading-relaxed">Analisis lonjakan isu kilat berbasis pokok masalah konkrit.</p>
             </button>
             <button 
               onClick={() => setCurrentPage("6jam")}
@@ -115,7 +87,7 @@ export default function SocialMediaMonitoring() {
             <ArrowLeft size={20} /> Kembali ke Menu Utama
           </button>
           <button 
-            onClick={() => fetchLiveTrends(currentPage === "3jam" ? 3 : 6)}
+            onClick={fetchLiveTrends}
             className="flex items-center gap-2 bg-[#161b22] text-blue-400 border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-blue-500 transition-all"
           >
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh Data
@@ -126,7 +98,7 @@ export default function SocialMediaMonitoring() {
           <h1 className="text-2xl font-bold text-white">
             Topik Hype ({currentPage === "3jam" ? "3 Jam Terakhir" : "6 Jam Terakhir"})
           </h1>
-          <p className="text-gray-400 mt-1">Pokok masalah diambil langsung dari berita dan perbincangan publik terkini.</p>
+          <p className="text-gray-400 mt-1">Pokok masalah diambil langsung dari diskursus dan perbincangan publik terkini.</p>
         </div>
 
         {isLoading ? (
