@@ -5,20 +5,14 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { Lock, Unlock, ArrowLeft, Activity } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
-  // State Navigasi
   const [currentPage, setCurrentPage] = useState("main");
-
-  // State API & Admin
   const [apiKey, setApiKey] = useState("sk_live_451a82abf05a8a5b2368ef1002c74b2e");
   const [isApiOnline, setIsApiOnline] = useState(false); 
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
-
-  // State Data
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fungsi Unlock Admin
   const handleAdminLogin = () => {
     if (adminPassword === "Ger1594Nxt0y!") {
       setIsAdmin(true);
@@ -29,39 +23,40 @@ export default function SocialMediaMonitoring() {
     }
   };
 
-  // FUNGSI UTAMA: Tembak API Lokal (Mock Data Social Vault)
+  // --- FITUR BARU: AUTO PING SAAT WEB DIBUKA ---
+  useEffect(() => {
+    const checkInitialConnection = async () => {
+      try {
+        const res = await fetch("/api/instagram");
+        if (res.ok) setIsApiOnline(true);
+      } catch (e) {
+        setIsApiOnline(false);
+      }
+    };
+    checkInitialConnection();
+  }, []);
+  // ----------------------------------------------
+
   const fetchMonitoringData = async (hours) => {
     setIsLoading(true);
-    
     try {
-      // URL diarahkan ke API lokal yang udah kita bikin di /api/instagram/route.js
       const endpointURL = "/api/instagram"; 
-
       const response = await fetch(endpointURL, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        }
+        headers: { "Content-Type": "application/json" }
       });
 
-      if (!response.ok) {
-        throw new Error("Gagal terhubung ke API");
-      }
+      if (!response.ok) throw new Error("Gagal terhubung ke API");
 
-      // Mengambil data JSON lokal
       const rawData = await response.json();
-      
-      // Mengunci target profil dari JSON
       const targetUser = rawData.data.data.user;
       const followers = targetUser.edge_followed_by.count || 0;
       
-      // Menghitung total view video dari timeline
       const videos = targetUser.edge_felix_video_timeline?.edges || {};
       const totalVideoViews = Object.values(videos).reduce((total, video) => {
         return total + (video.node.video_view_count || 0);
       }, 0);
 
-      // Memasukkan data ke dalam grafik
       const liveData = [
         { id: 1, topik: "Total Followers", volume: followers, desc: targetUser.biography },
         { id: 2, topik: "Tayangan Video (IGTV)", volume: totalVideoViews, desc: "Total tayangan dari video terakhir di timeline." },
@@ -71,13 +66,11 @@ export default function SocialMediaMonitoring() {
       ].sort((a, b) => b.volume - a.volume);
       
       setIssuesData(liveData);
-      
-      // Jika berhasil narik data, indikator otomatis jadi hijau (Online)
       setIsApiOnline(true); 
 
     } catch (error) {
       console.error("API Error:", error);
-      setIsApiOnline(false); // Indikator API merah jika gagal
+      setIsApiOnline(false);
       setIssuesData([
         { id: 1, topik: "Koneksi API Gagal", volume: 0, desc: "Pastikan file route.js di /api/instagram sudah dibuat dengan benar." }
       ]);
@@ -92,12 +85,10 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage]);
 
-  // --- RENDER PAGE UTAMA ---
   if (currentPage === "main") {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-4xl space-y-8 mt-10">
-          
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold tracking-tight text-white">Social Media Monitoring</h1>
             <p className="text-gray-400">Pantau perbincangan publik di Indonesia secara real-time.</p>
@@ -143,11 +134,6 @@ export default function SocialMediaMonitoring() {
                   </button>
                 </div>
               )}
-              {isAdmin && (
-                <p className="text-sm text-green-400 flex items-center gap-1 mt-2">
-                  <Unlock size={16} /> Mode Admin Aktif. API Key dapat diubah.
-                </p>
-              )}
             </div>
           </div>
 
@@ -157,15 +143,14 @@ export default function SocialMediaMonitoring() {
               className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 transition-all text-left space-y-2 group"
             >
               <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Update Monitoring 3 Jam</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 3 jam terakhir di X, Instagram, Facebook, dan Google.</p>
+              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 3 jam terakhir.</p>
             </button>
-
             <button 
               onClick={() => setCurrentPage("6jam")}
               className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 transition-all text-left space-y-2 group"
             >
               <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Update Monitoring 6 Jam</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 6 jam terakhir di X, Instagram, Facebook, dan Google.</p>
+              <p className="text-gray-400 text-sm leading-relaxed">Lihat 5 isu paling kontroversial dalam 6 jam terakhir.</p>
             </button>
           </div>
         </div>
@@ -173,11 +158,9 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- RENDER PAGE MONITORING ---
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
-        
         <button 
           onClick={() => setCurrentPage("main")}
           className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors font-medium"
@@ -215,9 +198,7 @@ export default function SocialMediaMonitoring() {
               {issuesData.map((isu, index) => (
                 <div key={isu.id} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 hover:bg-[#1c2128] transition-colors">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold text-white">
-                      #{index + 1} - {isu.topik}
-                    </h3>
+                    <h3 className="text-lg font-bold text-white">#{index + 1} - {isu.topik}</h3>
                     <span className="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold border border-blue-800/50">
                       Vol: {isu.volume.toLocaleString()}
                     </span>
