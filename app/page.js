@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, RefreshCw, ChevronDown, ChevronUp, ExternalLink, Calendar, Building2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2 } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
-  const [currentPage, setCurrentPage] = useState("main");
+  const [currentPage, setCurrentPage] = useState("main"); // "main", "3jam", "12jam", atau "detail"
+  const [selectedIssue, setSelectedIssue] = useState(null); // Menyimpan data isu yang dipilih untuk halaman detail
   const [isApiOnline, setIsApiOnline] = useState(true); 
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedId, setExpandedId] = useState(null); // State buat tombol buka/tutup rincian berita
 
   const fetchLiveTrends = async () => {
     setIsLoading(true);
@@ -35,10 +35,68 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage]);
 
-  const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id);
+  // Fungsi untuk membuka halaman detail berita baru
+  const handleOpenDetail = (isu) => {
+    setSelectedIssue(isu);
+    setCurrentPage("detail");
   };
 
+  // --- HALAMAN DETAIL BERITA (HALAMAN BARU KETIKA DITAP BUKA) ---
+  if (currentPage === "detail" && selectedIssue) {
+    return (
+      <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
+        <div className="w-full max-w-3xl space-y-6 mt-6">
+          <button 
+            onClick={() => setCurrentPage("12jam")}
+            className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors font-medium"
+          >
+            <ArrowLeft size={20} /> Kembali ke Daftar Isu
+          </button>
+
+          <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-6">
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider bg-blue-900/30 px-3 py-1 rounded-full border border-blue-800/50">
+                {selectedIssue.kategori}
+              </span>
+              <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug mt-2">
+                {selectedIssue.articleTitle || selectedIssue.topik}
+              </h1>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-400 border-y border-[#30363d] py-4">
+              <span className="flex items-center gap-2 text-blue-400 font-medium">
+                <Building2 size={16} /> Sumber: {selectedIssue.source}
+              </span>
+              <span className="flex items-center gap-2">
+                <Calendar size={16} /> Waktu Publikasi: {selectedIssue.pubDate}
+              </span>
+            </div>
+
+            <div className="space-y-4 text-gray-300 leading-relaxed text-base">
+              <p className="bg-[#0d1117] p-5 rounded-xl border border-[#30363d]">
+                {selectedIssue.articleDesc}
+              </p>
+            </div>
+
+            {selectedIssue.link && selectedIssue.link !== "#" && (
+              <div className="pt-4">
+                <a 
+                  href={selectedIssue.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg"
+                >
+                  Kunjungi Sumber Berita Asli <ExternalLink size={16} />
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // --- HALAMAN UTAMA ---
   if (currentPage === "main") {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -81,6 +139,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
+  // --- HALAMAN MONITORING (3 JAM / 12 JAM) ---
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
@@ -103,7 +162,7 @@ export default function SocialMediaMonitoring() {
           <h1 className="text-2xl font-bold text-white">
             Topik Hype ({currentPage === "3jam" ? "3 Jam Terakhir" : "12 Jam Terakhir"})
           </h1>
-          <p className="text-gray-400 mt-1">Menyedot seluruh diskursus pembicaraan publik dan berita terkini.</p>
+          <p className="text-gray-400 mt-1">Menyedot seluruh diskursus pembicaraan publik terkini.</p>
         </div>
 
         {isLoading ? (
@@ -126,56 +185,27 @@ export default function SocialMediaMonitoring() {
 
             <div className="space-y-4 pb-10">
               <h2 className="text-xl font-bold mt-8 text-white">Rincian Pokok Masalah</h2>
-              {issuesData.map((isu, index) => {
-                const isOpen = expandedId === isu.id;
-                return (
-                  <div key={isu.id} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 transition-all">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">{isu.kategori}</span>
-                        <h3 className="text-xl font-bold text-white mt-1">#{index + 1} - {isu.topik}</h3>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold border border-blue-800/50">
-                          Indeks: {isu.volume.toLocaleString()}
-                        </span>
-                        <button 
-                          onClick={() => toggleExpand(isu.id)}
-                          className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                        >
-                          {isOpen ? "Tutup" : "Buka"} {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </button>
-                      </div>
+              {issuesData.map((isu, index) => (
+                <div key={isu.id} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 hover:bg-[#1c2128] transition-colors">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">{isu.kategori}</span>
+                      <h3 className="text-xl font-bold text-white mt-1">#{index + 1} - {isu.topik}</h3>
                     </div>
-
-                    {/* Bagian Detail Berita yang disedot saat tombol Buka diklik */}
-                    {isOpen && (
-                      <div className="mt-5 pt-4 border-t border-[#30363d] bg-[#0d1117] p-4 rounded-xl space-y-3 animate-fadeIn">
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400">
-                          <span className="flex items-center gap-1 text-blue-400 font-medium">
-                            <Building2 size={14} /> Sumber: {isu.source}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar size={14} /> Waktu: {isu.pubDate}
-                          </span>
-                        </div>
-                        <h4 className="text-lg font-semibold text-white">{isu.articleTitle}</h4>
-                        <p className="text-gray-300 text-sm leading-relaxed">{isu.articleDesc}</p>
-                        {isu.link && (
-                          <a 
-                            href={isu.link} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline font-medium pt-1"
-                          >
-                            Baca artikel selengkapnya <ExternalLink size={12} />
-                          </a>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <span className="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold border border-blue-800/50">
+                        Indeks: {isu.volume.toLocaleString()}
+                      </span>
+                      <button 
+                        onClick={() => handleOpenDetail(isu)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-medium transition-colors shadow"
+                      >
+                        Buka
+                      </button>
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </>
         )}
