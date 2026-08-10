@@ -2,17 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #0d1117 !important;
-  color: #e6edf3 !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
+/* Kita hapus semua paksaan style di sini agar desain modern 
+   dari Tailwind di file page.js bisa bekerja maksimal */
 
-#root, main, #__next {
-  width: 100%;
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
