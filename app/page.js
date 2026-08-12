@@ -11,14 +11,15 @@ export default function SocialMediaMonitoring() {
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // STATE BARU UNTUK KATEGORI FILTER
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum"];
 
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/news');
+      // Mengirim parameter jam ke backend API agar volume disesuaikan
+      const hours = currentPage === "3jam" ? 3 : 12;
+      const response = await fetch(`/api/news?hours=${hours}`);
       const result = await response.json();
       
       if (result.success && result.data.length > 0) {
@@ -36,7 +37,7 @@ export default function SocialMediaMonitoring() {
   useEffect(() => {
     if (currentPage === "3jam" || currentPage === "12jam") {
       fetchLiveTrends();
-      setSelectedCategory("Semua"); // Reset filter tiap pindah halaman
+      setSelectedCategory("Semua"); 
     }
   }, [currentPage]);
 
@@ -45,21 +46,19 @@ export default function SocialMediaMonitoring() {
     setCurrentPage("detail");
   };
 
-  // --- LOGIKA FILTERING DATA ---
   const filteredData = selectedCategory === "Semua" 
     ? issuesData 
     : issuesData.filter(issue => issue.kategori === selectedCategory);
 
-  const chartData = filteredData.slice(0, 5); // Chart dibatasi Top 5
-  const listData = filteredData.slice(0, 10); // List dibatasi Top 10
+  const chartData = filteredData.slice(0, 5); 
+  const listData = filteredData.slice(0, 10); 
 
-  // --- HALAMAN DETAIL ---
   if (currentPage === "detail" && selectedIssue) {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-3xl space-y-6 mt-6">
           <button 
-            onClick={() => setCurrentPage("12jam")}
+            onClick={() => setCurrentPage(currentPage)}
             className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors font-medium"
           >
             <ArrowLeft size={20} /> Kembali ke Daftar Isu
@@ -127,7 +126,6 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN UTAMA ---
   if (currentPage === "main") {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -170,7 +168,6 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN MONITORING ---
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
@@ -196,7 +193,6 @@ export default function SocialMediaMonitoring() {
           <p className="text-gray-400 mt-1">Menyedot seluruh diskursus pembicaraan publik terkini.</p>
         </div>
 
-        {/* MENU FILTER KATEGORI */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 text-gray-400 mr-2">
             <Filter size={18} />
