@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon, Filter } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -10,6 +10,10 @@ export default function SocialMediaMonitoring() {
   const [isApiOnline, setIsApiOnline] = useState(true); 
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // STATE BARU UNTUK KATEGORI FILTER
+  const [selectedCategory, setSelectedCategory] = useState("Semua");
+  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum"];
 
   const fetchLiveTrends = async () => {
     setIsLoading(true);
@@ -32,6 +36,7 @@ export default function SocialMediaMonitoring() {
   useEffect(() => {
     if (currentPage === "3jam" || currentPage === "12jam") {
       fetchLiveTrends();
+      setSelectedCategory("Semua"); // Reset filter tiap pindah halaman
     }
   }, [currentPage]);
 
@@ -40,7 +45,15 @@ export default function SocialMediaMonitoring() {
     setCurrentPage("detail");
   };
 
-  // --- HALAMAN DETAIL BARU: BERSIH DARI KOTAK TEKS, ISI DAFTAR LINK KLIKABLE ---
+  // --- LOGIKA FILTERING DATA ---
+  const filteredData = selectedCategory === "Semua" 
+    ? issuesData 
+    : issuesData.filter(issue => issue.kategori === selectedCategory);
+
+  const chartData = filteredData.slice(0, 5); // Chart dibatasi Top 5
+  const listData = filteredData.slice(0, 10); // List dibatasi Top 10
+
+  // --- HALAMAN DETAIL ---
   if (currentPage === "detail" && selectedIssue) {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -55,7 +68,7 @@ export default function SocialMediaMonitoring() {
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-6">
             <div className="space-y-2">
               <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider bg-blue-900/30 px-3 py-1 rounded-full border border-blue-800/50">
-                {selectedIssue.kategori || "Sosial & Publik"}
+                {selectedIssue.kategori || "Sosial"}
               </span>
               <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug mt-2">
                 {selectedIssue.articleTitle || selectedIssue.topik}
@@ -71,7 +84,6 @@ export default function SocialMediaMonitoring() {
               </span>
             </div>
 
-            {/* DAFTAR LINK BERITA YANG BISA DITAP LANGSUNG */}
             <div className="space-y-3 pt-2">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                 <LinkIcon size={16} className="text-blue-400" /> Tautan Sumber Berita Terkait:
@@ -158,7 +170,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN MONITORING (3 JAM / 12 JAM) ---
+  // --- HALAMAN MONITORING ---
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
@@ -184,6 +196,27 @@ export default function SocialMediaMonitoring() {
           <p className="text-gray-400 mt-1">Menyedot seluruh diskursus pembicaraan publik terkini.</p>
         </div>
 
+        {/* MENU FILTER KATEGORI */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 text-gray-400 mr-2">
+            <Filter size={18} />
+            <span className="text-sm font-semibold">Filter:</span>
+          </div>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                selectedCategory === cat 
+                ? 'bg-blue-600 text-white border-blue-500 shadow-md' 
+                : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128] hover:text-gray-200'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -191,20 +224,26 @@ export default function SocialMediaMonitoring() {
         ) : (
           <>
             <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] h-96">
-              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Lonjakan Isu (Real-time Interest)</h2>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={issuesData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis type="number" stroke="#4b5563" />
-                  <YAxis dataKey="topik" type="category" width={180} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} />
-                  <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
-                  <Bar dataKey="volume" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 {selectedCategory !== "Semua" && `(${selectedCategory})`}</h2>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <XAxis type="number" stroke="#4b5563" />
+                    <YAxis dataKey="topik" type="category" width={180} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} />
+                    <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
+                    <Bar dataKey="volume" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  Belum ada data untuk kategori ini.
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 pb-10">
-              <h2 className="text-xl font-bold mt-8 text-white">Rincian Pokok Masalah</h2>
-              {issuesData.map((isu, index) => (
+              <h2 className="text-xl font-bold mt-8 text-white">Rincian Pokok Masalah (Top 10)</h2>
+              {listData.length > 0 ? listData.map((isu, index) => (
                 <div key={isu.id} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 hover:bg-[#1c2128] transition-colors">
                   <div className="flex justify-between items-center">
                     <div>
@@ -212,19 +251,24 @@ export default function SocialMediaMonitoring() {
                       <h3 className="text-xl font-bold text-white mt-1">#{index + 1} - {isu.topik}</h3>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-semibold border border-blue-800/50">
-                        Indeks: {isu.volume.toLocaleString()}
-                      </span>
+                      <div className="bg-[#0d1117] text-gray-300 text-xs px-3 py-1.5 rounded-full font-medium border border-[#30363d] flex flex-col items-center">
+                        <span className="text-[10px] text-blue-400 leading-none">Indeks:</span>
+                        <span className="font-bold leading-tight">{isu.volume.toLocaleString()}</span>
+                      </div>
                       <button 
                         onClick={() => handleOpenDetail(isu)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-medium transition-colors shadow"
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-md"
                       >
                         Buka
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-500 bg-[#161b22] p-6 rounded-xl border border-[#30363d] text-center">
+                  Tidak ada isu terkait kategori {selectedCategory} dalam radar saat ini.
+                </p>
+              )}
             </div>
           </>
         )}
