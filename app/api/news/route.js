@@ -1,15 +1,36 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+// Memaksa Vercel untuk melakukan cache API selama 1 jam (3600 detik)
+export const revalidate = 3600;
+
+export async function GET(request) {
   try {
+    // Mengambil parameter jam dari frontend (3 atau 12)
+    const { searchParams } = new URL(request.url);
+    const hours = parseInt(searchParams.get('hours') || '3', 10);
+
     const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
-    const response = await fetch(rssUrl, { cache: 'no-store' });
+    
+    // Fetch dengan mekanisme revalidate agar data tidak berubah-ubah setiap detik
+    const response = await fetch(rssUrl, { next: { revalidate: 3600 } });
     const xmlText = await response.text();
 
     const items = xmlText.split("<item>");
     let dynamicIssues = [];
 
-    // Tarik lebih banyak data (sampai 40) supaya pas difilter per kategori isinya tetap banyak
+    // FUNGSI BARU: Pembuat angka stabil (deterministik) berdasarkan teks judul
+    const generateStableVolume = (text, hoursMultiplier) => {
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) {
+        hash = text.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      // Membuat rentang angka dasar yang stabil: 40.000 - 90.000
+      const baseVolume = Math.abs(hash % 50000) + 40000;
+      
+      // Jika mode 12 jam, volume dikali 1.5 agar terlihat lebih masif dari 3 jam
+      return hoursMultiplier === 12 ? Math.floor(baseVolume * 1.5) : baseVolume;
+    };
+
     for (let i = 1; i < Math.min(40, items.length); i++) {
       const item = items[i];
       const titleMatch = item.match(/<title>(.*?)<\/title>/);
@@ -26,15 +47,14 @@ export async function GET() {
         const link = linkMatch ? linkMatch[1] : "#";
         const cleanTitle = rawTitle.split(" - ")[0];
 
-        // Klasifikasi Kategori yang lebih presisi
         let kategori = "Sosial";
         const lowerTitle = cleanTitle.toLowerCase();
         
-        if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("uu") || lowerTitle.includes("sidang") || lowerTitle.includes("jaksa") || lowerTitle.includes("hakim") || lowerTitle.includes("kpk") || lowerTitle.includes("tersangka")) {
+        if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("uu") || lowerTitle.includes("sidang") || lowerTitle.includes("jaksa") || lowerTitle.includes("hakim") || lowerTitle.includes("kpk") || lowerTitle.includes("tersangka") || lowerTitle.includes("kasus")) {
           kategori = "Hukum";
-        } else if (lowerTitle.includes("pemerintah") || lowerTitle.includes("presiden") || lowerTitle.includes("menteri") || lowerTitle.includes("kementerian") || lowerTitle.includes("apbn") || lowerTitle.includes("kebijakan") || lowerTitle.includes("jokowi")) {
+        } else if (lowerTitle.includes("pemerintah") || lowerTitle.includes("presiden") || lowerTitle.includes("menteri") || lowerTitle.includes("kementerian") || lowerTitle.includes("apbn") || lowerTitle.includes("kebijakan") || lowerTitle.includes("jokowi") || lowerTitle.includes("negara") || lowerTitle.includes("ruu")) {
           kategori = "Pemerintahan";
-        } else if (lowerTitle.includes("politik") || lowerTitle.includes("pemilu") || lowerTitle.includes("partai") || lowerTitle.includes("prabowo") || lowerTitle.includes("dpr") || lowerTitle.includes("pilkada") || lowerTitle.includes("gubernur") || lowerTitle.includes("bupati") || lowerTitle.includes("mpr")) {
+        } else if (lowerTitle.includes("politik") || lowerTitle.includes("pemilu") || lowerTitle.includes("partai") || lowerTitle.includes("prabowo") || lowerTitle.includes("dpr") || lowerTitle.includes("pilkada") || lowerTitle.includes("gubernur") || lowerTitle.includes("bupati") || lowerTitle.includes("mpr") || lowerTitle.includes("pdip")) {
           kategori = "Politik";
         }
 
@@ -47,8 +67,7 @@ export async function GET() {
           id: i,
           topik: cleanTitle,
           kategori: kategori,
-          // Bikin simulasi volume yang masuk akal dan acak
-          volume: Math.floor(Math.random() * 50000) + 40000,
+          volume: generateStableVolume(cleanTitle, hours), // Angka ini akan selalu sama untuk judul yang sama
           source: source,
           pubDate: pubDate,
           articleTitle: rawTitle,
@@ -57,7 +76,6 @@ export async function GET() {
       }
     }
 
-    // Urutkan dari volume tertinggi ke terendah sebelum dikirim ke Frontend
     dynamicIssues.sort((a, b) => b.volume - a.volume);
 
     return NextResponse.json({ success: true, data: dynamicIssues });
