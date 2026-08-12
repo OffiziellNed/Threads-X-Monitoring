@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon, Filter } from "lucide-react";
+import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon, Filter, DownloadCloud, Copy, CheckCircle2 } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -14,10 +14,14 @@ export default function SocialMediaMonitoring() {
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum"];
 
+  // State untuk fitur Sedot Data
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapedResult, setScrapedResult] = useState("");
+  const [isCopied, setIsCopied] = useState(false);
+
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
-      // Mengirim parameter jam ke backend API agar volume disesuaikan
       const hours = currentPage === "3jam" ? 3 : 12;
       const response = await fetch(`/api/news?hours=${hours}`);
       const result = await response.json();
@@ -43,7 +47,35 @@ export default function SocialMediaMonitoring() {
 
   const handleOpenDetail = (isu) => {
     setSelectedIssue(isu);
+    setScrapedResult(""); // Reset hasil sedot saat buka isu baru
+    setIsCopied(false);
     setCurrentPage("detail");
+  };
+
+  // --- FUNGSI SEDOT DATA & BUAT PROMPT ---
+  const handleSedotData = () => {
+    setIsScraping(true);
+    setIsCopied(false);
+
+    // Simulasi proses scraping Page 1 & Page 2 dari tautan berita
+    setTimeout(() => {
+      const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, 10 dalam konteks pro dan 10 dalam konteks kontra. Jika Kontra pastikan menggunakan bahasa bahasa kontroversial, satir, sarkas, bisa pakai hook agar mengundang pembaca.";
+      
+      const title = selectedIssue.articleTitle || selectedIssue.topik;
+      const simulatedContent = `${selectedIssue.articleDesc} Dalam laporan mendalam yang dirilis hari ini, perbincangan publik semakin memanas terkait arah regulasi dan penegakan hukum yang ada. Berbagai pihak menilai ada kejanggalan dalam prosedur yang dijalankan, sementara pihak otoritas bersikeras bahwa semua telah sesuai dengan undang-undang yang berlaku. (Page 1) \n\nLebih lanjut, gelombang protes di media sosial tidak dapat dihindarkan. Tokoh-tokoh masyarakat mendesak adanya transparansi dan evaluasi menyeluruh agar kasus serupa tidak menjadi preseden buruk bagi demokrasi dan keadilan sosial di masa mendatang. (Page 2)`;
+
+      const finalOutput = `${promptInstruction}\n\n[JUDUL BERITA]\n${title}\n\n[DESKRIPSI & ISI BERITA]\n${simulatedContent}`;
+      
+      setScrapedResult(finalOutput);
+      setIsScraping(false);
+    }, 2000); // Jeda 2 detik untuk efek loading
+  };
+
+  // --- FUNGSI COPY TO CLIPBOARD ---
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(scrapedResult);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 3000); // Notifikasi "Copied!" bertahan 3 detik
   };
 
   const filteredData = selectedCategory === "Semua" 
@@ -53,12 +85,13 @@ export default function SocialMediaMonitoring() {
   const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, 10); 
 
+  // --- HALAMAN DETAIL ---
   if (currentPage === "detail" && selectedIssue) {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-3xl space-y-6 mt-6">
           <button 
-            onClick={() => setCurrentPage(currentPage)}
+            onClick={() => setCurrentPage(currentPage === "detail" ? "12jam" : currentPage)} // Fallback return
             className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors font-medium"
           >
             <ArrowLeft size={20} /> Kembali ke Daftar Isu
@@ -120,12 +153,57 @@ export default function SocialMediaMonitoring() {
                 )}
               </div>
             </div>
+
+            {/* SEKSI SEDOT DATA & PROMPT GENERATOR */}
+            <div className="pt-6 border-t border-[#30363d] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Ekstraksi Konten & Pembuat Opini</h3>
+                  <p className="text-sm text-gray-400 mt-1">Tarik teks dari tautan di atas untuk menghasilkan draf opini Threads/X secara otomatis.</p>
+                </div>
+                <button 
+                  onClick={handleSedotData}
+                  disabled={isScraping}
+                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-gray-400 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-md min-w-[140px]"
+                >
+                  {isScraping ? (
+                    <><RefreshCw size={16} className="animate-spin" /> Menyedot...</>
+                  ) : (
+                    <><DownloadCloud size={16} /> Sedot Data</>
+                  )}
+                </button>
+              </div>
+
+              {/* Tampilan Hasil Sedot & Prompt */}
+              {scrapedResult && (
+                <div className="mt-4 bg-[#0d1117] rounded-xl border border-[#30363d] overflow-hidden">
+                  <div className="flex items-center justify-between bg-[#161b22] px-4 py-3 border-b border-[#30363d]">
+                    <span className="text-sm font-semibold text-gray-300">Hasil Tarikan (Prompt Ready)</span>
+                    <button 
+                      onClick={handleCopyPrompt}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        isCopied ? 'bg-green-900/40 text-green-400 border border-green-800' : 'bg-[#0d1117] text-gray-300 border border-[#30363d] hover:bg-[#1c2128]'
+                      }`}
+                    >
+                      {isCopied ? <><CheckCircle2 size={14} /> Tersalin!</> : <><Copy size={14} /> Salin Prompt</>}
+                    </button>
+                  </div>
+                  <div className="p-4">
+                    <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">
+                      {scrapedResult}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </main>
     );
   }
 
+  // --- HALAMAN UTAMA ---
   if (currentPage === "main") {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -168,6 +246,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
+  // --- HALAMAN MONITORING ---
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
@@ -242,11 +321,11 @@ export default function SocialMediaMonitoring() {
               {listData.length > 0 ? listData.map((isu, index) => (
                 <div key={isu.id} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 hover:bg-[#1c2128] transition-colors">
                   <div className="flex justify-between items-center">
-                    <div>
+                    <div className="pr-4">
                       <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">{isu.kategori}</span>
                       <h3 className="text-xl font-bold text-white mt-1">#{index + 1} - {isu.topik}</h3>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                       <div className="bg-[#0d1117] text-gray-300 text-xs px-3 py-1.5 rounded-full font-medium border border-[#30363d] flex flex-col items-center">
                         <span className="text-[10px] text-blue-400 leading-none">Indeks:</span>
                         <span className="font-bold leading-tight">{isu.volume.toLocaleString()}</span>
