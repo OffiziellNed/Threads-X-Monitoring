@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -40,7 +40,7 @@ export default function SocialMediaMonitoring() {
     setCurrentPage("detail");
   };
 
-  // --- HALAMAN DETAIL BERITA ---
+  // --- HALAMAN DETAIL BARU: BERSIH DARI KOTAK TEKS, ISI DAFTAR LINK KLIKABLE ---
   if (currentPage === "detail" && selectedIssue) {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -64,31 +64,51 @@ export default function SocialMediaMonitoring() {
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-gray-400 border-y border-[#30363d] py-4">
               <span className="flex items-center gap-2 text-blue-400 font-medium">
-                <Building2 size={16} /> Sumber: {selectedIssue.source || "Media Nasional"}
+                <Building2 size={16} /> Sumber Utama: {selectedIssue.source || "Media Nasional"}
               </span>
               <span className="flex items-center gap-2">
                 <Calendar size={16} /> Waktu: {selectedIssue.pubDate || "Baru saja"}
               </span>
             </div>
 
-            <div className="space-y-4 text-gray-300 leading-relaxed text-base">
-              <p className="bg-[#0d1117] p-5 rounded-xl border border-[#30363d]">
-                {selectedIssue.articleDesc || selectedIssue.desc || "Informasi mendalam mengenai perkembangan isu ini."}
-              </p>
-            </div>
-
-            {selectedIssue.link && selectedIssue.link !== "#" && (
-              <div className="pt-4">
-                <a 
-                  href={selectedIssue.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg"
-                >
-                  Kunjungi Sumber Berita Asli <ExternalLink size={16} />
-                </a>
+            {/* DAFTAR LINK BERITA YANG BISA DITAP LANGSUNG */}
+            <div className="space-y-3 pt-2">
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <LinkIcon size={16} className="text-blue-400" /> Tautan Sumber Berita Terkait:
+              </h3>
+              <div className="grid grid-cols-1 gap-2.5">
+                {selectedIssue.sourcesList && selectedIssue.sourcesList.length > 0 ? (
+                  selectedIssue.sourcesList.map((src, idx) => (
+                    <a 
+                      key={idx}
+                      href={src.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="flex items-center justify-between bg-[#0d1117] hover:bg-[#1c2128] p-4 rounded-xl border border-[#30363d] text-gray-200 hover:text-blue-400 transition-all group shadow-sm"
+                    >
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        {src.name}
+                      </span>
+                      <ExternalLink size={16} className="text-gray-500 group-hover:text-blue-400 transition-colors" />
+                    </a>
+                  ))
+                ) : (
+                  <a 
+                    href={selectedIssue.link || "#"} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center justify-between bg-[#0d1117] hover:bg-[#1c2128] p-4 rounded-xl border border-[#30363d] text-gray-200 hover:text-blue-400 transition-all group"
+                  >
+                    <span className="font-medium text-sm flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      {selectedIssue.source || "Buka Berita Asli"}
+                    </span>
+                    <ExternalLink size={16} className="text-gray-500 group-hover:text-blue-400" />
+                  </a>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </main>
