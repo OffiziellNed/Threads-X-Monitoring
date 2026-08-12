@@ -22,23 +22,22 @@ export async function GET() {
         
         const source = sourceMatch ? sourceMatch[1] : "Media Nasional";
         const pubDate = dateMatch ? new Date(dateMatch[1]).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
-        const link = linkMatch ? linkMatch[1] : "#";
+        const link = linkMatch ? linkMatch[1] : "#"; // Ini adalah URL spesifik ke artikel berita tersebut
         const cleanTitle = rawTitle.split(" - ")[0];
 
         let kategori = "Sosial & Publik";
         const lowerTitle = cleanTitle.toLowerCase();
-        if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("uu")) {
+        if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("uu") || lowerTitle.includes("ekshumasi")) {
           kategori = "Hukum & Kriminal";
         } else if (lowerTitle.includes("politik") || lowerTitle.includes("pemilu") || lowerTitle.includes("menteri") || lowerTitle.includes("prabowo")) {
           kategori = "Politik & Kebijakan";
         }
 
-        // Simulasi beberapa link sumber berita terkait untuk memperkaya daftar referensi
-        const relatedSources = [
-          { name: source, url: link },
-          { name: "Detik News", url: "https://detik.com" },
-          { name: "Kompas Media", url: "https://kompas.com" },
-          { name: "CNN Indonesia", url: "https://cnnindonesia.com" }
+        // Menyusun daftar tautan spesifik yang mengarah langsung ke halaman beritanya
+        const specificSources = [
+          { name: `${source} (Artikel Utama)`, url: link },
+          // Kita juga bisa menyertakan variasi parameter pencarian spesifik Google News untuk topik ini
+          { name: `Cari referensi lain terkait "${cleanTitle.substring(0, 25)}..." di Google`, url: `https://www.google.com/search?q=${encodeURIComponent(cleanTitle)}&tbm=nws` }
         ];
 
         dynamicIssues.push({
@@ -49,7 +48,7 @@ export async function GET() {
           source: source,
           pubDate: pubDate,
           articleTitle: rawTitle,
-          sourcesList: relatedSources
+          sourcesList: specificSources
         });
       }
     }
@@ -69,7 +68,7 @@ export async function GET() {
           source: "Redaksi", 
           pubDate: "Hari ini", 
           articleTitle: "Perkembangan Terbaru Isu Publik di Indonesia", 
-          sourcesList: [{ name: "Portal Berita Utama", url: "#" }]
+          sourcesList: [{ name: "Portal Berita Utama", url: "https://news.google.com" }]
         }
       ] 
     });
