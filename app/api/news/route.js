@@ -9,7 +9,8 @@ export async function GET() {
     const items = xmlText.split("<item>");
     let dynamicIssues = [];
 
-    for (let i = 1; i < Math.min(6, items.length); i++) {
+    // Tarik lebih banyak data (sampai 40) supaya pas difilter per kategori isinya tetap banyak
+    for (let i = 1; i < Math.min(40, items.length); i++) {
       const item = items[i];
       const titleMatch = item.match(/<title>(.*?)<\/title>/);
       const sourceMatch = item.match(/<source.*?>(.*?)<\/source>/);
@@ -22,29 +23,32 @@ export async function GET() {
         
         const source = sourceMatch ? sourceMatch[1] : "Media Nasional";
         const pubDate = dateMatch ? new Date(dateMatch[1]).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
-        const link = linkMatch ? linkMatch[1] : "#"; // Ini adalah URL spesifik ke artikel berita tersebut
+        const link = linkMatch ? linkMatch[1] : "#";
         const cleanTitle = rawTitle.split(" - ")[0];
 
-        let kategori = "Sosial & Publik";
+        // Klasifikasi Kategori yang lebih presisi
+        let kategori = "Sosial";
         const lowerTitle = cleanTitle.toLowerCase();
-        if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("uu") || lowerTitle.includes("ekshumasi")) {
-          kategori = "Hukum & Kriminal";
-        } else if (lowerTitle.includes("politik") || lowerTitle.includes("pemilu") || lowerTitle.includes("menteri") || lowerTitle.includes("prabowo")) {
-          kategori = "Politik & Kebijakan";
+        
+        if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("uu") || lowerTitle.includes("sidang") || lowerTitle.includes("jaksa") || lowerTitle.includes("hakim") || lowerTitle.includes("kpk") || lowerTitle.includes("tersangka")) {
+          kategori = "Hukum";
+        } else if (lowerTitle.includes("pemerintah") || lowerTitle.includes("presiden") || lowerTitle.includes("menteri") || lowerTitle.includes("kementerian") || lowerTitle.includes("apbn") || lowerTitle.includes("kebijakan") || lowerTitle.includes("jokowi")) {
+          kategori = "Pemerintahan";
+        } else if (lowerTitle.includes("politik") || lowerTitle.includes("pemilu") || lowerTitle.includes("partai") || lowerTitle.includes("prabowo") || lowerTitle.includes("dpr") || lowerTitle.includes("pilkada") || lowerTitle.includes("gubernur") || lowerTitle.includes("bupati") || lowerTitle.includes("mpr")) {
+          kategori = "Politik";
         }
 
-        // Menyusun daftar tautan spesifik yang mengarah langsung ke halaman beritanya
         const specificSources = [
           { name: `${source} (Artikel Utama)`, url: link },
-          // Kita juga bisa menyertakan variasi parameter pencarian spesifik Google News untuk topik ini
-          { name: `Cari referensi lain terkait "${cleanTitle.substring(0, 25)}..." di Google`, url: `https://www.google.com/search?q=${encodeURIComponent(cleanTitle)}&tbm=nws` }
+          { name: `Cari referensi lain terkait di Google`, url: `https://www.google.com/search?q=${encodeURIComponent(cleanTitle)}&tbm=nws` }
         ];
 
         dynamicIssues.push({
           id: i,
           topik: cleanTitle,
           kategori: kategori,
-          volume: Math.floor(Math.random() * 50000) + 60000 - (i * 7000),
+          // Bikin simulasi volume yang masuk akal dan acak
+          volume: Math.floor(Math.random() * 50000) + 40000,
           source: source,
           pubDate: pubDate,
           articleTitle: rawTitle,
@@ -53,24 +57,13 @@ export async function GET() {
       }
     }
 
+    // Urutkan dari volume tertinggi ke terendah sebelum dikirim ke Frontend
+    dynamicIssues.sort((a, b) => b.volume - a.volume);
+
     return NextResponse.json({ success: true, data: dynamicIssues });
 
   } catch (error) {
     console.error("Live fetch error:", error);
-    return NextResponse.json({ 
-      success: true, 
-      data: [
-        { 
-          id: 1, 
-          topik: "Dinamika Isu Publik Nasional", 
-          kategori: "Politik & Sosial", 
-          volume: 88000, 
-          source: "Redaksi", 
-          pubDate: "Hari ini", 
-          articleTitle: "Perkembangan Terbaru Isu Publik di Indonesia", 
-          sourcesList: [{ name: "Portal Berita Utama", url: "https://news.google.com" }]
-        }
-      ] 
-    });
+    return NextResponse.json({ success: false, data: [] });
   }
 }
