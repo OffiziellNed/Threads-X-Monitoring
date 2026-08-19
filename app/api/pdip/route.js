@@ -8,8 +8,8 @@ export async function GET(request) {
     const hours = parseInt(searchParams.get('hours') || '3', 10);
 
     const timeFilter = hours === 3 ? 'when:3h' : 'when:12h';
-    // Hanya mencari berita PDIP
-    const query = encodeURIComponent(`"PDI Perjuangan" OR PDIP OR Megawati OR Hasto OR Ganjar ${timeFilter}`);
+    // Kunci pencarian spesifik ke Soekarnoputri
+    const query = encodeURIComponent(`"PDI Perjuangan" OR PDIP OR "Megawati Soekarnoputri" OR Hasto OR Ganjar ${timeFilter}`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=id&gl=ID&ceid=ID:id`;
 
     const response = await fetch(rssUrl, { cache: 'no-store' });
@@ -24,7 +24,6 @@ export async function GET(request) {
       return hoursMultiplier === 12 ? Math.floor(baseVolume * 1.5) : baseVolume;
     };
 
-    // FILTER BAJA: Wajib ada unsur kata kunci!
     const pdipKeywords = ['pdip', 'pdi perjuangan', 'megawati', 'hasto', 'ganjar', 'pramono', 'banteng', 'gesuri', 'kader'];
 
     for (let i = 1; i < items.length; i++) {
@@ -36,7 +35,11 @@ export async function GET(request) {
         const cleanTitle = rawTitle.split(" - ")[0];
         const lowerTitle = cleanTitle.toLowerCase();
 
-        // Validasi Ekstrem
+        // FILTER ANTI BOCOR: Kalau ada unsur voli / atlet Megawati, LANGSUNG BUANG!
+        if (lowerTitle.includes('voli') || lowerTitle.includes('hangestri') || lowerTitle.includes('red sparks') || lowerTitle.includes('olahraga')) {
+          continue; 
+        }
+
         const isRelevant = pdipKeywords.some(kw => lowerTitle.includes(kw));
         if (!isRelevant) continue;
 
