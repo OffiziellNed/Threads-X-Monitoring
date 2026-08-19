@@ -8,15 +8,15 @@ export async function POST(request) {
     const body = await request.json();
     const type = body.type || 'negative';
 
+    // 1 KUNCI SAKTI UNTUK 2 GERBANG (YouTube & Gemini)
     const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
-    const GEMINI_API_KEY = "AQ.Ab8RN6K3yZ72kiKcmVkHVjp_6j9dDC2sNDKBhypWJxUC9wo0kQ";
+    const GEMINI_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
 
     // 1. CARI 1 VIDEO SAJA
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
     
-    // Detektor Error YouTube
     if (searchData.error) {
        return NextResponse.json({ success: true, data: [{ topik: "YouTube API Error", volume: 0, konteks: searchData.error.message }] });
     }
@@ -45,22 +45,21 @@ export async function POST(request) {
 
     const rawCommentsText = allComments.join("\n- ").substring(0, 10000); 
 
-    // 3. PROMPT MAKSIMAL (Minta Format Array)
+    // 3. PROMPT MAKSIMAL 
     const promptContext = type === 'negative' 
       ? `Tugas: Ekstrak 5 isu negatif atau kritik utama dari komentar YouTube berikut tentang Puan Maharani. Format WAJIB JSON Array murni. Contoh: [{"topik": "Isu A", "volume": 85, "konteks": "Penjelasan"}]`
       : `Tugas: Ekstrak 5 sentimen positif atau dukungan utama dari komentar YouTube berikut tentang Puan Maharani. Format WAJIB JSON Array murni. Contoh: [{"topik": "Pujian A", "volume": 75, "konteks": "Penjelasan"}]`;
 
-    // 4. KUNCI DIPINDAH KE HEADER (Ini Obatnya!)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+    // 4. JALUR URL NORMAL (Karena kunci AIza pasti lolos)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    
     const aiResponse = await fetch(geminiUrl, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY // Memaksa server Google menerima kunci ini
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: `${promptContext}\n\nKomentar:\n${rawCommentsText}` }] }],
         generationConfig: { responseMimeType: "application/json" },
+        // SENSOR DIMATIKAN TOTAL AGAR BERANI BACA KRITIK POLITIK
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -72,7 +71,6 @@ export async function POST(request) {
 
     const aiData = await aiResponse.json();
     
-    // Detektor Error Gemini
     if (aiData.error) {
         return NextResponse.json({ success: true, data: [{ topik: "Gemini API Error", volume: 0, konteks: aiData.error.message }] });
     }
