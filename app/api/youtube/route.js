@@ -8,9 +8,11 @@ export async function POST(request) {
     const body = await request.json();
     const type = body.type || 'negative';
 
-    // 1 KUNCI SAKTI UNTUK 2 GERBANG (YouTube & Gemini)
+    // KUNCI YOUTUBE TETAP PAKAI YANG LAMA
     const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
-    const GEMINI_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
+    
+    // MASUKIN KUNCI GEMINI YANG BARU AJA LO BIKIN DI SINI:
+    const GEMINI_API_KEY = "MASUKIN_KUNCI_GEMINI_YANG_BARU_DI_SINI";
 
     // 1. CARI 1 VIDEO SAJA
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
@@ -50,7 +52,7 @@ export async function POST(request) {
       ? `Tugas: Ekstrak 5 isu negatif atau kritik utama dari komentar YouTube berikut tentang Puan Maharani. Format WAJIB JSON Array murni. Contoh: [{"topik": "Isu A", "volume": 85, "konteks": "Penjelasan"}]`
       : `Tugas: Ekstrak 5 sentimen positif atau dukungan utama dari komentar YouTube berikut tentang Puan Maharani. Format WAJIB JSON Array murni. Contoh: [{"topik": "Pujian A", "volume": 75, "konteks": "Penjelasan"}]`;
 
-    // 4. JALUR URL NORMAL (Karena kunci AIza pasti lolos)
+    // 4. JALUR URL NORMAL PAKAI KUNCI BARU GEMINI
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     const aiResponse = await fetch(geminiUrl, {
@@ -59,7 +61,6 @@ export async function POST(request) {
       body: JSON.stringify({
         contents: [{ parts: [{ text: `${promptContext}\n\nKomentar:\n${rawCommentsText}` }] }],
         generationConfig: { responseMimeType: "application/json" },
-        // SENSOR DIMATIKAN TOTAL AGAR BERANI BACA KRITIK POLITIK
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
