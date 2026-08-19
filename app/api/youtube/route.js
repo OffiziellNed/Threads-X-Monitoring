@@ -33,7 +33,7 @@ export async function POST(request) {
 
     const rawCommentsText = allComments.join("\n- ").substring(0, 8000); 
 
-    // 3. PROMPT GROQ
+    // 3. PROMPT GROQ DENGAN MODEL UNIVERSAL
     const promptContext = type === 'negative' 
       ? `Ekstrak 5 isu kritik utama dari komentar berikut tentang Puan Maharani. Format JSON Array murni dengan key "items". Contoh: {"items": [{"topik": "Isu", "volume": 80, "konteks": "Penjelasan"}]}`
       : `Ekstrak 5 pujian utama dari komentar berikut tentang Puan Maharani. Format JSON Array murni dengan key "items". Contoh: {"items": [{"topik": "Pujian", "volume": 80, "konteks": "Penjelasan"}]}`;
@@ -45,7 +45,7 @@ export async function POST(request) {
         'Content-Type': 'application/json' 
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "llama3-8b-8192", // Model universal yang pasti aktif
         messages: [{ role: "user", content: `${promptContext}\n\nKomentar:\n${rawCommentsText}` }],
         temperature: 0.5,
         response_format: { type: "json_object" }
@@ -58,10 +58,9 @@ export async function POST(request) {
         return NextResponse.json({ success: true, data: [{ topik: "Groq API Error", volume: 0, konteks: groqData.error.message }] });
     }
 
-    // 4. PARSING YANG PRESISI
+    // 4. PARSING DATA
     let content = groqData.choices[0].message.content;
     let parsed = JSON.parse(content);
-    // Mengambil data dari key "items" sesuai instruksi prompt di atas
     let finalData = parsed.items || [];
 
     return NextResponse.json({ success: true, data: finalData });
