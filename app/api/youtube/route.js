@@ -8,8 +8,9 @@ export async function POST(request) {
     const body = await request.json();
     const type = body.type || 'negative';
 
+    // KUNCI API SUDAH DIUPDATE SESUAI YANG TERBARU
     const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
-    const GEMINI_API_KEY = "AQ.Ab8RN6K2p4V294eiQPwMsZex3Kq2JX7hN5V4r3BQXuQ6NWkV-w";
+    const GEMINI_API_KEY = "AQ.Ab8RN6K3yZ72kiKcmVkHVjp_6j9dDC2sNDKBhypWJxUC9wo0kQ";
 
     // 1. CARI 1 VIDEO SAJA BIAR SANGAT CEPAT (Mencegah Timeout Vercel 10 Detik)
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
