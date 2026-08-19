@@ -8,9 +8,9 @@ export async function POST(request) {
     const body = await request.json();
     const type = body.type || 'negative'; // 'negative' atau 'positive'
 
-    // MASUKKAN API KEY LO DI SINI BOS!
-    const YOUTUBE_API_KEY = "TARUH_YOUTUBE_API_KEY_LO_DISINI";
-    const GEMINI_API_KEY = "TARUH_GEMINI_API_KEY_LO_DISINI";
+    // API KEY LO UDAH TERPASANG OTOMATIS DI SINI BOS!
+    const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
+    const GEMINI_API_KEY = "AQ.Ab8RN6K2p4V294eiQPwMsZex3Kq2JX7hN5V4r3BQXuQ6NWkV-w";
 
     // 1. CARI 3 VIDEO TERBARU TENTANG PUAN MAHARANI
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=3&key=${YOUTUBE_API_KEY}`;
