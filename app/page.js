@@ -27,7 +27,10 @@ export default function SocialMediaMonitoring() {
       if (currentPage.includes('12jam')) hours = 12;
       if (currentPage.includes('pdip')) topic = 'pdip';
 
-      const response = await fetch(`/api/news?hours=${hours}&topic=${topic}`);
+      // CACHE BUSTER: Menambahkan timestamp agar Vercel TIDAK BISA menggunakan data basi
+      const url = `/api/news?hours=${hours}&topic=${topic}&t=${Date.now()}`;
+      
+      const response = await fetch(url, { cache: 'no-store' });
       const result = await response.json();
       
       if (result.success) {
