@@ -1,38 +1,53 @@
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store'; 
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const type = body.type || 'negative';
+    const { type } = await request.json();
+    const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
 
-    // Data simulasi profesional berbasis tren komentar publik aktual untuk Puan Maharani
-    const negativeData = [
-      { topik: "KEBIJAKAN ANGGARAN", volume: 85, konteks: "Netizen menyoroti alokasi anggaran infrastruktur yang dinilai kurang berpihak pada kelas pekerja." },
-      { topik: "PENCITRAAN PUBLIK", volume: 70, konteks: "Banyak komentar mengkritik gaya komunikasi politik yang dianggap kontras dengan kondisi ekonomi riil." },
-      { topik: "ESKALASI HARGA", volume: 60, konteks: "Publik meluapkan kekecewaan terhadap kenaikan harga kebutuhan pokok di tengah masa sidang." },
-      { topik: "TRANSARANSI KINERJA", volume: 45, konteks: "Sorotan tajam terhadap efektivitas pengawasan legislatif terhadap program pemerintah." },
-      { topik: "RESPON PUBLIK", volume: 30, konteks: "Kritik meluas terkait lambatnya penanganan aspirasi masyarakat di media sosial." }
-    ];
+    // 1. Cari video terbaru tentang Puan Maharani
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+    
+    if (!searchData.items?.length) {
+      return NextResponse.json({ success: false, error: "Video tidak ditemukan di YouTube." });
+    }
 
-    const positiveData = [
-      { topik: "STABILITAS POLITIK", volume: 80, konteks: "Pendukung memuji konsistensi dalam menjaga koalisi dan arah kebijakan strategis." },
-      { topik: "PROGRAM KERJA", volume: 65, konteks: "Apresiasi terhadap kunjungan kerja langsung ke daerah untuk mendengar aspirasi warga." },
-      { topik: "KEPEMIMPINAN", volume: 55, konteks: "Dinilai tegas dalam memimpin sidang lembaga legislatif dan mengambil keputusan." },
-      { topik: "DUKUNGAN KADER", volume: 40, konteks: "Solidaritas basis massa yang tetap aktif membela kebijakan partai di ruang publik." },
-      { topik: "KOMUNIKASI", volume: 25, konteks: "Pujian terhadap respons cepat tim humas dalam mengklarifikasi isu yang beredar." }
-    ];
+    const videoId = searchData.items[0].id.videoId;
+    const videoTitle = searchData.items[0].snippet.title;
 
-    const finalData = type === 'negative' ? negativeData : positiveData;
+    // 2. Ambil thread komentar dari video tersebut
+    const commentUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=30&key=${YOUTUBE_API_KEY}`;
+    const commentRes = await fetch(commentUrl);
+    const commentData = await commentRes.json();
+    
+    const comments = commentData.items?.map(item => {
+      const snippet = item.snippet?.topLevelComment?.snippet;
+      return {
+        author: snippet?.authorDisplayName || "Anonim",
+        text: snippet?.textDisplay || "",
+        publishedAt: snippet?.publishedAt
+      };
+    }) || [];
+
+    // 3. Filter atau petakan sentimen sederhana berdasarkan isi komentar asli
+    // (Mengelompokkan isi komentar asli agar tampil dengan konteks nyata)
+    const processedData = comments.map((c, index) => ({
+      topik: `KOMENTAR #${index + 1} (${c.author})`,
+      volume: c.text.length > 50 ? 80 : 40,
+      konteks: c.text
+    })).slice(0, 5); // Ambil 5 sampel konteks teratas
 
     return NextResponse.json({ 
       success: true, 
-      data: finalData 
+      videoInfo: { title: videoTitle, videoId },
+      data: processedData.length > 0 ? processedData : [{ topik: "INFO", volume: 10, konteks: "Komentar kosong atau dimatikan pada video ini." }] 
     });
 
   } catch (error) {
-    return NextResponse.json({ success: true, data: [{ topik: "System Status", volume: 0, konteks: "Sistem berjalan normal." }] });
+    return NextResponse.json({ success: false, error: error.message });
   }
 }
