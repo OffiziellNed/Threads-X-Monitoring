@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon, Filter, DownloadCloud, Copy, CheckCircle2, Youtube, ThumbsDown, ThumbsUp } from "lucide-react";
+import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon, Filter, DownloadCloud, Copy, CheckCircle2, PlayCircle, ThumbsDown, ThumbsUp } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -187,7 +187,7 @@ export default function SocialMediaMonitoring() {
 
             {/* BOARD YOUTUBE AI */}
             <div className="mt-6 pt-4 border-t border-[#30363d] space-y-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Youtube className="text-red-500" /> Analisis Sentimen Netizen YouTube (AI Realtime)</h3>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><PlayCircle className="text-red-500" /> Analisis Sentimen Netizen YouTube (AI Realtime)</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button onClick={() => setCurrentPage("puan-negative")} className="flex items-center gap-4 p-5 bg-[#161b22] border border-red-900/50 rounded-xl hover:border-red-500 transition-all text-left">
                   <div className="bg-red-500/20 p-3 rounded-lg"><ThumbsDown className="text-red-500" size={24} /></div>
