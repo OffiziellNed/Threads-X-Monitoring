@@ -33,7 +33,7 @@ export async function POST(request) {
 
     const rawCommentsText = allComments.join("\n- ").substring(0, 8000); 
 
-    // 3. PROMPT GROQ DENGAN MODEL UNIVERSAL
+    // 3. PROMPT GROQ DENGAN MODEL TERBARU
     const promptContext = type === 'negative' 
       ? `Ekstrak 5 isu kritik utama dari komentar berikut tentang Puan Maharani. Format JSON Array murni dengan key "items". Contoh: {"items": [{"topik": "Isu", "volume": 80, "konteks": "Penjelasan"}]}`
       : `Ekstrak 5 pujian utama dari komentar berikut tentang Puan Maharani. Format JSON Array murni dengan key "items". Contoh: {"items": [{"topik": "Pujian", "volume": 80, "konteks": "Penjelasan"}]}`;
@@ -45,7 +45,7 @@ export async function POST(request) {
         'Content-Type': 'application/json' 
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192", // Model universal yang pasti aktif
+        model: "llama-3.1-8b-instant", // Model aktif yang direkomendasikan
         messages: [{ role: "user", content: `${promptContext}\n\nKomentar:\n${rawCommentsText}` }],
         temperature: 0.5,
         response_format: { type: "json_object" }
