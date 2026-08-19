@@ -2,19 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon, Filter, DownloadCloud, Copy, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, RefreshCw, ExternalLink, Calendar, Building2, Link as LinkIcon, Filter, DownloadCloud, Copy, CheckCircle2, Newspaper, Instagram } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [selectedIssue, setSelectedIssue] = useState(null);
-  const [isApiOnline, setIsApiOnline] = useState(true); 
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum"];
 
-  // State untuk fitur Sedot Data
+  // STATE SUMBER DATA: 'google' atau 'instagram'
+  const [dataSource, setDataSource] = useState("google");
+
   const [isScraping, setIsScraping] = useState(false);
   const [scrapedResult, setScrapedResult] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -23,75 +24,65 @@ export default function SocialMediaMonitoring() {
     setIsLoading(true);
     try {
       const hours = currentPage === "3jam" ? 3 : 12;
-      const response = await fetch(`/api/news?hours=${hours}`);
+      // Fetch berdasarkan sumber data yang dipilih
+      const response = await fetch(`/api/news?hours=${hours}&source=${dataSource}`);
       const result = await response.json();
       
-      if (result.success && result.data.length > 0) {
+      if (result.success) {
         setIssuesData(result.data);
-        setIsApiOnline(true);
       }
     } catch (error) {
       console.error("Gagal memuat tren:", error);
-      setIsApiOnline(false);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Efek ini jalan tiap ganti halaman (3 jam / 12 jam) ATAU tiap switch sumber data (Google / IG)
   useEffect(() => {
     if (currentPage === "3jam" || currentPage === "12jam") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
-  }, [currentPage]);
+  }, [currentPage, dataSource]);
 
   const handleOpenDetail = (isu) => {
     setSelectedIssue(isu);
-    setScrapedResult(""); // Reset hasil sedot saat buka isu baru
+    setScrapedResult(""); 
     setIsCopied(false);
     setCurrentPage("detail");
   };
 
-  // --- FUNGSI SEDOT DATA & BUAT PROMPT ---
   const handleSedotData = () => {
     setIsScraping(true);
     setIsCopied(false);
-
-    // Simulasi proses scraping Page 1 & Page 2 dari tautan berita
     setTimeout(() => {
-      const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, 10 dalam konteks pro dan 10 dalam konteks kontra. Jika Kontra pastikan menggunakan bahasa bahasa kontroversial, satir, sarkas, bisa pakai hook agar mengundang pembaca.";
-      
+      const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, 10 dalam konteks pro dan 10 dalam konteks kontra. Jika Kontra pastikan menggunakan bahasa kontroversial, satir, sarkas, bisa pakai hook agar mengundang pembaca.";
       const title = selectedIssue.articleTitle || selectedIssue.topik;
-      const simulatedContent = `${selectedIssue.articleDesc} Dalam laporan mendalam yang dirilis hari ini, perbincangan publik semakin memanas terkait arah regulasi dan penegakan hukum yang ada. Berbagai pihak menilai ada kejanggalan dalam prosedur yang dijalankan, sementara pihak otoritas bersikeras bahwa semua telah sesuai dengan undang-undang yang berlaku. (Page 1) \n\nLebih lanjut, gelombang protes di media sosial tidak dapat dihindarkan. Tokoh-tokoh masyarakat mendesak adanya transparansi dan evaluasi menyeluruh agar kasus serupa tidak menjadi preseden buruk bagi demokrasi dan keadilan sosial di masa mendatang. (Page 2)`;
-
-      const finalOutput = `${promptInstruction}\n\n[JUDUL BERITA]\n${title}\n\n[DESKRIPSI & ISI BERITA]\n${simulatedContent}`;
+      const content = selectedIssue.articleDesc || "Tidak ada rincian yang disedot.";
       
+      const finalOutput = `${promptInstruction}\n\n[JUDUL TOPIK]\n${title}\n\n[DESKRIPSI & ISI KONTEN]\n${content}`;
       setScrapedResult(finalOutput);
       setIsScraping(false);
-    }, 2000); // Jeda 2 detik untuk efek loading
+    }, 1500);
   };
 
-  // --- FUNGSI COPY TO CLIPBOARD ---
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(scrapedResult);
     setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 3000); // Notifikasi "Copied!" bertahan 3 detik
+    setTimeout(() => setIsCopied(false), 3000); 
   };
 
-  const filteredData = selectedCategory === "Semua" 
-    ? issuesData 
-    : issuesData.filter(issue => issue.kategori === selectedCategory);
-
+  const filteredData = selectedCategory === "Semua" ? issuesData : issuesData.filter(issue => issue.kategori === selectedCategory);
   const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, 10); 
 
-  // --- HALAMAN DETAIL ---
   if (currentPage === "detail" && selectedIssue) {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-3xl space-y-6 mt-6">
           <button 
-            onClick={() => setCurrentPage(currentPage === "detail" ? "12jam" : currentPage)} // Fallback return
+            onClick={() => setCurrentPage(currentPage === "detail" ? "12jam" : currentPage)} 
             className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors font-medium"
           >
             <ArrowLeft size={20} /> Kembali ke Daftar Isu
@@ -108,102 +99,64 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-gray-400 border-y border-[#30363d] py-4">
-              <span className="flex items-center gap-2 text-blue-400 font-medium">
-                <Building2 size={16} /> Sumber Utama: {selectedIssue.source || "Media Nasional"}
+              <span className={`flex items-center gap-2 font-medium ${dataSource === 'instagram' ? 'text-pink-500' : 'text-blue-400'}`}>
+                {dataSource === 'instagram' ? <Instagram size={16} /> : <Building2 size={16} />} 
+                Sumber: {selectedIssue.source}
               </span>
               <span className="flex items-center gap-2">
-                <Calendar size={16} /> Waktu: {selectedIssue.pubDate || "Baru saja"}
+                <Calendar size={16} /> Waktu: {selectedIssue.pubDate}
               </span>
             </div>
 
             <div className="space-y-3 pt-2">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                <LinkIcon size={16} className="text-blue-400" /> Tautan Sumber Berita Terkait:
+                <LinkIcon size={16} className="text-blue-400" /> Tautan Terkait:
               </h3>
               <div className="grid grid-cols-1 gap-2.5">
-                {selectedIssue.sourcesList && selectedIssue.sourcesList.length > 0 ? (
-                  selectedIssue.sourcesList.map((src, idx) => (
-                    <a 
-                      key={idx}
-                      href={src.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="flex items-center justify-between bg-[#0d1117] hover:bg-[#1c2128] p-4 rounded-xl border border-[#30363d] text-gray-200 hover:text-blue-400 transition-all group shadow-sm"
-                    >
-                      <span className="font-medium text-sm flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                        {src.name}
-                      </span>
-                      <ExternalLink size={16} className="text-gray-500 group-hover:text-blue-400 transition-colors" />
-                    </a>
-                  ))
-                ) : (
-                  <a 
-                    href={selectedIssue.link || "#"} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center justify-between bg-[#0d1117] hover:bg-[#1c2128] p-4 rounded-xl border border-[#30363d] text-gray-200 hover:text-blue-400 transition-all group"
-                  >
+                {selectedIssue.sourcesList.map((src, idx) => (
+                  <a key={idx} href={src.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between bg-[#0d1117] hover:bg-[#1c2128] p-4 rounded-xl border border-[#30363d] text-gray-200 hover:text-blue-400 transition-all group shadow-sm">
                     <span className="font-medium text-sm flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                      {selectedIssue.source || "Buka Berita Asli"}
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>{src.name}
                     </span>
-                    <ExternalLink size={16} className="text-gray-500 group-hover:text-blue-400" />
+                    <ExternalLink size={16} className="text-gray-500 group-hover:text-blue-400 transition-colors" />
                   </a>
-                )}
+                ))}
               </div>
             </div>
 
-            {/* SEKSI SEDOT DATA & PROMPT GENERATOR */}
             <div className="pt-6 border-t border-[#30363d] space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Ekstraksi Konten & Pembuat Opini</h3>
-                  <p className="text-sm text-gray-400 mt-1">Tarik teks dari tautan di atas untuk menghasilkan draf opini Threads/X secara otomatis.</p>
+                  <h3 className="text-lg font-bold text-white">Pembuat Opini AI</h3>
+                  <p className="text-sm text-gray-400 mt-1">Sintesis data menjadi prompt pro & kontra.</p>
                 </div>
                 <button 
                   onClick={handleSedotData}
                   disabled={isScraping}
-                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-gray-400 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-md min-w-[140px]"
+                  className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-md"
                 >
-                  {isScraping ? (
-                    <><RefreshCw size={16} className="animate-spin" /> Menyedot...</>
-                  ) : (
-                    <><DownloadCloud size={16} /> Sedot Data</>
-                  )}
+                  {isScraping ? <><RefreshCw size={16} className="animate-spin" /> Ekstraksi...</> : <><DownloadCloud size={16} /> Sedot & Buat Prompt</>}
                 </button>
               </div>
 
-              {/* Tampilan Hasil Sedot & Prompt */}
               {scrapedResult && (
                 <div className="mt-4 bg-[#0d1117] rounded-xl border border-[#30363d] overflow-hidden">
                   <div className="flex items-center justify-between bg-[#161b22] px-4 py-3 border-b border-[#30363d]">
-                    <span className="text-sm font-semibold text-gray-300">Hasil Tarikan (Prompt Ready)</span>
-                    <button 
-                      onClick={handleCopyPrompt}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        isCopied ? 'bg-green-900/40 text-green-400 border border-green-800' : 'bg-[#0d1117] text-gray-300 border border-[#30363d] hover:bg-[#1c2128]'
-                      }`}
-                    >
-                      {isCopied ? <><CheckCircle2 size={14} /> Tersalin!</> : <><Copy size={14} /> Salin Prompt</>}
+                    <span className="text-sm font-semibold text-gray-300">Hasil Prompt (Siap Salin)</span>
+                    <button onClick={handleCopyPrompt} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${isCopied ? 'bg-green-900/40 text-green-400' : 'bg-[#0d1117] text-gray-300 hover:bg-[#1c2128]'}`}>
+                      {isCopied ? <><CheckCircle2 size={14} /> Tersalin!</> : <><Copy size={14} /> Salin</>}
                     </button>
                   </div>
-                  <div className="p-4">
-                    <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">
-                      {scrapedResult}
-                    </pre>
-                  </div>
+                  <div className="p-4"><pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">{scrapedResult}</pre></div>
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </main>
     );
   }
 
-  // --- HALAMAN UTAMA ---
   if (currentPage === "main") {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -212,33 +165,22 @@ export default function SocialMediaMonitoring() {
             <h1 className="text-4xl font-bold tracking-tight text-white">Public Trend Radar</h1>
             <p className="text-gray-400">Monitoring isu politik, sosial, & hukum terupdate real-time.</p>
           </div>
-
           <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
-                <TrendingUp size={20} className="text-blue-400" /> Status Live Feed
-              </h2>
+              <h2 className="text-xl font-semibold flex items-center gap-2 text-white"><TrendingUp size={20} className="text-blue-400" /> Status Live Feed</h2>
               <div className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 bg-green-900/50 text-green-400 border border-green-800">
-                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>
-                Online & Stabil
+                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span> Online & Stabil
               </div>
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button 
-              onClick={() => setCurrentPage("3jam")}
-              className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 transition-all text-left space-y-2 group"
-            >
-              <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Monitoring 3 Jam Terakhir</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Analisis lonjakan isu kilat berbasis pokok masalah konkrit.</p>
+            <button onClick={() => setCurrentPage("3jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group">
+              <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring 3 Jam Terakhir</h3>
+              <p className="text-gray-400 text-sm">Analisis lonjakan isu kilat.</p>
             </button>
-            <button 
-              onClick={() => setCurrentPage("12jam")}
-              className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 transition-all text-left space-y-2 group"
-            >
-              <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Monitoring 12 Jam Terakhir</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Akumulasi pembicaraan publik dan tren berita dalam 12 jam terakhir.</p>
+            <button onClick={() => setCurrentPage("12jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group">
+              <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring 12 Jam Terakhir</h3>
+              <p className="text-gray-400 text-sm">Akumulasi tren berita 12 jam.</p>
             </button>
           </div>
         </div>
@@ -246,47 +188,45 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN MONITORING ---
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
         <div className="flex justify-between items-center">
-          <button 
-            onClick={() => setCurrentPage("main")}
-            className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors font-medium"
-          >
-            <ArrowLeft size={20} /> Kembali ke Menu Utama
+          <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-blue-400">
+            <ArrowLeft size={20} /> Menu Utama
           </button>
-          <button 
-            onClick={fetchLiveTrends}
-            className="flex items-center gap-2 bg-[#161b22] text-blue-400 border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-blue-500 transition-all"
-          >
+          <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#161b22] text-blue-400 border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-blue-500">
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh Data
           </button>
         </div>
 
-        <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
-          <h1 className="text-2xl font-bold text-white">
-            Topik Hype ({currentPage === "3jam" ? "3 Jam Terakhir" : "12 Jam Terakhir"})
-          </h1>
-          <p className="text-gray-400 mt-1">Menyedot seluruh diskursus pembicaraan publik terkini.</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 text-gray-400 mr-2">
-            <Filter size={18} />
-            <span className="text-sm font-semibold">Filter:</span>
-          </div>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                selectedCategory === cat 
-                ? 'bg-blue-600 text-white border-blue-500 shadow-md' 
-                : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128] hover:text-gray-200'
+        {/* TOGGLE SUMBER DATA: GOOGLE VS INSTAGRAM */}
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-[#161b22] p-2 rounded-2xl border border-[#30363d]">
+          <div className="flex w-full sm:w-auto">
+            <button 
+              onClick={() => setDataSource('google')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${
+                dataSource === 'google' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-[#1c2128]'
               }`}
             >
+              <Newspaper size={18} /> Berita Nasional (Google)
+            </button>
+            <button 
+              onClick={() => setDataSource('instagram')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${
+                dataSource === 'instagram' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-400 hover:bg-[#1c2128]'
+              }`}
+            >
+              <Instagram size={18} /> Opini Kreator (IG)
+            </button>
+          </div>
+        </div>
+
+        {/* MENU FILTER KATEGORI */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 text-gray-400 mr-2"><Filter size={18} /><span className="text-sm font-semibold">Filter:</span></div>
+          {categories.map((cat) => (
+            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-medium border ${selectedCategory === cat ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'}`}>
               {cat}
             </button>
           ))}
@@ -299,27 +239,25 @@ export default function SocialMediaMonitoring() {
         ) : (
           <>
             <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] h-96">
-              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 {selectedCategory !== "Semua" && `(${selectedCategory})`}</h2>
+              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 {selectedCategory !== "Semua" && `(${selectedCategory})`} - {dataSource.toUpperCase()}</h2>
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <XAxis type="number" stroke="#4b5563" />
                     <YAxis dataKey="topik" type="category" width={180} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} />
                     <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
-                    <Bar dataKey="volume" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="volume" fill={dataSource === 'instagram' ? '#ec4899' : '#3b82f6'} radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Belum ada data untuk kategori ini.
-                </div>
+                <div className="flex items-center justify-center h-full text-gray-500">Belum ada data untuk kategori ini.</div>
               )}
             </div>
 
             <div className="space-y-4 pb-10">
               <h2 className="text-xl font-bold mt-8 text-white">Rincian Pokok Masalah (Top 10)</h2>
               {listData.length > 0 ? listData.map((isu, index) => (
-                <div key={isu.id} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 hover:bg-[#1c2128] transition-colors">
+                <div key={isu.id} className={`bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 hover:bg-[#1c2128] transition-colors ${dataSource === 'instagram' ? 'border-l-pink-500' : 'border-l-blue-500'}`}>
                   <div className="flex justify-between items-center">
                     <div className="pr-4">
                       <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">{isu.kategori}</span>
@@ -330,19 +268,14 @@ export default function SocialMediaMonitoring() {
                         <span className="text-[10px] text-blue-400 leading-none">Indeks:</span>
                         <span className="font-bold leading-tight">{isu.volume.toLocaleString()}</span>
                       </div>
-                      <button 
-                        onClick={() => handleOpenDetail(isu)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-md"
-                      >
+                      <button onClick={() => handleOpenDetail(isu)} className={`text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-md ${dataSource === 'instagram' ? 'bg-pink-600 hover:bg-pink-500' : 'bg-blue-600 hover:bg-blue-500'}`}>
                         Buka
                       </button>
                     </div>
                   </div>
                 </div>
               )) : (
-                <p className="text-gray-500 bg-[#161b22] p-6 rounded-xl border border-[#30363d] text-center">
-                  Tidak ada isu terkait kategori {selectedCategory} dalam radar saat ini.
-                </p>
+                <p className="text-gray-500 bg-[#161b22] p-6 rounded-xl border border-[#30363d] text-center">Tidak ada isu terkait kategori {selectedCategory}.</p>
               )}
             </div>
           </>
