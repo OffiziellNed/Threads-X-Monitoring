@@ -7,60 +7,55 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const type = body.type || 'negative';
-
+    
     const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
+    const OPENROUTER_KEY = "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";
 
-    // 1. CARI VIDEO TERBARU
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
+    // 1. Ambil video terbaru Puan Maharani
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=Puan+Maharani&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
     
-    if (!searchData.items?.length) {
-      return NextResponse.json({ success: true, data: [{ topik: "System", volume: 0, konteks: "Video tidak ditemukan." }] });
+    if (!searchData.items?.length) throw new Error("Video tidak ditemukan");
+    
+    const videoId = searchData.items[0].id.videoId;
+
+    // 2. Ambil komentar YouTube
+    const commentRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=30&key=${YOUTUBE_API_KEY}`);
+    const commentData = await commentRes.json();
+    const comments = commentData.items?.map(c => c.snippet.topLevelComment.snippet.textDisplay).join("\n") || "Tidak ada komentar.";
+
+    // 3. Minta konteks AI lewat OpenRouter (GPT-4o-mini)
+    const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${OPENROUTER_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://your-app-url.vercel.app/' 
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        messages: [{ 
+          role: "user", 
+          content: `Analisis komentar ini tentang Puan Maharani: "${comments}". 
+          Berikan 5 poin utama sentimen ${type}. 
+          Format JSON murni dengan struktur: {"items": [{"topik": "Judul Isu", "volume": 80, "konteks": "Penjelasan detail kenapa netizen berpendapat demikian"}]}` 
+        }],
+        response_format: { type: "json_object" }
+      })
+    });
+
+    const aiData = await aiRes.json();
+    
+    if (aiData.error) {
+        return NextResponse.json({ success: true, data: [{ topik: "AI Error", volume: 0, konteks: aiData.error.message }] });
     }
 
-    // 2. SEDOT KOMENTAR LEBIH BANYAK (50 Komentar)
-    const videoId = searchData.items[0].id.videoId;
-    const commentUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=50&key=${YOUTUBE_API_KEY}`;
-    const commentRes = await fetch(commentUrl);
-    const commentData = await commentRes.json();
-    
-    const comments = commentData.items?.map(c => c.snippet?.topLevelComment?.snippet?.textDisplay.toLowerCase()) || [];
+    const finalData = JSON.parse(aiData.choices[0].message.content).items;
 
-    // 3. KAMUS KATA KUNCI LOKAL YANG LEBIH LUAS
-    const negKeywords = ['gagal', 'buruk', 'korupsi', 'tidak', 'kecewa', 'mahal', 'kritik', 'pencitraan', 'rugi', 'parah', 'hancur', 'bohong', 'rakyat', 'beban', 'aturan', 'wakil'];
-    const posKeywords = ['dukung', 'bagus', 'setuju', 'hebat', 'lanjutkan', 'mantap', 'terima', 'keren', 'salut', 'mantap', 'terbaik', 'sukses', 'puan'];
-    
-    let analysis = {};
-    const targetKeywords = type === 'negative' ? negKeywords : posKeywords;
-
-    targetKeywords.forEach(word => {
-        analysis[word] = 0;
-        comments.forEach(comment => {
-            if (comment.includes(word)) analysis[word]++;
-        });
-    });
-
-    // 4. FORMAT DATA JSON UNTUK RECHARTS
-    const finalData = Object.entries(analysis)
-        .map(([topik, count]) => ({
-            topik: topik.toUpperCase(),
-            volume: (count * 15) + Math.floor(Math.random() * 10), // Dinormalisasi biar grafiknya hidup
-            konteks: `Ditemukan kemunculan kata kunci pada ${count} komentar netizen.`
-        }))
-        .filter(item => item.volume > 0)
-        .sort((a, b) => b.volume - a.volume)
-        .slice(0, 5);
-
-    return NextResponse.json({ 
-      success: true, 
-      data: finalData.length > 0 ? finalData : [
-        { topik: "DEFAULT ISU", volume: 45, konteks: "Komentar netizen terpantau membahas dinamika kebijakan." },
-        { topik: "PUBLIK", volume: 30, konteks: "Sentimen umum merespons pemberitaan terbaru." }
-      ] 
-    });
+    return NextResponse.json({ success: true, data: finalData });
 
   } catch (error) {
-    return NextResponse.json({ success: true, data: [{ topik: "Error", volume: 0, konteks: error.message }] });
+    return NextResponse.json({ success: true, data: [{ topik: "System Error", volume: 0, konteks: error.message }] });
   }
 }
