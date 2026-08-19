@@ -31,7 +31,7 @@ export async function POST(request) {
     
     const rawComments = commentData.items?.map(c => c.snippet?.topLevelComment?.snippet?.textDisplay.toLowerCase()) || [];
 
-    // 3. Analisis real-time dan sertakan link sumber yang bersih
+    // 3. Analisis real-time dan pisahkan properti url
     let analysisResult = [];
 
     if (type === 'negative') {
