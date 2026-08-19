@@ -22,15 +22,16 @@ export default function SocialMediaMonitoring() {
     setIsLoading(true);
     try {
       let hours = 3;
-      let topic = 'general';
+      let isPdip = currentPage.includes('pdip');
       
       if (currentPage.includes('12jam')) hours = 12;
-      if (currentPage.includes('pdip')) topic = 'pdip';
 
-      // CACHE BUSTER: Menambahkan timestamp agar Vercel TIDAK BISA menggunakan data basi
-      const url = `/api/news?hours=${hours}&topic=${topic}&t=${Date.now()}`;
+      // KUNCI PERUBAHAN: Memisahkan endpoint API agar Vercel tidak bingung
+      const endpoint = isPdip 
+        ? `/api/pdip?hours=${hours}&t=${Date.now()}` 
+        : `/api/news?hours=${hours}&t=${Date.now()}`;
       
-      const response = await fetch(url, { cache: 'no-store' });
+      const response = await fetch(endpoint, { cache: 'no-store' });
       const result = await response.json();
       
       if (result.success) {
