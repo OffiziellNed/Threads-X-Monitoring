@@ -9,7 +9,8 @@ export async function POST(request) {
     const type = body.type || 'negative';
 
     const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
-    const GROQ_API_KEY = "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";
+    // KUNCI BARU LO UDAH TERPASANG DI SINI
+    const GROQ_API_KEY = "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";
 
     // 1. CARI VIDEO
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
@@ -17,7 +18,7 @@ export async function POST(request) {
     const searchData = await searchRes.json();
     
     if (!searchData.items?.length) {
-      return NextResponse.json({ success: true, data: [{ topik: "Video Error", volume: 0, konteks: "Gagal ambil video." }] });
+      return NextResponse.json({ success: true, data: [{ topik: "Video Error", volume: 0, konteks: "Gagal ambil data video." }] });
     }
 
     // 2. SEDOT KOMENTAR
@@ -29,10 +30,10 @@ export async function POST(request) {
     const allComments = commentData.items?.map(c => c.snippet?.topLevelComment?.snippet?.textDisplay) || [];
     const rawCommentsText = allComments.join("\n- ").substring(0, 5000); 
 
-    // 3. PROMPT & MODEL DEFAULT
+    // 3. PROMPT KE GROQ
     const promptContext = type === 'negative' 
-      ? `Ekstrak 5 isu kritik dari komentar ini. Format JSON: {"items": [{"topik": "...", "volume": 50, "konteks": "..."}]}`
-      : `Ekstrak 5 pujian dari komentar ini. Format JSON: {"items": [{"topik": "...", "volume": 50, "konteks": "..."}]}`;
+      ? `Ekstrak 5 isu kritik dari komentar ini tentang Puan Maharani. Format JSON: {"items": [{"topik": "...", "volume": 50, "konteks": "..."}]}`
+      : `Ekstrak 5 pujian dari komentar ini tentang Puan Maharani. Format JSON: {"items": [{"topik": "...", "volume": 50, "konteks": "..."}]}`;
 
     const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: 'POST',
@@ -41,7 +42,7 @@ export async function POST(request) {
         'Content-Type': 'application/json' 
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile", // INI MODEL PALING STABIL SAAT INI
+        model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: `${promptContext}\n\nKomentar:\n${rawCommentsText}` }],
         temperature: 0.3,
         response_format: { type: "json_object" }
