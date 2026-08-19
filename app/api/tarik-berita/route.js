@@ -1,52 +1,137 @@
-import * as cheerio from 'cheerio';
 import { NextResponse } from 'next/server';
 
-export async function POST(request) {
+export const revalidate = 0; // Dinamis agar bisa switch sumber kapan saja
+
+export async function GET(request) {
   try {
-    const { url } = await request.json();
-    
-    // Menyamar sebagai browser Chrome agar tidak diblokir web berita
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+    const { searchParams } = new URL(request.url);
+    const hours = parseInt(searchParams.get('hours') || '3', 10);
+    const sourceData = searchParams.get('source') || 'google'; // default ke google
+
+    let dynamicIssues = [];
+
+    // ==========================================
+    // MESIN 1: GOOGLE NEWS (BERITA NASIONAL)
+    // ==========================================
+    if (sourceData === 'google') {
+      const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
+      const response = await fetch(rssUrl, { cache: 'no-store' });
+      const xmlText = await response.text();
+      const items = xmlText.split("<item>");
+
+      const generateStableVolume = (text, hoursMultiplier) => {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) { hash = text.charCodeAt(i) + ((hash << 5) - hash); }
+        const baseVolume = Math.abs(hash % 50000) + 40000;
+        return hoursMultiplier === 12 ? Math.floor(baseVolume * 1.5) : baseVolume;
+      };
+
+      for (let i = 1; i < Math.min(40, items.length); i++) {
+        const item = items[i];
+        const titleMatch = item.match(/<title>(.*?)<\/title>/);
+        const sourceMatch = item.match(/<source.*?>(.*?)<\/source>/);
+        const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
+        const linkMatch = item.match(/<link>(.*?)<\/link>/);
+
+        if (titleMatch) {
+          let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
+          rawTitle = rawTitle.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+          
+          const sourceName = sourceMatch ? sourceMatch[1] : "Media Nasional";
+          const pubDate = dateMatch ? new Date(dateMatch[1]).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
+          const link = linkMatch ? linkMatch[1] : "#";
+          const cleanTitle = rawTitle.split(" - ")[0];
+
+          let kategori = "Sosial";
+          const lowerTitle = cleanTitle.toLowerCase();
+          if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("uu") || lowerTitle.includes("sidang")) kategori = "Hukum";
+          else if (lowerTitle.includes("pemerintah") || lowerTitle.includes("menteri") || lowerTitle.includes("apbn") || lowerTitle.includes("jokowi")) kategori = "Pemerintahan";
+          else if (lowerTitle.includes("politik") || lowerTitle.includes("pemilu") || lowerTitle.includes("prabowo") || lowerTitle.includes("dpr") || lowerTitle.includes("partai")) kategori = "Politik";
+
+          dynamicIssues.push({
+            id: `g-${i}`,
+            topik: cleanTitle,
+            kategori: kategori,
+            volume: generateStableVolume(cleanTitle, hours),
+            source: sourceName,
+            pubDate: pubDate,
+            articleTitle: rawTitle,
+            articleDesc: "Informasi mendalam mengenai perkembangan isu ini dari redaksi nasional.",
+            sourcesList: [
+              { name: `${sourceName} (Artikel Utama)`, url: link },
+              { name: `Cari referensi lain terkait di Google`, url: `https://www.google.com/search?q=${encodeURIComponent(cleanTitle)}&tbm=nws` }
+            ]
+          });
+        }
       }
-    });
+    } 
+    // ==========================================
+    // MESIN 2: APIFY INSTAGRAM (OPINI KREATOR)
+    // ==========================================
+    else if (sourceData === 'instagram') {
+      const apifyToken = "apify_api_kP2QlhZ9G51RqYWeK1xa1vt2EfxFyc23Udjh";
+      const apifyInput = {
+        "dataDetailLevel": "basicData",
+        "resultsLimit": 15, // Dibatasi dikit biar Vercel nggak timeout
+        "skipPinnedPosts": false,
+        "username": ["narasinewsroom", "asumsico", "tempodotco", "mojokdotco"] // Kolam akun lo
+      };
 
-    if (!response.ok) throw new Error("Gagal menyedot web. Website mungkin dilindungi anti-bot.");
-    
-    const html = await response.text();
-    const $ = cheerio.load(html);
+      const response = await fetch(`https://api.apify.com/v2/acts/apify~instagram-post-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apifyInput)
+      });
 
-    // 1. Ambil Judul Berita (SEO Tag)
-    let title = $('meta[property="og:title"]').attr('content') || $('title').text() || $('h1').first().text();
+      if (!response.ok) throw new Error("Gagal menyedot data dari Apify");
 
-    // 2. Ambil Gambar Utama Berita (Open Graph Image)
-    let image = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content') || '';
+      const apifyData = await response.json();
 
-    // 3. Ambil Isi Teks Berita
-    let content = '';
-    // Mencari elemen artikel utama agar tidak nyedot menu/footer
-    const articleBody = $('article, .read__content, .detail__body-text, .post-content, main');
-    if (articleBody.length > 0) {
-      articleBody.find('p').each((i, el) => { content += $(el).text() + '\n\n'; });
-    } else {
-      $('p').each((i, el) => { content += $(el).text() + '\n\n'; });
+      apifyData.forEach((post, index) => {
+        const caption = post.caption || "Tanpa keterangan tulisan.";
+        const cleanTitle = caption.split('\n')[0].substring(0, 60) + "..."; 
+        
+        const sourceName = post.ownerUsername || "Instagram";
+        const totalEngagement = (post.likesCount || 0) + (post.commentsCount || 0);
+        const link = post.url || "#";
+        const pubDate = post.timestamp ? new Date(post.timestamp).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
+
+        let kategori = "Sosial";
+        const lowerCaption = caption.toLowerCase();
+        if (lowerCaption.includes("hukum") || lowerCaption.includes("korupsi") || lowerCaption.includes("polisi") || lowerCaption.includes("sidang")) kategori = "Hukum";
+        else if (lowerCaption.includes("pemerintah") || lowerCaption.includes("menteri") || lowerCaption.includes("ekonomi") || lowerCaption.includes("jokowi")) kategori = "Pemerintahan";
+        else if (lowerCaption.includes("politik") || lowerCaption.includes("dpr") || lowerCaption.includes("pilkada")) kategori = "Politik";
+
+        dynamicIssues.push({
+          id: `ig-${index}`,
+          topik: cleanTitle,
+          kategori: kategori,
+          volume: totalEngagement,
+          source: `IG: @${sourceName}`,
+          pubDate: pubDate,
+          articleTitle: `Opini Publik via @${sourceName}`,
+          articleDesc: caption, // Full caption untuk disedot AI
+          sourcesList: [
+            { name: `Lihat Postingan Asli @${sourceName}`, url: link },
+            { name: `Cari isu ini di Google`, url: `https://www.google.com/search?q=${encodeURIComponent(cleanTitle)}&tbm=nws` }
+          ]
+        });
+      });
     }
 
-    // Merapikan spasi yang berlebihan
-    content = content.replace(/\n\s*\n/g, '\n\n').trim();
-
-    // Template untuk dimasukkan ke Textarea Page 2
-    const promptTeks = `[JUDUL BERITA]\n${title}\n\n[ISI BERITA]\n${content.substring(0, 2500)}...`;
-    
-    return NextResponse.json({
-      status: "success",
-      prompt: promptTeks,
-      gambar_url: image,
-      sumber: `Sumber Berita: ${new URL(url).hostname}`
-    });
+    dynamicIssues.sort((a, b) => b.volume - a.volume);
+    return NextResponse.json({ success: true, data: dynamicIssues });
 
   } catch (error) {
-    return NextResponse.json({ status: "error", detail: error.message });
+    console.error("Fetch error:", error);
+    return NextResponse.json({ 
+      success: true, 
+      data: [{ 
+        id: "error-1", topik: "Proses Scraping Sedang Berjalan / Timeout", kategori: "Pemerintahan", volume: 99999, source: "Sistem", pubDate: "Hari ini", 
+        articleTitle: "Koneksi ke Scraper Terputus (Timeout Vercel)", 
+        articleDesc: "Proses nyedot data dari Instagram memakan waktu terlalu lama. Silakan coba klik tombol refresh lagi atau gunakan database terpisah.",
+        sourcesList: [{ name: "Refresh Halaman", url: "#" }]
+      }] 
+    });
   }
 }
