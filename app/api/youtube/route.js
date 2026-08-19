@@ -8,11 +8,10 @@ export async function POST(request) {
     const body = await request.json();
     const type = body.type || 'negative';
 
-    // KUNCI YOUTUBE TETAP PAKAI YANG LAMA
-    const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
+    const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY".trim();
     
-    // MASUKIN KUNCI GEMINI YANG BARU AJA LO BIKIN DI SINI:
-    const GEMINI_API_KEY = "MASUKIN_KUNCI_GEMINI_YANG_BARU_DI_SINI";
+    // GUE PAKE KUNCI AI STUDIO LO YANG ASLI BIAR GAK RIBET COPAS LAGI
+    const GEMINI_API_KEY = "AQ.Ab8RN6K3yZ72kiKcmVkHVjp_6j9dDC2sNDKBhypWJxUC9wo0kQ".trim();
 
     // 1. CARI 1 VIDEO SAJA
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
@@ -47,12 +46,11 @@ export async function POST(request) {
 
     const rawCommentsText = allComments.join("\n- ").substring(0, 10000); 
 
-    // 3. PROMPT MAKSIMAL 
     const promptContext = type === 'negative' 
       ? `Tugas: Ekstrak 5 isu negatif atau kritik utama dari komentar YouTube berikut tentang Puan Maharani. Format WAJIB JSON Array murni. Contoh: [{"topik": "Isu A", "volume": 85, "konteks": "Penjelasan"}]`
       : `Tugas: Ekstrak 5 sentimen positif atau dukungan utama dari komentar YouTube berikut tentang Puan Maharani. Format WAJIB JSON Array murni. Contoh: [{"topik": "Pujian A", "volume": 75, "konteks": "Penjelasan"}]`;
 
-    // 4. JALUR URL NORMAL PAKAI KUNCI BARU GEMINI
+    // 3. SURUH GEMINI BACA DENGAN KUNCI YANG SUDAH DIBERSIHKAN
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     const aiResponse = await fetch(geminiUrl, {
@@ -72,36 +70,30 @@ export async function POST(request) {
 
     const aiData = await aiResponse.json();
     
+    // PELACAK WAKTU DEPLOY (DEBUGGER)
+    const currentTime = new Date().toLocaleTimeString('id-ID');
+
     if (aiData.error) {
-        return NextResponse.json({ success: true, data: [{ topik: "Gemini API Error", volume: 0, konteks: aiData.error.message }] });
+        // JIKA MASIH ERROR, KITA BISA LIHAT DETIKNYA BERUBAH ATAU ENGGAK
+        return NextResponse.json({ success: true, data: [{ topik: "Gemini API Error", volume: 0, konteks: `Error: ${aiData.error.message} | Waktu Cek: ${currentTime}` }] });
     }
 
     if (!aiData.candidates || aiData.candidates.length === 0) {
-        return NextResponse.json({ success: true, data: [{ topik: "AI Diblokir", volume: 0, konteks: "Gemini menolak menjawab." }] });
+        return NextResponse.json({ success: true, data: [{ topik: "AI Diblokir", volume: 0, konteks: `Gemini menolak menjawab. | Waktu Cek: ${currentTime}` }] });
     }
 
-    // 5. PARSING DATA
+    // 4. PARSING DATA
     let finalData = [];
     try {
         let rawText = aiData.candidates[0].content.parts[0].text;
         rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-        
         const arrayMatch = rawText.match(/\[\s*\{[\s\S]*\}\s*\]/);
-        if (arrayMatch) {
-            rawText = arrayMatch[0];
-        }
-
+        if (arrayMatch) rawText = arrayMatch[0];
+        
         finalData = JSON.parse(rawText);
-
-        if (!Array.isArray(finalData)) {
-            if (finalData.data && Array.isArray(finalData.data)) {
-                finalData = finalData.data;
-            } else {
-                finalData = [finalData]; 
-            }
-        }
+        if (!Array.isArray(finalData)) finalData = Array.isArray(finalData.data) ? finalData.data : [finalData]; 
     } catch (parseError) {
-        return NextResponse.json({ success: true, data: [{ topik: "Gagal Baca Format", volume: 0, konteks: "AI membalas dengan format yang salah." }] });
+        return NextResponse.json({ success: true, data: [{ topik: "Gagal Baca Format", volume: 0, konteks: `AI format salah. | Waktu Cek: ${currentTime}` }] });
     }
 
     return NextResponse.json({ success: true, data: finalData });
