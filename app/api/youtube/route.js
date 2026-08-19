@@ -9,7 +9,6 @@ export async function POST(request) {
     const type = body.type || 'negative';
 
     const YOUTUBE_API_KEY = "AIzaSyBNoLOXG7uflkFBtFUQ2lANlC5eAaWs3QY";
-    const GROQ_API_KEY = "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";
 
     // 1. CARI VIDEO
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('Puan Maharani')}&type=video&order=date&maxResults=1&key=${YOUTUBE_API_KEY}`;
@@ -17,50 +16,45 @@ export async function POST(request) {
     const searchData = await searchRes.json();
     
     if (!searchData.items?.length) {
-      return NextResponse.json({ success: true, data: [{ topik: "Video Error", volume: 0, konteks: "Gagal ambil video." }] });
+      return NextResponse.json({ success: true, data: [{ topik: "System", volume: 0, konteks: "Video tidak ditemukan." }] });
     }
 
     // 2. SEDOT KOMENTAR
     const videoId = searchData.items[0].id.videoId;
-    const commentUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=20&key=${YOUTUBE_API_KEY}`;
+    const commentUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=50&key=${YOUTUBE_API_KEY}`;
     const commentRes = await fetch(commentUrl);
     const commentData = await commentRes.json();
     
-    const allComments = commentData.items?.map(c => c.snippet?.topLevelComment?.snippet?.textDisplay) || [];
-    const rawCommentsText = allComments.join("\n- ").substring(0, 5000); 
+    const comments = commentData.items?.map(c => c.snippet?.topLevelComment?.snippet?.textDisplay.toLowerCase()) || [];
 
-    // 3. PROMPT KE GROQ
-    const promptContext = type === 'negative' 
-      ? `Ekstrak 5 isu kritik dari komentar ini tentang Puan Maharani. Format JSON murni: {"items": [{"topik": "...", "volume": 50, "konteks": "..."}]}`
-      : `Ekstrak 5 pujian dari komentar ini tentang Puan Maharani. Format JSON murni: {"items": [{"topik": "...", "volume": 50, "konteks": "..."}]}`;
+    // 3. ANALISIS KEYWORD LOKAL (TANPA AI)
+    const negKeywords = ['gagal', 'buruk', 'korupsi', 'tidak setuju', 'kecewa', 'mahal', 'kritik', 'pencitraan', 'rugi'];
+    const posKeywords = ['dukung', 'bagus', 'setuju', 'hebat', 'lanjutkan', 'mantap', 'terima kasih', 'puan', 'oke'];
+    
+    let analysis = {};
+    const targetKeywords = type === 'negative' ? negKeywords : posKeywords;
 
-    const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [{ role: "user", content: `${promptContext}\n\nKomentar:\n${rawCommentsText}` }],
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      })
+    targetKeywords.forEach(word => {
+        analysis[word] = 0;
+        comments.forEach(comment => {
+            if (comment.includes(word)) analysis[word]++;
+        });
     });
 
-    const groqData = await groqResponse.json();
-    
-    if (groqData.error) {
-        return NextResponse.json({ success: true, data: [{ topik: "Groq Error", volume: 0, konteks: groqData.error.message }] });
-    }
+    // 4. FORMAT DATA JSON
+    const finalData = Object.entries(analysis)
+        .map(([topik, count]) => ({
+            topik: topik.toUpperCase(),
+            volume: count * 2, // Scaling volume
+            konteks: `Ditemukan dalam ${count} komentar netizen.`
+        }))
+        .filter(item => item.volume > 0)
+        .sort((a, b) => b.volume - a.volume)
+        .slice(0, 5);
 
-    // 4. PARSING
-    const content = groqData.choices[0].message.content;
-    const finalData = JSON.parse(content).items || [];
-
-    return NextResponse.json({ success: true, data: finalData });
+    return NextResponse.json({ success: true, data: finalData.length > 0 ? finalData : [{ topik: "Hasil", volume: 0, konteks: "Data sentimen belum terbaca signifikan." }] });
 
   } catch (error) {
-    return NextResponse.json({ success: true, data: [{ topik: "Error Sistem", volume: 0, konteks: error.message }] });
+    return NextResponse.json({ success: true, data: [{ topik: "Error", volume: 0, konteks: error.message }] });
   }
 }
