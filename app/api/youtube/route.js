@@ -45,7 +45,7 @@ export async function POST(request) {
         'Content-Type': 'application/json' 
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant", // Model aktif yang direkomendasikan
+        model: "meta-llama/llama-4-scout-17b-16e-instruct", // Model aktif terbaru
         messages: [{ role: "user", content: `${promptContext}\n\nKomentar:\n${rawCommentsText}` }],
         temperature: 0.5,
         response_format: { type: "json_object" }
