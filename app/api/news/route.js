@@ -1,47 +1,51 @@
 import { NextResponse } from 'next/server';
 
-// Memaksa Vercel untuk melakukan cache API selama 1 jam (3600 detik)
 export const revalidate = 3600;
 
 export async function GET(request) {
   try {
-    // Mengambil parameter jam dari frontend (3 atau 12)
     const { searchParams } = new URL(request.url);
     const hours = parseInt(searchParams.get('hours') || '3', 10);
 
     const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
     
-    // Fetch dengan mekanisme revalidate agar data tidak berubah-ubah setiap detik
     const response = await fetch(rssUrl, { next: { revalidate: 3600 } });
     const xmlText = await response.text();
 
     const items = xmlText.split("<item>");
     let dynamicIssues = [];
 
-    // FUNGSI BARU: Pembuat angka stabil (deterministik) berdasarkan teks judul
     const generateStableVolume = (text, hoursMultiplier) => {
       let hash = 0;
       for (let i = 0; i < text.length; i++) {
         hash = text.charCodeAt(i) + ((hash << 5) - hash);
       }
-      // Membuat rentang angka dasar yang stabil: 40.000 - 90.000
       const baseVolume = Math.abs(hash % 50000) + 40000;
-      
-      // Jika mode 12 jam, volume dikali 1.5 agar terlihat lebih masif dari 3 jam
       return hoursMultiplier === 12 ? Math.floor(baseVolume * 1.5) : baseVolume;
     };
 
     for (let i = 1; i < Math.min(40, items.length); i++) {
       const item = items[i];
-      const titleMatch = item.match(/<title>(.*?)<\/title>/);
-      const sourceMatch = item.match(/<source.*?>(.*?)<\/source>/);
-      const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
-      const linkMatch = item.match(/<link>(.*?)<\/link>/);
+      const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
+      const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
+      const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+      const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
+      
+      // LOGIKA BARU: Menyedot deskripsi dari RSS
+      const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
+      let pureDesc = "Tidak ada deskripsi rinci.";
 
       if (titleMatch) {
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
         rawTitle = rawTitle.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
         
+        // Bersihkan deskripsi dari tag HTML
+        if (descMatch) {
+          pureDesc = descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+          pureDesc = pureDesc.replace(/<[^>]*>?/gm, ''); // Hilangkan tag HTML bawaan Google News
+          pureDesc = pureDesc.replace(/&nbsp;/g, ' ').trim();
+        }
+
         const source = sourceMatch ? sourceMatch[1] : "Media Nasional";
         const pubDate = dateMatch ? new Date(dateMatch[1]).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
         const link = linkMatch ? linkMatch[1] : "#";
@@ -67,17 +71,17 @@ export async function GET(request) {
           id: i,
           topik: cleanTitle,
           kategori: kategori,
-          volume: generateStableVolume(cleanTitle, hours), // Angka ini akan selalu sama untuk judul yang sama
+          volume: generateStableVolume(cleanTitle, hours),
           source: source,
           pubDate: pubDate,
           articleTitle: rawTitle,
+          articleDesc: pureDesc, // Hasil sedotan dimasukin ke sini
           sourcesList: specificSources
         });
       }
     }
 
     dynamicIssues.sort((a, b) => b.volume - a.volume);
-
     return NextResponse.json({ success: true, data: dynamicIssues });
 
   } catch (error) {
