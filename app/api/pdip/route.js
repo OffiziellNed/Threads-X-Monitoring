@@ -35,38 +35,31 @@ export async function GET(request) {
         const cleanTitle = rawTitle.split(" - ")[0];
         const lowerTitle = cleanTitle.toLowerCase();
 
-        if (lowerTitle.includes('voli') || lowerTitle.includes('hangestri') || lowerTitle.includes('red sparks') || lowerTitle.includes('olahraga')) {
-          continue; 
-        }
+        if (lowerTitle.includes('voli') || lowerTitle.includes('hangestri') || lowerTitle.includes('red sparks')) continue; 
+        if (!pdipKeywords.some(kw => lowerTitle.includes(kw))) continue;
 
-        const isRelevant = pdipKeywords.some(kw => lowerTitle.includes(kw));
-        if (!isRelevant) continue;
-
+        // PEMBERSIH KODE ALIEN (HTML ENTITIES DECODER)
         let pureDesc = "Tidak ada deskripsi rinci.";
         if (descMatch) {
-          pureDesc = descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
-          pureDesc = pureDesc.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+          let rawDesc = descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+          rawDesc = rawDesc.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+          pureDesc = rawDesc.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
-        const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media";
-        const pubDate = dateMatch ? new Date(dateMatch[1]).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
         const link = linkMatch ? linkMatch[1] : "#";
-
-        let kategori = "Politik";
-        if (lowerTitle.includes("hukum") || lowerTitle.includes("kpk") || lowerTitle.includes("korupsi")) kategori = "Hukum";
 
         dynamicIssues.push({
           id: `pdip-${dynamicIssues.length + 1}`,
           topik: cleanTitle,
-          kategori: kategori,
+          kategori: "Politik",
           volume: generateStableVolume(cleanTitle, hours),
           source: sourceName,
-          pubDate: pubDate,
+          pubDate: "Baru saja",
           articleTitle: rawTitle,
-          articleDesc: pureDesc, // Hasil sedotan deskripsi berita PDIP
+          articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
         });
 
@@ -75,11 +68,6 @@ export async function GET(request) {
     }
 
     dynamicIssues.sort((a, b) => b.volume - a.volume);
-    
-    if (dynamicIssues.length === 0) {
-      dynamicIssues.push({ id: "pdip-empty", topik: `Belum ada berita PDIP signifikan dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ditemukan berita yang relevan.", sourcesList: [] });
-    }
-
     return NextResponse.json({ success: true, data: dynamicIssues });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
