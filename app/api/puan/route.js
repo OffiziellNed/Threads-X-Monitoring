@@ -8,7 +8,6 @@ export async function GET(request) {
     const hours = parseInt(searchParams.get('hours') || '3', 10);
 
     const timeFilter = hours === 3 ? 'when:3h' : 'when:12h';
-    // Fokus sedot berita yang spesifik menyebutkan Puan
     const query = encodeURIComponent(`"Puan Maharani" ${timeFilter}`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=id&gl=ID&ceid=ID:id`;
 
@@ -28,20 +27,26 @@ export async function GET(request) {
 
     for (let i = 1; i < items.length; i++) {
       const item = items[i];
-      const titleMatch = item.match(/<title>(.*?)<\/title>/);
+      const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
+      const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
       
       if (titleMatch) {
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
         const cleanTitle = rawTitle.split(" - ")[0];
         const lowerTitle = cleanTitle.toLowerCase();
 
-        // Validasi: Wajib ada unsur nama Puan
         const isRelevant = puanKeywords.some(kw => lowerTitle.includes(kw));
         if (!isRelevant) continue;
 
-        const sourceMatch = item.match(/<source.*?>(.*?)<\/source>/);
-        const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
-        const linkMatch = item.match(/<link>(.*?)<\/link>/);
+        let pureDesc = "Tidak ada deskripsi rinci.";
+        if (descMatch) {
+          pureDesc = descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+          pureDesc = pureDesc.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+        }
+
+        const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
+        const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+        const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media";
         const pubDate = dateMatch ? new Date(dateMatch[1]).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
         const link = linkMatch ? linkMatch[1] : "#";
@@ -57,7 +62,7 @@ export async function GET(request) {
           source: sourceName,
           pubDate: pubDate,
           articleTitle: rawTitle,
-          articleDesc: `Informasi analisis isu ini dari ${sourceName}.`,
+          articleDesc: pureDesc, // Hasil sedotan deskripsi berita Puan
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
         });
 
