@@ -9,13 +9,8 @@ function getRealVolume(title, allTitles) {
   const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
   const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w) && !IGNORE_WORDS.includes(w));
   if (coreWords.length === 0) return 1;
-
   let count = 0;
-  allTitles.forEach(t => {
-    const tLower = t.toLowerCase();
-    const isRelated = coreWords.some(cw => tLower.includes(cw));
-    if (isRelated) count++;
-  });
+  allTitles.forEach(t => { if (coreWords.some(cw => t.toLowerCase().includes(cw))) count++; });
   return count;
 }
 
@@ -34,13 +29,20 @@ export async function GET(request) {
     let rawItems = [];
     let allTitles = [];
     const puanKeywords = ['puan', 'puan maharani', 'ketua dpr'];
+    const now = new Date();
 
     for (let i = 1; i < items.length; i++) {
       const item = items[i];
       const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
       const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
+      const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
       
-      if (titleMatch) {
+      if (titleMatch && dateMatch) {
+        // FILTER KETAT WAKTU 
+        const articleDate = new Date(dateMatch[1]);
+        const diffHours = (now - articleDate) / (1000 * 60 * 60);
+        if (diffHours > hours) continue; // TENDANG BERITA LAMA
+
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
         const cleanTitle = rawTitle.split(" - ")[0];
         
@@ -59,12 +61,13 @@ export async function GET(request) {
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media";
         const link = linkMatch ? linkMatch[1] : "#";
+        const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
         rawItems.push({
           topik: cleanTitle,
           kategori: "Politik",
           source: sourceName,
-          pubDate: "Baru saja",
+          pubDate: pubDate,
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
@@ -84,7 +87,7 @@ export async function GET(request) {
         dynamicIssues.push({
           id: `puan-${index}`,
           ...item,
-          volume: hours === 12 ? Math.floor(volumeData * 1.5) : volumeData
+          volume: volumeData
         });
       }
     });
@@ -92,7 +95,7 @@ export async function GET(request) {
     dynamicIssues.sort((a, b) => b.volume - a.volume);
     
     if (dynamicIssues.length === 0) {
-      dynamicIssues.push({ id: "puan-empty", topik: `Belum ada berita Puan Maharani signifikan.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ditemukan berita.", sourcesList: [] });
+      dynamicIssues.push({ id: "puan-empty", topik: `Tidak ada berita Puan Maharani dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Coba cek mode 12 jam.", sourcesList: [] });
     }
 
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
