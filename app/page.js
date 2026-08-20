@@ -86,11 +86,10 @@ export default function SocialMediaMonitoring() {
     setIsCopied(false);
     
     setTimeout(() => {
-      // PROMPT DIKUNCI MATI DISINI
       const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, 10 dalam konteks pro dan 10 dalam konteks kontra. Jika Kontra pastikan menggunakan bahasa kontroversial, satir, sarkas, bisa pakai hook agar mengundang pembaca.";
       
-      // Menggabungkan Judul dan Deskripsi penuh
-      const title = selectedIssue.articleTitle || selectedIssue.topik || "Tanpa Judul";
+      // REVISI 3: Mengambil judul bersih (tanpa sumber) dan deskripsi murni dari berita
+      const title = selectedIssue.topik || "Tanpa Judul"; 
       const content = selectedIssue.articleDesc || selectedIssue.konteks || "Tidak ada deskripsi rinci.";
       
       const finalOutput = `${promptInstruction}\n\n[JUDUL TOPIK]\n${title}\n\n[DESKRIPSI & ISI KONTEN]\n${content}`;
@@ -123,16 +122,16 @@ export default function SocialMediaMonitoring() {
           </button>
           
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-4">
-            {/* 1. JUDUL STATIS (TIDAK BISA DIKLIK) */}
+            
+            {/* REVISI 1: JUDUL STATIS BERSIH (TANPA NAMA SUMBER BERITA) */}
             <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">
-              {selectedIssue.articleTitle || selectedIssue.topik}
+              {selectedIssue.topik}
             </h1>
             
-            {/* 2. SUMBER BERITA & LINK (DI BAWAH JUDUL) */}
-            <div className="flex items-center gap-2 text-sm bg-[#0d1117] px-4 py-2.5 rounded-lg border border-[#30363d]">
-              <span className="text-gray-400 font-medium">Sumber: {selectedIssue.source || "YouTube"} |</span>
+            {/* SUMBER BERITA & LINK */}
+            <div className="flex flex-wrap items-center gap-2 text-sm bg-[#0d1117] px-4 py-2.5 rounded-lg border border-[#30363d]">
+              <span className="text-gray-400 font-medium">Sumber: {selectedIssue.source || "Sistem"} |</span>
               
-              {/* Logika link untuk Berita (sourcesList) atau YouTube AI (url) */}
               {selectedIssue.sourcesList && selectedIssue.sourcesList.length > 0 ? (
                 <a href={selectedIssue.sourcesList[0].url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1">
                   Tap untuk baca artikel asli <ExternalLink size={14} />
@@ -146,12 +145,15 @@ export default function SocialMediaMonitoring() {
               )}
             </div>
 
-            {/* 3. DESKRIPSI KONTEN */}
-            <p className="text-gray-300 border-y border-[#30363d] py-6 leading-relaxed">
-              {selectedIssue.articleDesc || selectedIssue.konteks}
-            </p>
+            {/* REVISI 2: DESKRIPSI KONTEN YANG DISEDOT DARI BERITA */}
+            <div className="border-y border-[#30363d] py-6 space-y-2">
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Informasi Analisis / Deskripsi:</h4>
+              <p className="text-gray-300 leading-relaxed">
+                {selectedIssue.articleDesc || selectedIssue.konteks}
+              </p>
+            </div>
             
-            {/* 4. TOMBOL SEDOT & PEMBUAT OPINI AI */}
+            {/* TOMBOL SEDOT & PEMBUAT OPINI AI */}
             <div className="pt-2 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
