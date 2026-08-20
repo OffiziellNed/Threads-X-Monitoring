@@ -12,7 +12,6 @@ function getRealVolume(title, allTitles) {
   let count = 0;
   allTitles.forEach(t => {
     const tLower = t.toLowerCase();
-    // Hitung berapa media yg membahas setidaknya 1-2 kata kunci spesifik yang sama
     const isRelated = coreWords.some(cw => tLower.includes(cw));
     if (isRelated) count++;
   });
@@ -23,7 +22,8 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const hours = parseInt(searchParams.get('hours') || '3', 10);
-    const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
+    // Pakai parameter pencarian waktu bawaan Google agar feed utamanya lebih segar
+    const rssUrl = `https://news.google.com/rss/search?q=when:${hours}h&hl=id&gl=ID&ceid=ID:id`;
     
     const response = await fetch(rssUrl, { next: { revalidate: 3600 } });
     const xmlText = await response.text();
@@ -31,14 +31,20 @@ export async function GET(request) {
     
     let rawItems = [];
     let allTitles = [];
+    const now = new Date();
 
-    // Ekstraksi Mentah
     for (let i = 1; i < items.length; i++) {
       const item = items[i];
       const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
       const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
+      const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
       
-      if (titleMatch) {
+      if (titleMatch && dateMatch) {
+        // FILTER KETAT WAKTU 
+        const articleDate = new Date(dateMatch[1]);
+        const diffHours = (now - articleDate) / (1000 * 60 * 60);
+        if (diffHours > hours) continue; // TENDANG BERITA LAMA
+
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
         const cleanTitle = rawTitle.split(" - ")[0];
         allTitles.push(cleanTitle);
@@ -54,6 +60,7 @@ export async function GET(request) {
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media Nasional";
         const link = linkMatch ? linkMatch[1] : "#";
+        const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
         let kategori = "Sosial";
         const lowerTitle = cleanTitle.toLowerCase();
@@ -65,7 +72,7 @@ export async function GET(request) {
           topik: cleanTitle,
           kategori: kategori,
           source: sourceName,
-          pubDate: "Baru saja",
+          pubDate: pubDate,
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
@@ -73,26 +80,28 @@ export async function GET(request) {
       }
     }
 
-    // Hitung Volume Asli (Clustering) & Filter Duplikat
     let dynamicIssues = [];
     let seenTopics = new Set();
 
     rawItems.forEach((item, index) => {
       const volumeData = getRealVolume(item.topik, allTitles);
-      
-      // Mencegah isu yang SANGAT mirip masuk berulang kali ke ranking
       const mainKeyword = item.topik.substring(0, 15).toLowerCase();
       if (!seenTopics.has(mainKeyword)) {
         seenTopics.add(mainKeyword);
         dynamicIssues.push({
           id: index,
           ...item,
-          volume: hours === 12 ? Math.floor(volumeData * 1.5) : volumeData // Multiplier logis jika 12 jam
+          volume: volumeData 
         });
       }
     });
 
     dynamicIssues.sort((a, b) => b.volume - a.volume);
+    
+    if (dynamicIssues.length === 0) {
+       dynamicIssues.push({ id: "empty", topik: `Tidak ada berita umum dalam ${hours} jam terakhir.`, kategori: "Sistem", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Coba pantau mode 12 jam.", sourcesList: [] });
+    }
+
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
