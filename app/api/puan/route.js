@@ -2,11 +2,27 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat'];
+const IGNORE_WORDS = ['puan', 'maharani', 'ketua', 'dpr'];
+
+function getRealVolume(title, allTitles) {
+  const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+  const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w) && !IGNORE_WORDS.includes(w));
+  if (coreWords.length === 0) return 1;
+
+  let count = 0;
+  allTitles.forEach(t => {
+    const tLower = t.toLowerCase();
+    const isRelated = coreWords.some(cw => tLower.includes(cw));
+    if (isRelated) count++;
+  });
+  return count;
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const hours = parseInt(searchParams.get('hours') || '3', 10);
-
     const timeFilter = hours === 3 ? 'when:3h' : 'when:12h';
     const query = encodeURIComponent(`"Puan Maharani" ${timeFilter}`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=id&gl=ID&ceid=ID:id`;
@@ -14,15 +30,9 @@ export async function GET(request) {
     const response = await fetch(rssUrl, { cache: 'no-store' });
     const xmlText = await response.text();
     const items = xmlText.split("<item>");
-    let dynamicIssues = [];
-
-    const generateStableVolume = (text, hoursMultiplier) => {
-      let hash = 0;
-      for (let i = 0; i < text.length; i++) { hash = text.charCodeAt(i) + ((hash << 5) - hash); }
-      const baseVolume = Math.abs(hash % 50000) + 40000;
-      return hoursMultiplier === 12 ? Math.floor(baseVolume * 1.5) : baseVolume;
-    };
-
+    
+    let rawItems = [];
+    let allTitles = [];
     const puanKeywords = ['puan', 'puan maharani', 'ketua dpr'];
 
     for (let i = 1; i < items.length; i++) {
@@ -36,7 +46,8 @@ export async function GET(request) {
         
         if (!puanKeywords.some(kw => cleanTitle.toLowerCase().includes(kw))) continue;
 
-        // PEMBERSIH KODE ALIEN (HTML ENTITIES DECODER)
+        allTitles.push(cleanTitle);
+
         let pureDesc = "Tidak ada deskripsi rinci.";
         if (descMatch) {
           let rawDesc = descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
@@ -49,24 +60,42 @@ export async function GET(request) {
         const sourceName = sourceMatch ? sourceMatch[1] : "Media";
         const link = linkMatch ? linkMatch[1] : "#";
 
-        dynamicIssues.push({
-          id: `puan-${dynamicIssues.length + 1}`,
+        rawItems.push({
           topik: cleanTitle,
           kategori: "Politik",
-          volume: generateStableVolume(cleanTitle, hours),
           source: sourceName,
           pubDate: "Baru saja",
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
         });
-
-        if (dynamicIssues.length >= 20) break;
       }
     }
 
+    let dynamicIssues = [];
+    let seenTopics = new Set();
+
+    rawItems.forEach((item, index) => {
+      const volumeData = getRealVolume(item.topik, allTitles);
+      const mainKeyword = item.topik.substring(0, 15).toLowerCase();
+      
+      if (!seenTopics.has(mainKeyword)) {
+        seenTopics.add(mainKeyword);
+        dynamicIssues.push({
+          id: `puan-${index}`,
+          ...item,
+          volume: hours === 12 ? Math.floor(volumeData * 1.5) : volumeData
+        });
+      }
+    });
+
     dynamicIssues.sort((a, b) => b.volume - a.volume);
-    return NextResponse.json({ success: true, data: dynamicIssues });
+    
+    if (dynamicIssues.length === 0) {
+      dynamicIssues.push({ id: "puan-empty", topik: `Belum ada berita Puan Maharani signifikan.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ditemukan berita.", sourcesList: [] });
+    }
+
+    return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
   }
