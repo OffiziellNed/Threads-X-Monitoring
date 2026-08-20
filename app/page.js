@@ -85,7 +85,12 @@ export default function SocialMediaMonitoring() {
   const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, 10); 
 
-  const isRedTheme = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati") || currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
+  // REVISI WARNA: Hanya pakai merah jika secara eksplisit halamannya adalah partai/tokoh
+  const isRedTheme = 
+    currentPage.includes("pdip") || 
+    currentPage.includes("puan") || 
+    currentPage.includes("megawati") || 
+    (currentPage === "detail" && (previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati")));
 
   // --- HALAMAN DETAIL ---
   if (currentPage === "detail" && selectedIssue) {
@@ -102,7 +107,6 @@ export default function SocialMediaMonitoring() {
               {selectedIssue.topik}
             </h1>
             
-            {/* TAMPILAN SUMBER & WAKTU DI DETAIL */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm bg-[#0d1117] px-4 py-3 rounded-lg border border-[#30363d]">
               <span className="text-gray-400 font-medium flex items-center gap-1.5">
                 <Building2 size={16} className="text-gray-500"/> Sumber: {selectedIssue.source || "Sistem"}
@@ -172,6 +176,8 @@ export default function SocialMediaMonitoring() {
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold tracking-tight text-white">Public Trend Radar</h1>
             <p className="text-gray-400">Monitoring isu publik terupdate secara real-time.</p>
+            {/* REVISI: Tambahan Teks Sample Data Google */}
+            <p className="text-gray-500 text-sm mt-1 italic font-medium">( Sample data diambil dari Google )</p>
           </div>
           
           <div className="space-y-4 pt-4">
@@ -193,7 +199,6 @@ export default function SocialMediaMonitoring() {
             </div>
           </div>
 
-          {/* MENU BARU: MEGAWATI SOEKARNOPUTRI */}
           <div className="space-y-4 pt-6">
             <div className="border-b border-red-900/50 pb-2 space-y-1">
               <h2 className="text-2xl font-bold text-red-500">Megawati Soekarnoputri</h2>
@@ -237,13 +242,13 @@ export default function SocialMediaMonitoring() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 text-gray-400 mr-2"><Filter size={18} /><span className="text-sm font-semibold">Filter:</span></div>
           {categories.map((cat) => (
-            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm transition-colors border ${selectedCategory === cat ? 'bg-red-600 text-white border-red-500' : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'}`}>{cat}</button>
+            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm transition-colors border ${selectedCategory === cat ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'}`}>{cat}</button>
           ))}
         </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? 'border-red-500' : 'border-blue-500'}`}></div>
           </div>
         ) : (
           <>
@@ -274,7 +279,6 @@ export default function SocialMediaMonitoring() {
                       </span>
                       <h3 className="text-xl font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
                       
-                      {/* TAMPILAN WAKTU DIRILIS DI LIST DAFTAR ISU */}
                       <p className="text-xs text-gray-400 mt-2.5 flex items-center gap-1.5 font-medium">
                         <Calendar size={14} className="text-gray-500"/> Dirilis: {isu.pubDate}
                       </p>
