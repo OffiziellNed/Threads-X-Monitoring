@@ -33,36 +33,31 @@ export async function GET(request) {
       if (titleMatch) {
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
         const cleanTitle = rawTitle.split(" - ")[0];
-        const lowerTitle = cleanTitle.toLowerCase();
+        
+        if (!puanKeywords.some(kw => cleanTitle.toLowerCase().includes(kw))) continue;
 
-        const isRelevant = puanKeywords.some(kw => lowerTitle.includes(kw));
-        if (!isRelevant) continue;
-
+        // PEMBERSIH KODE ALIEN (HTML ENTITIES DECODER)
         let pureDesc = "Tidak ada deskripsi rinci.";
         if (descMatch) {
-          pureDesc = descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
-          pureDesc = pureDesc.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+          let rawDesc = descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+          rawDesc = rawDesc.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+          pureDesc = rawDesc.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
-        const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media";
-        const pubDate = dateMatch ? new Date(dateMatch[1]).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : "Baru saja";
         const link = linkMatch ? linkMatch[1] : "#";
-
-        let kategori = "Politik";
-        if (lowerTitle.includes("hukum") || lowerTitle.includes("kpk") || lowerTitle.includes("korupsi")) kategori = "Hukum";
 
         dynamicIssues.push({
           id: `puan-${dynamicIssues.length + 1}`,
           topik: cleanTitle,
-          kategori: kategori,
+          kategori: "Politik",
           volume: generateStableVolume(cleanTitle, hours),
           source: sourceName,
-          pubDate: pubDate,
+          pubDate: "Baru saja",
           articleTitle: rawTitle,
-          articleDesc: pureDesc, // Hasil sedotan deskripsi berita Puan
+          articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
         });
 
@@ -71,11 +66,6 @@ export async function GET(request) {
     }
 
     dynamicIssues.sort((a, b) => b.volume - a.volume);
-    
-    if (dynamicIssues.length === 0) {
-      dynamicIssues.push({ id: "puan-empty", topik: `Belum ada berita Puan Maharani signifikan dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ditemukan berita yang relevan.", sourcesList: [] });
-    }
-
     return NextResponse.json({ success: true, data: dynamicIssues });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
