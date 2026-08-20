@@ -3,20 +3,14 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat'];
-// IGNORE KEYWORDS agar mesin tidak overcounting hanya karena ada kata "PDIP"
 const IGNORE_WORDS = ['pdip', 'pdi', 'perjuangan', 'megawati', 'soekarnoputri', 'hasto', 'ganjar'];
 
 function getRealVolume(title, allTitles) {
   const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
   const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w) && !IGNORE_WORDS.includes(w));
   if (coreWords.length === 0) return 1;
-
   let count = 0;
-  allTitles.forEach(t => {
-    const tLower = t.toLowerCase();
-    const isRelated = coreWords.some(cw => tLower.includes(cw));
-    if (isRelated) count++;
-  });
+  allTitles.forEach(t => { if (coreWords.some(cw => t.toLowerCase().includes(cw))) count++; });
   return count;
 }
 
@@ -35,13 +29,20 @@ export async function GET(request) {
     let rawItems = [];
     let allTitles = [];
     const pdipKeywords = ['pdip', 'pdi perjuangan', 'megawati', 'hasto', 'ganjar', 'pramono', 'banteng', 'gesuri', 'kader'];
+    const now = new Date();
 
     for (let i = 1; i < items.length; i++) {
       const item = items[i];
       const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
       const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
+      const dateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
       
-      if (titleMatch) {
+      if (titleMatch && dateMatch) {
+        // FILTER KETAT WAKTU 
+        const articleDate = new Date(dateMatch[1]);
+        const diffHours = (now - articleDate) / (1000 * 60 * 60);
+        if (diffHours > hours) continue; // TENDANG BERITA LAMA
+
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
         const cleanTitle = rawTitle.split(" - ")[0];
         const lowerTitle = cleanTitle.toLowerCase();
@@ -62,12 +63,13 @@ export async function GET(request) {
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media";
         const link = linkMatch ? linkMatch[1] : "#";
+        const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
         rawItems.push({
           topik: cleanTitle,
           kategori: "Politik",
           source: sourceName,
-          pubDate: "Baru saja",
+          pubDate: pubDate,
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
@@ -81,13 +83,12 @@ export async function GET(request) {
     rawItems.forEach((item, index) => {
       const volumeData = getRealVolume(item.topik, allTitles);
       const mainKeyword = item.topik.substring(0, 15).toLowerCase();
-      
       if (!seenTopics.has(mainKeyword)) {
         seenTopics.add(mainKeyword);
         dynamicIssues.push({
           id: `pdip-${index}`,
           ...item,
-          volume: hours === 12 ? Math.floor(volumeData * 1.5) : volumeData
+          volume: volumeData
         });
       }
     });
@@ -95,7 +96,7 @@ export async function GET(request) {
     dynamicIssues.sort((a, b) => b.volume - a.volume);
     
     if (dynamicIssues.length === 0) {
-      dynamicIssues.push({ id: "pdip-empty", topik: `Belum ada berita signifikan dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ditemukan berita.", sourcesList: [] });
+      dynamicIssues.push({ id: "pdip-empty", topik: `Tidak ada berita PDIP dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Coba cek dalam rentang 12 jam.", sourcesList: [] });
     }
 
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
