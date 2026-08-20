@@ -19,7 +19,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const hours = parseInt(searchParams.get('hours') || '3', 10);
     const timeFilter = hours === 3 ? 'when:3h' : 'when:12h';
-    const query = encodeURIComponent(`"Megawati Soekarnoputri" OR "Megawati" ${timeFilter}`);
+    
+    // 1. FILTER LEVEL URL: Paksa Google cari yang nempel sama PDIP / nama lengkap
+    const query = encodeURIComponent(`"Megawati Soekarnoputri" OR "Megawati PDIP" OR "Megawati PDI Perjuangan" ${timeFilter}`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=id&gl=ID&ceid=ID:id`;
 
     const response = await fetch(rssUrl, { cache: 'no-store' });
@@ -28,7 +30,6 @@ export async function GET(request) {
     
     let rawItems = [];
     let allTitles = [];
-    const megaKeywords = ['megawati', 'soekarnoputri'];
     const now = new Date();
 
     for (let i = 1; i < items.length; i++) {
@@ -44,13 +45,12 @@ export async function GET(request) {
 
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
         const cleanTitle = rawTitle.split(" - ")[0];
-        
-        // Cek relevansi atlet voli (Megawati Hangestri) biar nggak bocor
         const lowerTitle = cleanTitle.toLowerCase();
-        if (lowerTitle.includes('voli') || lowerTitle.includes('hangestri') || lowerTitle.includes('red sparks') || lowerTitle.includes('korea')) continue;
-        if (!megaKeywords.some(kw => lowerTitle.includes(kw))) continue;
-
-        allTitles.push(cleanTitle);
+        
+        // 2. FILTER ANTI ATLET & SELEB (Tendang kalau ada unsur olahraga)
+        if (lowerTitle.includes('voli') || lowerTitle.includes('hangestri') || lowerTitle.includes('red sparks') || lowerTitle.includes('korea') || lowerTitle.includes('atlet') || lowerTitle.includes('liga') || lowerTitle.includes('pemain')) {
+            continue;
+        }
 
         let pureDesc = "Tidak ada deskripsi rinci.";
         if (descMatch) {
@@ -59,11 +59,19 @@ export async function GET(request) {
           pureDesc = rawDesc.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
+        // 3. WAJIB KONTEKS POLITIK (Cek judul dan deskripsi)
+        const fullTextContext = (lowerTitle + " " + pureDesc.toLowerCase());
+        const isPoliticContext = fullTextContext.includes('pdip') || fullTextContext.includes('pdi perjuangan') || fullTextContext.includes('soekarnoputri') || fullTextContext.includes('ketum') || fullTextContext.includes('politik') || fullTextContext.includes('partai');
+        
+        // Kalau teksnya sama sekali nggak bahas PDIP/Politik, tendang!
+        if (!isPoliticContext) continue; 
+
+        allTitles.push(cleanTitle);
+
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media";
         const link = linkMatch ? linkMatch[1] : "#";
-        // Format tanggal & waktu khas Indonesia
         const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
 
         rawItems.push({
@@ -94,7 +102,7 @@ export async function GET(request) {
     dynamicIssues.sort((a, b) => b.volume - a.volume);
     
     if (dynamicIssues.length === 0) {
-      dynamicIssues.push({ id: "mega-empty", topik: `Tidak ada berita Megawati dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Coba cek mode 12 jam.", sourcesList: [] });
+      dynamicIssues.push({ id: "mega-empty", topik: `Tidak ada berita Megawati Soekarnoputri dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ada pemberitaan.", sourcesList: [] });
     }
 
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
