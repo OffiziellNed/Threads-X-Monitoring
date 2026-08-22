@@ -23,7 +23,6 @@ export default function SocialMediaMonitoring() {
     try {
       let endpoint = '';
       
-      // LOGIKA ROUTE (12 Jam vs Terkini 24 Jam)
       if (currentPage === 'bencana-24jam') {
         endpoint = `/api/bencana?t=${Date.now()}`;
       } 
@@ -40,7 +39,6 @@ export default function SocialMediaMonitoring() {
         else endpoint = `/api/puan?hours=12&t=${Date.now()}`;
       } 
       else {
-        // Berita Nasional Umum
         if (currentPage.includes('terkini')) endpoint = `/api/news?hours=24&mode=terkini&t=${Date.now()}`;
         else endpoint = `/api/news?hours=12&t=${Date.now()}`;
       }
@@ -193,16 +191,16 @@ export default function SocialMediaMonitoring() {
             <h2 className="text-2xl font-bold text-white border-b border-[#30363d] pb-2">Berita Nasional Umum</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("12jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring 12 Jam Terakhir</h3>
+                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring Top News</h3>
                 <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("terkini")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Berita Nasional Umum Terkini (24 Jam)</h3>
+                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Berita Nasional Umum Terkini</h3>
                 <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
               <button onClick={() => setCurrentPage("bencana-24jam")} className="md:col-span-2 p-6 bg-[#161b22] border border-orange-900/30 rounded-2xl shadow-lg hover:border-orange-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-orange-500 group-hover:text-orange-400 flex items-center gap-2">
-                  🚨 Berita Bencana Terkini (24 Jam Terakhir)
+                  🚨 Berita Bencana Terkini
                 </h3>
                 <p className="text-sm text-gray-400">Monitoring khusus insiden dan darurat bencana terbaru tanpa filter algoritma volume.</p>
               </button>
@@ -212,14 +210,15 @@ export default function SocialMediaMonitoring() {
           <div className="space-y-4 pt-6">
             <div className="border-b border-red-900/50 pb-2 space-y-1">
               <h2 className="text-2xl font-bold text-red-500">PDI Perjuangan</h2>
+              <p className="text-gray-400 text-sm">Monitoring isu partai dan kader PDI Perjuangan</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("pdip-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring 12 Jam Terakhir</h3>
+                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
                 <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("pdip-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita PDI Perjuangan Terkini (24 Jam)</h3>
+                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita PDI Perjuangan Terkini</h3>
                 <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
             </div>
@@ -228,14 +227,15 @@ export default function SocialMediaMonitoring() {
           <div className="space-y-4 pt-6">
             <div className="border-b border-red-900/50 pb-2 space-y-1">
               <h2 className="text-2xl font-bold text-red-500">Megawati Soekarnoputri</h2>
+              <p className="text-gray-400 text-sm">Monitoring spesifik berita eksklusif Megawati Soekarnoputri</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("megawati-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring 12 Jam Terakhir</h3>
+                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
                 <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("megawati-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Megawati Soekarnoputri Terkini (24 Jam)</h3>
+                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Megawati Soekarnoputri Terkini</h3>
                 <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
             </div>
@@ -244,14 +244,15 @@ export default function SocialMediaMonitoring() {
           <div className="space-y-4 pt-6">
             <div className="border-b border-red-900/50 pb-2 space-y-1">
               <h2 className="text-2xl font-bold text-red-500">Puan Maharani</h2>
+              <p className="text-gray-400 text-sm">Monitoring spesifik berita eksklusif Puan Maharani</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("puan-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring 12 Jam Terakhir</h3>
+                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
                 <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("puan-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Puan Maharani Terkini (24 Jam)</h3>
+                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Puan Maharani Terkini</h3>
                 <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
             </div>
@@ -341,7 +342,7 @@ export default function SocialMediaMonitoring() {
             {isTerkiniMode && (
               <div className={`border p-6 rounded-2xl shadow-lg mb-4 ${isBencanaMode ? 'bg-orange-950/20 border-orange-900/50' : (isRedTheme ? 'bg-red-950/20 border-red-900/50' : 'bg-blue-950/20 border-blue-900/50')}`}>
                 <h1 className={`text-2xl font-bold ${isBencanaMode ? 'text-orange-500' : (isRedTheme ? 'text-red-500' : 'text-blue-500')}`}>
-                  {isBencanaMode ? "🚨 Peringatan & Info Bencana 24 Jam Terakhir" : "⚡ Berita Update Terkini 24 Jam Terakhir"}
+                  {isBencanaMode ? "🚨 Peringatan & Info Bencana Terkini" : "⚡ Berita Update Terkini"}
                 </h1>
                 <p className="text-gray-400 mt-2 text-sm">Daftar di bawah ini diurutkan murni berdasarkan waktu publikasi berita paling baru. Sistem tidak menggunakan klasterisasi volume agar Anda tidak ketinggalan informasi krusial.</p>
               </div>
