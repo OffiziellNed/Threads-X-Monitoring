@@ -24,9 +24,14 @@ function getRealVolume(title, allTitles) {
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const hours = parseInt(searchParams.get('hours') || '3', 10);
+    const hours = parseInt(searchParams.get('hours') || '12', 10);
+    const mode = searchParams.get('mode') || 'volume'; 
     
-    const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
+    let rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
+    if (mode === 'terkini') {
+        rssUrl = `https://news.google.com/rss/search?q=when:24h&hl=id&gl=ID&ceid=ID:id`;
+    }
+
     const response = await fetch(rssUrl, { cache: 'no-store' });
     const xmlText = await response.text();
     const items = xmlText.split("<item>");
@@ -62,54 +67,24 @@ export async function GET(request) {
         const link = linkMatch ? linkMatch[1] : "#";
         const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
 
-        // =================================================================
-        // SISTEM KATEGORISASI CERDAS (DENGAN TAMBAHAN FINANSIAL)
-        // =================================================================
         const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
         let kategori = "Sosial"; 
 
-        // 1. Olahraga
-        if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|kebugaran|skor|klasemen|olimpiade|medali|pssi|premier league|manchester united|hull city|pertandingan|turnamen|klub|pemain|pelatih)\b/)) {
-          kategori = "Olahraga";
-        }
-        // 2. Bencana 
-        else if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|kegawatdaruratan|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) {
-          kategori = "Bencana";
-        }
-        // 3. Entertainment 
-        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) {
-          kategori = "Entertainment";
-        }
-        // 4. Finansial (Ditaruh tinggi agar isu ekonomi tidak tertimpa Politik/Pemerintahan/Teknologi)
-        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|direktur|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) {
-          kategori = "Finansial";
-        }
-        // 5. Teknologi (Kata 'startup' dipindah ke Finansial)
-        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi)\b/)) {
-          kategori = "Teknologi";
-        }
-        // 6. Hukum 
-        else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan)\b/)) {
-          kategori = "Hukum";
-        }
-        // 7. Politik 
-        else if (textToAnalyze.match(/\b(politik|partai|pdip|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|deklarasikan|pemilu|pilkada|dpr|koalisi|oposisi|pwnu|muktamar|kampanye|kpu|bawaslu|demokrasi|parlemen|caleg|cagub|cabup|cawalkot|perang|diplomasi internasional)\b/)) {
-          kategori = "Politik";
-        }
-        // 8. Pemerintahan 
-        else if (textToAnalyze.match(/\b(pemerintah|presiden|menteri|birokrasi|pelayanan publik|anggaran|program kerja|tata kota|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri)\b/)) {
-          kategori = "Pemerintahan";
-        }
-        // 9. Sosial (Default)
-        else if (textToAnalyze.match(/\b(sosial|warga|masyarakat|ketimpangan|budaya|konflik|kesenjangan|gerakan sipil|gaya hidup|pekerja|buruh|pendidikan|kesehatan|mental|komunal|kesejahteraan|hepatitis|penyakit|sekolah|kampus|mahasiswa|demo|protes|idap)\b/)) {
-          kategori = "Sosial";
-        }
+        if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|kebugaran|skor|klasemen|olimpiade|medali|pssi|premier league|manchester united|hull city|pertandingan|turnamen|klub|pemain|pelatih)\b/)) { kategori = "Olahraga"; }
+        else if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|kegawatdaruratan|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) { kategori = "Bencana"; }
+        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { kategori = "Entertainment"; }
+        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|direktur|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) { kategori = "Finansial"; }
+        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi)\b/)) { kategori = "Teknologi"; }
+        else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan)\b/)) { kategori = "Hukum"; }
+        else if (textToAnalyze.match(/\b(politik|partai|pdip|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|deklarasikan|pemilu|pilkada|dpr|koalisi|oposisi|pwnu|muktamar|kampanye|kpu|bawaslu|demokrasi|parlemen|caleg|cagub|cabup|cawalkot|perang|diplomasi internasional)\b/)) { kategori = "Politik"; }
+        else if (textToAnalyze.match(/\b(pemerintah|presiden|menteri|birokrasi|pelayanan publik|anggaran|program kerja|tata kota|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri)\b/)) { kategori = "Pemerintahan"; }
 
         rawItems.push({
           topik: cleanTitle,
           kategori: kategori,
           source: sourceName,
           pubDate: pubDate,
+          timestamp: articleDate.getTime(),
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }],
@@ -119,28 +94,37 @@ export async function GET(request) {
     }
 
     let filteredItems = rawItems.filter(item => item.diffHours <= hours);
-    if (filteredItems.length === 0) {
+    if (filteredItems.length === 0 && mode !== 'terkini') {
         filteredItems = rawItems.sort((a, b) => a.diffHours - b.diffHours).slice(0, 12);
     }
 
     let dynamicIssues = [];
     let seenTopics = new Set();
 
-    filteredItems.forEach((item, index) => {
-      const volumeData = getRealVolume(item.topik, allTitles);
-      const mainKeyword = item.topik.substring(0, 15).toLowerCase();
-      
-      if (!seenTopics.has(mainKeyword)) {
-        seenTopics.add(mainKeyword);
-        dynamicIssues.push({
-          id: index,
-          ...item,
-          volume: volumeData 
+    if (mode === 'terkini') {
+        filteredItems.sort((a, b) => b.timestamp - a.timestamp);
+        filteredItems.forEach((item, index) => {
+          const mainKeyword = item.topik.substring(0, 20).toLowerCase();
+          if (!seenTopics.has(mainKeyword)) {
+            seenTopics.add(mainKeyword);
+            dynamicIssues.push({ id: index, ...item, volume: 0 });
+          }
         });
-      }
-    });
+    } else {
+        filteredItems.forEach((item, index) => {
+          const volumeData = getRealVolume(item.topik, allTitles);
+          const mainKeyword = item.topik.substring(0, 15).toLowerCase();
+          if (!seenTopics.has(mainKeyword)) {
+            seenTopics.add(mainKeyword);
+            dynamicIssues.push({ id: index, ...item, volume: volumeData });
+          }
+        });
+        dynamicIssues.sort((a, b) => b.volume - a.volume);
+    }
 
-    dynamicIssues.sort((a, b) => b.volume - a.volume);
+    if (dynamicIssues.length === 0) {
+        dynamicIssues.push({ id: "empty", topik: `Tidak ada berita dalam ${hours} jam terakhir.`, kategori: "Sistem", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ada pemberitaan.", sourcesList: [] });
+    }
 
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
   } catch (error) {
