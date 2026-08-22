@@ -22,8 +22,10 @@ function getRealVolume(title, allTitles) {
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const hours = parseInt(searchParams.get('hours') || '3', 10);
-    const timeFilter = hours === 3 ? 'when:3h' : 'when:12h';
+    const hours = parseInt(searchParams.get('hours') || '12', 10);
+    const mode = searchParams.get('mode') || 'volume'; 
+    
+    const timeFilter = `when:${hours}h`;
     const query = encodeURIComponent(`"Puan Maharani" ${timeFilter}`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=id&gl=ID&ceid=ID:id`;
 
@@ -67,7 +69,6 @@ export async function GET(request) {
         const link = linkMatch ? linkMatch[1] : "#";
         const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
 
-        // SISTEM KATEGORISASI CERDAS
         const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
         let kategori = "Sosial"; 
 
@@ -85,6 +86,7 @@ export async function GET(request) {
           kategori: kategori,
           source: sourceName,
           pubDate: pubDate,
+          timestamp: articleDate.getTime(),
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
@@ -95,21 +97,26 @@ export async function GET(request) {
     let dynamicIssues = [];
     let seenTopics = new Set();
 
-    rawItems.forEach((item, index) => {
-      const volumeData = getRealVolume(item.topik, allTitles);
-      const mainKeyword = item.topik.substring(0, 15).toLowerCase();
-      
-      if (!seenTopics.has(mainKeyword)) {
-        seenTopics.add(mainKeyword);
-        dynamicIssues.push({
-          id: `puan-${index}`,
-          ...item,
-          volume: volumeData
+    if (mode === 'terkini') {
+        rawItems.sort((a, b) => b.timestamp - a.timestamp);
+        rawItems.forEach((item, index) => {
+          const mainKeyword = item.topik.substring(0, 20).toLowerCase();
+          if (!seenTopics.has(mainKeyword)) {
+            seenTopics.add(mainKeyword);
+            dynamicIssues.push({ id: `puan-${index}`, ...item, volume: 0 });
+          }
         });
-      }
-    });
-
-    dynamicIssues.sort((a, b) => b.volume - a.volume);
+    } else {
+        rawItems.forEach((item, index) => {
+          const volumeData = getRealVolume(item.topik, allTitles);
+          const mainKeyword = item.topik.substring(0, 15).toLowerCase();
+          if (!seenTopics.has(mainKeyword)) {
+            seenTopics.add(mainKeyword);
+            dynamicIssues.push({ id: `puan-${index}`, ...item, volume: volumeData });
+          }
+        });
+        dynamicIssues.sort((a, b) => b.volume - a.volume);
+    }
     
     if (dynamicIssues.length === 0) {
       dynamicIssues.push({ id: "puan-empty", topik: `Tidak ada berita Puan Maharani dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Coba cek mode 12 jam.", sourcesList: [] });
