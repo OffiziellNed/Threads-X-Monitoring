@@ -224,6 +224,8 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
+        
+        {/* HEADER & NAVIGASI */}
         <div className="flex justify-between items-center">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
             <ArrowLeft size={20} /> Menu Utama
@@ -234,21 +236,21 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {/* REVISI: FILTER MENU JADI 1 BARIS (Scroll Horizontal jika layar sempit) */}
-        <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
-          <div className="flex items-center gap-2 min-w-max">
-            <div className="flex items-center gap-1.5 text-gray-400 mr-2 shrink-0">
-              <Filter size={18} />
-              <span className="text-sm font-semibold">Filter:</span>
-            </div>
+        {/* REVISI: FILTER MENU COMPACT INLINE (1 BARIS PENUH) */}
+        <div className="flex items-center w-full bg-[#161b22] px-4 py-3 rounded-2xl border border-[#30363d]">
+          <div className="flex items-center gap-1.5 text-gray-400 shrink-0 border-r border-gray-700 pr-4 mr-3">
+            <Filter size={16} />
+            <span className="text-[11px] font-bold uppercase tracking-wider">Filter:</span>
+          </div>
+          <div className="flex items-center justify-between w-full">
             {categories.map((cat) => (
               <button 
                 key={cat} 
                 onClick={() => setSelectedCategory(cat)} 
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border whitespace-nowrap shrink-0 ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border tracking-wide ${
                   selectedCategory === cat 
                   ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') 
-                  : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
+                  : 'bg-[#0d1117] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
                 }`}
               >
                 {cat}
@@ -263,12 +265,13 @@ export default function SocialMediaMonitoring() {
           </div>
         ) : (
           <>
-            {/* REVISI: DITAMBAH PENJELASAN KETERANGAN VOLUME DI BAWAH GRAFIK */}
-            <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] flex flex-col h-[28rem]">
-              <h2 className="text-lg font-semibold mb-4 text-white shrink-0">Grafik Top 5 Topik Berita</h2>
+            {/* REVISI: GRAFIK DIKASIH TINGGI FIX SUPAYA TIDAK MELEYOT & KETERANGAN ABU-ABU DI BAWAHNYA */}
+            <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] h-auto">
+              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
+              
               {chartData.length > 0 ? (
                 <>
-                  <div className="flex-grow min-h-0">
+                  <div className="w-full h-[280px]"> 
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <XAxis type="number" stroke="#4b5563" />
@@ -278,12 +281,16 @@ export default function SocialMediaMonitoring() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  <p className="text-xs text-gray-500 text-center mt-3 shrink-0 italic">
-                    *Volume menunjukkan jumlah media berbeda yang sedang memberitakan topik ini secara bersamaan.
-                  </p>
+                  
+                  {/* KETERANGAN VOLUME WARNA ABU-ABU */}
+                  <div className="mt-5 pt-3 border-t border-[#30363d]">
+                    <p className="text-xs text-gray-500 text-center italic">
+                      *Volume pada grafik menunjukkan jumlah publikasi media berbeda yang sedang memberitakan topik tersebut secara bersamaan.
+                    </p>
+                  </div>
                 </>
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">Belum ada data tersedia.</div>
+                <div className="flex items-center justify-center h-[280px] text-gray-500">Belum ada data tersedia.</div>
               )}
             </div>
 
