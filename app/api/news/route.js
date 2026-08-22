@@ -21,9 +21,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const hours = parseInt(searchParams.get('hours') || '3', 10);
     
-    // PERBAIKAN: Gunakan URL Top Stories Nasional yang valid
     const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
-    
     const response = await fetch(rssUrl, { cache: 'no-store' });
     const xmlText = await response.text();
     const items = xmlText.split("<item>");
@@ -32,7 +30,6 @@ export async function GET(request) {
     let allTitles = [];
     const now = new Date();
 
-    // 1. Ekstraksi semua berita
     for (let i = 1; i < items.length; i++) {
       const item = items[i];
       const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
@@ -58,13 +55,35 @@ export async function GET(request) {
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const sourceName = sourceMatch ? sourceMatch[1] : "Media Nasional";
         const link = linkMatch ? linkMatch[1] : "#";
-        const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+        const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
 
-        let kategori = "Sosial";
-        const lowerTitle = cleanTitle.toLowerCase();
-        if (lowerTitle.includes("hukum") || lowerTitle.includes("korupsi") || lowerTitle.includes("polisi") || lowerTitle.includes("kpk") || lowerTitle.includes("tersangka")) kategori = "Hukum";
-        else if (lowerTitle.includes("pemerintah") || lowerTitle.includes("menteri") || lowerTitle.includes("jokowi")) kategori = "Pemerintahan";
-        else if (lowerTitle.includes("politik") || lowerTitle.includes("prabowo") || lowerTitle.includes("dpr") || lowerTitle.includes("pdip")) kategori = "Politik";
+        // --- SISTEM KATEGORISASI CERDAS ---
+        // Menggabungkan Judul dan Deskripsi untuk akurasi pendeteksian
+        const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
+        let kategori = "Sosial"; // Default untuk isu sipil, pendidikan, warga, dll.
+
+        if (textToAnalyze.match(/(bencana|gempa|banjir|tsunami|longsor|kebakaran|erupsi|gunung meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai)/)) {
+          kategori = "Bencana";
+        } 
+        else if (textToAnalyze.match(/(olahraga|atlet|liga|bola|timnas|juara|badminton|motogp|f1|kompetisi|kebugaran|skor|klasemen|olimpiade|medali|pssi)/)) {
+          kategori = "Olahraga";
+        }
+        else if (textToAnalyze.match(/(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi)/)) {
+          kategori = "Entertainment";
+        }
+        else if (textToAnalyze.match(/(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|kecerdasan buatan|startup)/)) {
+          kategori = "Teknologi";
+        }
+        else if (textToAnalyze.match(/(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal)/)) {
+          kategori = "Hukum";
+        }
+        else if (textToAnalyze.match(/(pemerintah|presiden|menteri|birokrasi|pelayanan publik|anggaran|program kerja|tata kota|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd)/)) {
+          kategori = "Pemerintahan";
+        }
+        else if (textToAnalyze.match(/(politik|partai|pdip|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|pemilu|pilkada|dpr|koalisi|oposisi)/)) {
+          kategori = "Politik";
+        }
+        // Jika tidak masuk satupun di atas, akan otomatis menjadi "Sosial" (fokus realita warga)
 
         rawItems.push({
           topik: cleanTitle,
@@ -74,20 +93,16 @@ export async function GET(request) {
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }],
-          diffHours: diffHours // Simpan selisih waktu untuk difilter
+          diffHours: diffHours 
         });
       }
     }
 
-    // 2. FILTER WAKTU KETAT & SMART FALLBACK
     let filteredItems = rawItems.filter(item => item.diffHours <= hours);
-    
-    // Kalau kosong (efek delay RSS), tarik 12 berita paling fresh hari ini!
     if (filteredItems.length === 0) {
         filteredItems = rawItems.sort((a, b) => a.diffHours - b.diffHours).slice(0, 12);
     }
 
-    // 3. Hitung Volume & Bersihkan Duplikat Topik
     let dynamicIssues = [];
     let seenTopics = new Set();
 
@@ -106,7 +121,6 @@ export async function GET(request) {
     });
 
     dynamicIssues.sort((a, b) => b.volume - a.volume);
-
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
