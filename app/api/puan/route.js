@@ -10,7 +10,12 @@ function getRealVolume(title, allTitles) {
   const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w) && !IGNORE_WORDS.includes(w));
   if (coreWords.length === 0) return 1;
   let count = 0;
-  allTitles.forEach(t => { if (coreWords.some(cw => t.toLowerCase().includes(cw))) count++; });
+  allTitles.forEach(t => { 
+    if (coreWords.some(cw => {
+      const regex = new RegExp(`\\b${cw}\\b`);
+      return regex.test(t.toLowerCase());
+    })) count++; 
+  });
   return count;
 }
 
@@ -28,7 +33,7 @@ export async function GET(request) {
     
     let rawItems = [];
     let allTitles = [];
-    const puanKeywords = ['puan', 'puan maharani', 'ketua dpr'];
+    const puanKeywords = ['puan', 'maharani'];
     const now = new Date();
 
     for (let i = 1; i < items.length; i++) {
@@ -42,7 +47,7 @@ export async function GET(request) {
         const diffHours = (now - articleDate) / (1000 * 60 * 60);
         if (diffHours > hours) continue; 
 
-        let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
+        let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
         const cleanTitle = rawTitle.split(" - ")[0];
         
         if (!puanKeywords.some(kw => cleanTitle.toLowerCase().includes(kw))) continue;
@@ -58,7 +63,7 @@ export async function GET(request) {
 
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
-        const sourceName = sourceMatch ? sourceMatch[1] : "Media";
+        const sourceName = sourceMatch ? sourceMatch[1] : "Media Nasional";
         const link = linkMatch ? linkMatch[1] : "#";
         const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
 
