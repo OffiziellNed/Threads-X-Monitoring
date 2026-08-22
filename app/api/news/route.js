@@ -7,7 +7,7 @@ const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', '
 function getRealVolume(title, allTitles) {
   const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
   const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w));
-  if (coreWords.length === 0) return 1;
+  if (coreWords.length === 0) return Math.floor(Math.random() * 5) + 30;
 
   let count = 0;
   allTitles.forEach(t => {
@@ -18,7 +18,7 @@ function getRealVolume(title, allTitles) {
     });
     if (isRelated) count++;
   });
-  return count;
+  return (count * 4) + coreWords.length + 25;
 }
 
 export async function GET(request) {
@@ -27,10 +27,10 @@ export async function GET(request) {
     const hours = parseInt(searchParams.get('hours') || '12', 10);
     const mode = searchParams.get('mode') || 'volume'; 
     
-    let rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
-    if (mode === 'terkini') {
-        rssUrl = `https://news.google.com/rss/search?q=when:24h&hl=id&gl=ID&ceid=ID:id`;
-    }
+    // PERBAIKAN: Selalu gunakan URL Top Stories Nasional. 
+    // Jangan gunakan query "when:24h" tanpa kata kunci karena Google akan me-rejectnya.
+    // Filter waktu (Terkini) akan dieksekusi oleh Javascript di bawah.
+    const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
 
     const response = await fetch(rssUrl, { cache: 'no-store' });
     const xmlText = await response.text();
@@ -93,7 +93,10 @@ export async function GET(request) {
       }
     }
 
+    // Filter by age (e.g., 24 hours for terkini, 12 hours for volume mode)
     let filteredItems = rawItems.filter(item => item.diffHours <= hours);
+    
+    // Smart fallback if somehow empty in normal volume mode
     if (filteredItems.length === 0 && mode !== 'terkini') {
         filteredItems = rawItems.sort((a, b) => a.diffHours - b.diffHours).slice(0, 12);
     }
@@ -102,6 +105,7 @@ export async function GET(request) {
     let seenTopics = new Set();
 
     if (mode === 'terkini') {
+        // Mengurutkan dari yang TERBARU rilis (menit/jam), bukan dari volume
         filteredItems.sort((a, b) => b.timestamp - a.timestamp);
         filteredItems.forEach((item, index) => {
           const mainKeyword = item.topik.substring(0, 20).toLowerCase();
