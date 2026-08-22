@@ -313,7 +313,8 @@ export default function SocialMediaMonitoring() {
                 
                 {chartData.length > 0 ? (
                   <>
-                    <div className="w-full" style={{ height: chartData.length > 2 ? '400px' : '180px' }}> 
+                    {/* REVISI: TINGGI DITAMBAH SIGNIFIKAN JADI 600px BIAR ADA RUANG UNTUK TEKS PANJANG */}
+                    <div className="w-full" style={{ height: chartData.length > 2 ? '600px' : '250px' }}> 
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                           <XAxis type="number" stroke="#4b5563" />
