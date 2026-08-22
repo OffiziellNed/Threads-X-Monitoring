@@ -12,8 +12,6 @@ export default function SocialMediaMonitoring() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
-  
-  // PENAMBAHAN KATEGORI FINANSIAL
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
   const [isScraping, setIsScraping] = useState(false);
@@ -236,11 +234,27 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 text-gray-400 mr-2 shrink-0"><Filter size={18} /><span className="text-sm font-semibold">Filter:</span></div>
-          {categories.map((cat) => (
-            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm transition-colors border ${selectedCategory === cat ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'}`}>{cat}</button>
-          ))}
+        {/* REVISI: FILTER MENU JADI 1 BARIS (Scroll Horizontal jika layar sempit) */}
+        <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
+          <div className="flex items-center gap-2 min-w-max">
+            <div className="flex items-center gap-1.5 text-gray-400 mr-2 shrink-0">
+              <Filter size={18} />
+              <span className="text-sm font-semibold">Filter:</span>
+            </div>
+            {categories.map((cat) => (
+              <button 
+                key={cat} 
+                onClick={() => setSelectedCategory(cat)} 
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border whitespace-nowrap shrink-0 ${
+                  selectedCategory === cat 
+                  ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') 
+                  : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         {isLoading ? (
@@ -249,17 +263,25 @@ export default function SocialMediaMonitoring() {
           </div>
         ) : (
           <>
-            <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] h-96">
-              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
+            {/* REVISI: DITAMBAH PENJELASAN KETERANGAN VOLUME DI BAWAH GRAFIK */}
+            <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] flex flex-col h-[28rem]">
+              <h2 className="text-lg font-semibold mb-4 text-white shrink-0">Grafik Top 5 Topik Berita</h2>
               {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <XAxis type="number" stroke="#4b5563" />
-                    <YAxis dataKey="topik" type="category" width={180} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} />
-                    <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
-                    <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <>
+                  <div className="flex-grow min-h-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <XAxis type="number" stroke="#4b5563" />
+                        <YAxis dataKey="topik" type="category" width={180} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} />
+                        <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
+                        <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center mt-3 shrink-0 italic">
+                    *Volume menunjukkan jumlah media berbeda yang sedang memberitakan topik ini secara bersamaan.
+                  </p>
+                </>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">Belum ada data tersedia.</div>
               )}
