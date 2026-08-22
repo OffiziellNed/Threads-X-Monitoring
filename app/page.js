@@ -13,8 +13,8 @@ export default function SocialMediaMonitoring() {
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   
-  // PENAMBAHAN KATEGORI BARU DI SINI
-  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi"];
+  // PENAMBAHAN KATEGORI FINANSIAL
+  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
   const [isScraping, setIsScraping] = useState(false);
   const [scrapedResult, setScrapedResult] = useState("");
@@ -236,7 +236,6 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {/* PENAMBAHAN FLEX-WRAP AGAR 9 TOMBOL KATEGORI BISA RAPI & RESPONSIVE */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 text-gray-400 mr-2 shrink-0"><Filter size={18} /><span className="text-sm font-semibold">Filter:</span></div>
           {categories.map((cat) => (
