@@ -98,7 +98,6 @@ export default function SocialMediaMonitoring() {
           </button>
           
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-4">
-            
             <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">
               {selectedIssue.topik}
             </h1>
@@ -110,9 +109,7 @@ export default function SocialMediaMonitoring() {
               <span className="text-gray-400 font-medium flex items-center gap-1.5 border-l border-gray-700 pl-4">
                 <Calendar size={16} className="text-gray-500"/> Waktu Rilis: {selectedIssue.pubDate}
               </span>
-              
               <div className="w-full h-px bg-gray-800 my-1"></div>
-              
               {selectedIssue.sourcesList && selectedIssue.sourcesList.length > 0 ? (
                 <a href={selectedIssue.sourcesList[0].url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 w-full">
                   Tap untuk baca artikel asli ke sumber portal <ExternalLink size={14} />
@@ -236,13 +233,13 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {/* REVISI: FILTER MENU COMPACT INLINE (1 BARIS PENUH) */}
-        <div className="flex items-center w-full bg-[#161b22] px-4 py-3 rounded-2xl border border-[#30363d]">
-          <div className="flex items-center gap-1.5 text-gray-400 shrink-0 border-r border-gray-700 pr-4 mr-3">
-            <Filter size={16} />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Filter:</span>
+        {/* REVISI: FILTER MENU TANPA BORDER, TULISAN FILTER DI ATAS, TOMBOL DI BAWAHNYA DALAM 1 BARIS */}
+        <div className="w-full flex flex-col items-start gap-2">
+          <div className="flex items-center gap-1.5 text-gray-400">
+            <Filter size={14} />
+            <span className="text-xs font-semibold tracking-wider uppercase">Filter Kategori:</span>
           </div>
-          <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2 flex-wrap">
             {categories.map((cat) => (
               <button 
                 key={cat} 
@@ -250,7 +247,7 @@ export default function SocialMediaMonitoring() {
                 className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border tracking-wide ${
                   selectedCategory === cat 
                   ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') 
-                  : 'bg-[#0d1117] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
+                  : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
                 }`}
               >
                 {cat}
@@ -265,13 +262,14 @@ export default function SocialMediaMonitoring() {
           </div>
         ) : (
           <>
-            {/* REVISI: GRAFIK DIKASIH TINGGI FIX SUPAYA TIDAK MELEYOT & KETERANGAN ABU-ABU DI BAWAHNYA */}
-            <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] h-auto">
+            {/* REVISI: GRAFIK MUNCUL NORMAL (DI-FIX HEIGHT-NYA) */}
+            <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
               <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
               
               {chartData.length > 0 ? (
                 <>
-                  <div className="w-full h-[280px]"> 
+                  {/* Container grafik dibikin fixed height biar recharts ga bingung kalau data cuma 1 */}
+                  <div className="w-full" style={{ height: chartData.length > 2 ? '280px' : '150px' }}> 
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <XAxis type="number" stroke="#4b5563" />
