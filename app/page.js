@@ -25,9 +25,12 @@ export default function SocialMediaMonitoring() {
       if (currentPage.includes('12jam')) hours = 12;
 
       let endpoint = `/api/news?hours=${hours}&t=${Date.now()}`;
-      if (currentPage.includes('pdip')) endpoint = `/api/pdip?hours=${hours}&t=${Date.now()}`;
-      if (currentPage.includes('megawati')) endpoint = `/api/megawati?hours=${hours}&t=${Date.now()}`;
-      if (currentPage.includes('puan-')) endpoint = `/api/puan?hours=${hours}&t=${Date.now()}`;
+      
+      // LOGIKA ROUTE BARU
+      if (currentPage === 'bencana-24jam') endpoint = `/api/bencana?t=${Date.now()}`;
+      else if (currentPage.includes('pdip')) endpoint = `/api/pdip?hours=${hours}&t=${Date.now()}`;
+      else if (currentPage.includes('megawati')) endpoint = `/api/megawati?hours=${hours}&t=${Date.now()}`;
+      else if (currentPage.includes('puan-')) endpoint = `/api/puan?hours=${hours}&t=${Date.now()}`;
       
       const response = await fetch(endpoint, { cache: 'no-store' });
       const result = await response.json();
@@ -41,7 +44,7 @@ export default function SocialMediaMonitoring() {
   };
 
   useEffect(() => {
-    if (currentPage.includes("3jam") || currentPage.includes("12jam")) {
+    if (currentPage !== "main" && currentPage !== "detail") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
@@ -61,10 +64,8 @@ export default function SocialMediaMonitoring() {
     
     setTimeout(() => {
       const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, 10 dalam konteks pro dan 10 dalam konteks kontra. Jika Kontra pastikan menggunakan bahasa kontroversial, satir, sarkas, bisa pakai hook agar mengundang pembaca.";
-      
       const title = selectedIssue.topik || "Tanpa Judul"; 
       const content = selectedIssue.articleDesc || "Tidak ada deskripsi rinci.";
-      
       const finalOutput = `${promptInstruction}\n\n[JUDUL TOPIK]\n${title}\n\n[DESKRIPSI & ISI KONTEN]\n${content}`;
       
       setScrapedResult(finalOutput);
@@ -78,9 +79,13 @@ export default function SocialMediaMonitoring() {
     setTimeout(() => setIsCopied(false), 3000); 
   };
 
-  const filteredData = selectedCategory === "Semua" ? issuesData : issuesData.filter(issue => issue.kategori === selectedCategory);
+  const isBencanaMode = currentPage === "bencana-24jam" || (currentPage === "detail" && previousPage === "bencana-24jam");
+  
+  // Kalau mode bencana, tidak usah difilter sama sekali
+  const filteredData = isBencanaMode ? issuesData : (selectedCategory === "Semua" ? issuesData : issuesData.filter(issue => issue.kategori === selectedCategory));
   const chartData = filteredData.slice(0, 5); 
-  const listData = filteredData.slice(0, 10); 
+  // Untuk bencana kita tampilkan 20 sekaligus karena tidak ada grafik, sisanya 10
+  const listData = filteredData.slice(0, isBencanaMode ? 20 : 10); 
 
   const isRedTheme = 
     currentPage.includes("pdip") || 
@@ -98,7 +103,6 @@ export default function SocialMediaMonitoring() {
           </button>
           
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-4">
-            
             <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">
               {selectedIssue.topik}
             </h1>
@@ -110,9 +114,7 @@ export default function SocialMediaMonitoring() {
               <span className="text-gray-400 font-medium flex items-center gap-1.5 border-l border-gray-700 pl-4">
                 <Calendar size={16} className="text-gray-500"/> Waktu Rilis: {selectedIssue.pubDate}
               </span>
-              
               <div className="w-full h-px bg-gray-800 my-1"></div>
-              
               {selectedIssue.sourcesList && selectedIssue.sourcesList.length > 0 ? (
                 <a href={selectedIssue.sourcesList[0].url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 w-full">
                   Tap untuk baca artikel asli ke sumber portal <ExternalLink size={14} />
@@ -138,7 +140,7 @@ export default function SocialMediaMonitoring() {
                 <button 
                   onClick={handleSedotData} 
                   disabled={isScraping} 
-                  className={`flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-colors ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}
+                  className={`flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-colors ${isBencanaMode ? 'bg-orange-600 hover:bg-orange-500' : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')}`}
                 >
                   {isScraping ? <><RefreshCw size={16} className="animate-spin" /> Ekstraksi Teks...</> : <><DownloadCloud size={16} /> Sedot & Buat Prompt</>}
                 </button>
@@ -180,6 +182,14 @@ export default function SocialMediaMonitoring() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("3jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group"><h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring 3 Jam Terakhir</h3></button>
               <button onClick={() => setCurrentPage("12jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group"><h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring 12 Jam Terakhir</h3></button>
+              
+              {/* TOMBOL BARU: BENCANA TERKINI (MELEBAR KE DUA KOLOM) */}
+              <button onClick={() => setCurrentPage("bencana-24jam")} className="md:col-span-2 p-6 bg-[#161b22] border border-orange-900/30 rounded-2xl shadow-lg hover:border-orange-500 text-left space-y-2 group transition-colors">
+                <h3 className="text-xl font-bold text-orange-500 group-hover:text-orange-400 flex items-center gap-2">
+                  🚨 Berita Bencana Terkini (24 Jam Terakhir)
+                </h3>
+                <p className="text-sm text-gray-400">Monitoring khusus insiden dan darurat bencana terbaru tanpa filter algoritma volume.</p>
+              </button>
             </div>
           </div>
 
@@ -236,75 +246,84 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {/* REVISI: JARAK DITAMBAH (gap-3) ANTARA TEKS DAN TOMBOL */}
-        <div className="w-full flex flex-col items-start gap-3">
-          <div className="flex items-center gap-1.5 text-gray-400">
-            <Filter size={14} />
-            <span className="text-xs font-semibold tracking-wider uppercase">Filter Kategori:</span>
+        {/* JIKA BUKAN MODE BENCANA, TAMPILKAN FILTER */}
+        {!isBencanaMode && (
+          <div className="w-full flex flex-col items-start gap-3">
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <Filter size={14} />
+              <span className="text-xs font-semibold tracking-wider uppercase">Filter Kategori:</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {categories.map((cat) => (
+                <button 
+                  key={cat} 
+                  onClick={() => setSelectedCategory(cat)} 
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border tracking-wide ${
+                    selectedCategory === cat 
+                    ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') 
+                    : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {categories.map((cat) => (
-              <button 
-                key={cat} 
-                onClick={() => setSelectedCategory(cat)} 
-                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border tracking-wide ${
-                  selectedCategory === cat 
-                  ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') 
-                  : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? 'border-red-500' : 'border-blue-500'}`}></div>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isBencanaMode ? 'border-orange-500' : (isRedTheme ? 'border-red-500' : 'border-blue-500')}`}></div>
           </div>
         ) : (
           <>
-            <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
-              <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
-              
-              {chartData.length > 0 ? (
-                <>
-                  {/* REVISI: TINGGI DITAMBAH JADI 400px (Lebih lega) */}
-                  <div className="w-full" style={{ height: chartData.length > 2 ? '400px' : '180px' }}> 
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <XAxis type="number" stroke="#4b5563" />
-                        {/* REVISI: interval={0} memaksa label nampil semua & width 200 supaya teks gampang muat */}
-                        <YAxis dataKey="topik" type="category" width={200} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} interval={0} />
-                        <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
-                        
-                        {/* REVISI: barSize={32} membuat batang grafik punya ukuran statis, sisanya otomatis jadi jarak spasi antar batang */}
-                        <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} barSize={32} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  {/* KETERANGAN VOLUME WARNA ABU-ABU */}
-                  <div className="mt-5 pt-3 border-t border-[#30363d]">
-                    <p className="text-xs text-gray-500 text-center italic">
-                      *Volume pada grafik menunjukkan jumlah publikasi media berbeda yang sedang memberitakan topik tersebut secara bersamaan.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-[280px] text-gray-500">Belum ada data tersedia.</div>
-              )}
-            </div>
+            {/* JIKA BUKAN MODE BENCANA, TAMPILKAN GRAFIK */}
+            {!isBencanaMode && (
+              <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
+                <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
+                
+                {chartData.length > 0 ? (
+                  <>
+                    <div className="w-full" style={{ height: chartData.length > 2 ? '400px' : '180px' }}> 
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                          <XAxis type="number" stroke="#4b5563" />
+                          <YAxis dataKey="topik" type="category" width={200} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} interval={0} />
+                          <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
+                          <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} barSize={32} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-5 pt-3 border-t border-[#30363d]">
+                      <p className="text-xs text-gray-500 text-center italic">
+                        *Volume pada grafik menunjukkan jumlah publikasi media berbeda yang sedang memberitakan topik tersebut secara bersamaan.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-[280px] text-gray-500">Belum ada data tersedia.</div>
+                )}
+              </div>
+            )}
+
+            {/* JIKA BENCANA, TAMPILKAN BANNER KHUSUS */}
+            {isBencanaMode && (
+              <div className="bg-orange-950/20 border border-orange-900/50 p-6 rounded-2xl shadow-lg mb-4">
+                <h1 className="text-2xl font-bold text-orange-500">🚨 Peringatan & Info Bencana 24 Jam Terakhir</h1>
+                <p className="text-gray-400 mt-2 text-sm">Daftar di bawah ini diurutkan murni berdasarkan waktu publikasi berita paling baru. Sistem tidak menggunakan klasterisasi volume agar Anda tidak ketinggalan informasi krusial.</p>
+              </div>
+            )}
 
             <div className="space-y-4 pb-10">
-              <h2 className="text-xl font-bold mt-8 text-white">Rincian Pokok Masalah</h2>
+              <h2 className="text-xl font-bold mt-8 text-white">
+                {isBencanaMode ? "Log Update Terkini" : "Rincian Pokok Masalah"}
+              </h2>
               {listData.length > 0 ? listData.map((isu, index) => (
-                <div key={index} className={`bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 ${isRedTheme ? 'border-l-red-500' : 'border-l-blue-500'}`}>
+                <div key={index} className={`bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 ${isBencanaMode ? 'border-l-orange-500' : (isRedTheme ? 'border-l-red-500' : 'border-l-blue-500')}`}>
                   <div className="flex justify-between items-start">
                     <div className="pr-4 w-full">
-                      <span className={`text-xs font-semibold uppercase tracking-wider ${isRedTheme ? 'text-red-400' : 'text-blue-400'}`}>
-                        {isu.kategori}
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${isBencanaMode ? 'text-orange-400' : (isRedTheme ? 'text-red-400' : 'text-blue-400')}`}>
+                        {isu.kategori} {isBencanaMode && " TERKINI"}
                       </span>
                       <h3 className="text-xl font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
                       
@@ -312,7 +331,7 @@ export default function SocialMediaMonitoring() {
                         <Calendar size={14} className="text-gray-500"/> Dirilis: {isu.pubDate}
                       </p>
                     </div>
-                    <button onClick={() => handleOpenDetail(isu)} className={`text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-md shrink-0 transition-colors ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}>Buka Detail</button>
+                    <button onClick={() => handleOpenDetail(isu)} className={`text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-md shrink-0 transition-colors ${isBencanaMode ? 'bg-orange-600 hover:bg-orange-500' : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')}`}>Buka Detail</button>
                   </div>
                 </div>
               )) : (
