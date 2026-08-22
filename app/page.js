@@ -210,7 +210,6 @@ export default function SocialMediaMonitoring() {
           <div className="space-y-4 pt-6">
             <div className="border-b border-red-900/50 pb-2 space-y-1">
               <h2 className="text-2xl font-bold text-red-500">PDI Perjuangan</h2>
-              <p className="text-gray-400 text-sm">Monitoring isu partai dan kader PDI Perjuangan</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("pdip-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
@@ -227,7 +226,6 @@ export default function SocialMediaMonitoring() {
           <div className="space-y-4 pt-6">
             <div className="border-b border-red-900/50 pb-2 space-y-1">
               <h2 className="text-2xl font-bold text-red-500">Megawati Soekarnoputri</h2>
-              <p className="text-gray-400 text-sm">Monitoring spesifik berita eksklusif Megawati Soekarnoputri</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("megawati-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
@@ -244,7 +242,6 @@ export default function SocialMediaMonitoring() {
           <div className="space-y-4 pt-6">
             <div className="border-b border-red-900/50 pb-2 space-y-1">
               <h2 className="text-2xl font-bold text-red-500">Puan Maharani</h2>
-              <p className="text-gray-400 text-sm">Monitoring spesifik berita eksklusif Puan Maharani</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("puan-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
