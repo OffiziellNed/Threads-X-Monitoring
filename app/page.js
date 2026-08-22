@@ -81,10 +81,8 @@ export default function SocialMediaMonitoring() {
 
   const isBencanaMode = currentPage === "bencana-24jam" || (currentPage === "detail" && previousPage === "bencana-24jam");
   
-  // Kalau mode bencana, tidak usah difilter sama sekali
   const filteredData = isBencanaMode ? issuesData : (selectedCategory === "Semua" ? issuesData : issuesData.filter(issue => issue.kategori === selectedCategory));
   const chartData = filteredData.slice(0, 5); 
-  // Untuk bencana kita tampilkan 20 sekaligus karena tidak ada grafik, sisanya 10
   const listData = filteredData.slice(0, isBencanaMode ? 20 : 10); 
 
   const isRedTheme = 
@@ -137,10 +135,11 @@ export default function SocialMediaMonitoring() {
                   <h3 className="text-lg font-bold text-white">Pembuat Opini AI</h3>
                   <p className="text-sm text-gray-400">Merangkum isu ini menjadi prompt utas kontroversial.</p>
                 </div>
+                {/* REVISI: Tombol di detail kembali pakai biru standar jika bukan Red Theme */}
                 <button 
                   onClick={handleSedotData} 
                   disabled={isScraping} 
-                  className={`flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-colors ${isBencanaMode ? 'bg-orange-600 hover:bg-orange-500' : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')}`}
+                  className={`flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-colors ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}
                 >
                   {isScraping ? <><RefreshCw size={16} className="animate-spin" /> Ekstraksi Teks...</> : <><DownloadCloud size={16} /> Sedot & Buat Prompt</>}
                 </button>
@@ -183,7 +182,6 @@ export default function SocialMediaMonitoring() {
               <button onClick={() => setCurrentPage("3jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group"><h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring 3 Jam Terakhir</h3></button>
               <button onClick={() => setCurrentPage("12jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group"><h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring 12 Jam Terakhir</h3></button>
               
-              {/* TOMBOL BARU: BENCANA TERKINI (MELEBAR KE DUA KOLOM) */}
               <button onClick={() => setCurrentPage("bencana-24jam")} className="md:col-span-2 p-6 bg-[#161b22] border border-orange-900/30 rounded-2xl shadow-lg hover:border-orange-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-orange-500 group-hover:text-orange-400 flex items-center gap-2">
                   🚨 Berita Bencana Terkini (24 Jam Terakhir)
@@ -331,7 +329,8 @@ export default function SocialMediaMonitoring() {
                         <Calendar size={14} className="text-gray-500"/> Dirilis: {isu.pubDate}
                       </p>
                     </div>
-                    <button onClick={() => handleOpenDetail(isu)} className={`text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-md shrink-0 transition-colors ${isBencanaMode ? 'bg-orange-600 hover:bg-orange-500' : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')}`}>Buka Detail</button>
+                    {/* REVISI: Tombol di list Bencana kembali pakai biru standar */}
+                    <button onClick={() => handleOpenDetail(isu)} className={`text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-md shrink-0 transition-colors ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}>Buka Detail</button>
                   </div>
                 </div>
               )) : (
