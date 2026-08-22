@@ -12,13 +12,14 @@ export default function SocialMediaMonitoring() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
-  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum"];
+  
+  // PENAMBAHAN KATEGORI BARU DI SINI
+  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi"];
 
   const [isScraping, setIsScraping] = useState(false);
   const [scrapedResult, setScrapedResult] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
-  // FETCH UNTUK BERITA (BERITA UMUM, PDIP, MEGAWATI, PUAN)
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
@@ -41,7 +42,6 @@ export default function SocialMediaMonitoring() {
     }
   };
 
-  // TRIGGER EFEK KETIKA HALAMAN BERUBAH
   useEffect(() => {
     if (currentPage.includes("3jam") || currentPage.includes("12jam")) {
       fetchLiveTrends();
@@ -49,7 +49,6 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage]);
 
-  // LOGIC UI & STATE
   const handleOpenDetail = (isu) => {
     setSelectedIssue(isu);
     setScrapedResult(""); 
@@ -85,7 +84,6 @@ export default function SocialMediaMonitoring() {
   const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, 10); 
 
-  // REVISI WARNA: Hanya pakai merah jika secara eksplisit halamannya adalah partai/tokoh
   const isRedTheme = 
     currentPage.includes("pdip") || 
     currentPage.includes("puan") || 
@@ -176,7 +174,6 @@ export default function SocialMediaMonitoring() {
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold tracking-tight text-white">Public Trend Radar</h1>
             <p className="text-gray-400">Monitoring isu publik terupdate secara real-time.</p>
-            {/* REVISI: Tambahan Teks Sample Data Google */}
             <p className="text-gray-500 text-sm mt-1 italic font-medium">( Sample data diambil dari Google )</p>
           </div>
           
@@ -239,8 +236,9 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
+        {/* PENAMBAHAN FLEX-WRAP AGAR 9 TOMBOL KATEGORI BISA RAPI & RESPONSIVE */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 text-gray-400 mr-2"><Filter size={18} /><span className="text-sm font-semibold">Filter:</span></div>
+          <div className="flex items-center gap-2 text-gray-400 mr-2 shrink-0"><Filter size={18} /><span className="text-sm font-semibold">Filter:</span></div>
           {categories.map((cat) => (
             <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm transition-colors border ${selectedCategory === cat ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'}`}>{cat}</button>
           ))}
