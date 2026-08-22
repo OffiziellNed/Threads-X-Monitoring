@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat'];
 
-// Menggunakan regex word boundary agar kata "pakai" tidak dibaca sebagai "ai" (Teknologi)
 function getRealVolume(title, allTitles) {
   const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
   const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w));
@@ -64,40 +63,44 @@ export async function GET(request) {
         const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
 
         // =================================================================
-        // SISTEM KATEGORISASI CERDAS (MENGGUNAKAN HIERARKI & WORD BOUNDARY)
+        // SISTEM KATEGORISASI CERDAS (DENGAN TAMBAHAN FINANSIAL)
         // =================================================================
         const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
-        let kategori = "Sosial"; // Laci Default (realita warga, pendidikan, kesehatan)
+        let kategori = "Sosial"; 
 
-        // 1. Olahraga (Dicek lebih dulu agar "Badai Cedera" tidak masuk Bencana)
+        // 1. Olahraga
         if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|kebugaran|skor|klasemen|olimpiade|medali|pssi|premier league|manchester united|hull city|pertandingan|turnamen|klub|pemain|pelatih)\b/)) {
           kategori = "Olahraga";
         }
-        // 2. Bencana (Alam & Kecelakaan Darurat)
+        // 2. Bencana 
         else if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|kegawatdaruratan|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) {
           kategori = "Bencana";
         }
-        // 3. Entertainment (Hiburan, Pop, Figur Publik)
+        // 3. Entertainment 
         else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) {
           kategori = "Entertainment";
         }
-        // 4. Teknologi (Inovasi & Digital, \b memastikan "ai" berdiri sendiri, bukan di dalam pAKAI)
-        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|startup|aplikasi)\b/)) {
+        // 4. Finansial (Ditaruh tinggi agar isu ekonomi tidak tertimpa Politik/Pemerintahan/Teknologi)
+        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|direktur|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) {
+          kategori = "Finansial";
+        }
+        // 5. Teknologi (Kata 'startup' dipindah ke Finansial)
+        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi)\b/)) {
           kategori = "Teknologi";
         }
-        // 5. Hukum (Pelanggaran, Peradilan, Penegakan)
+        // 6. Hukum 
         else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan)\b/)) {
           kategori = "Hukum";
         }
-        // 6. Politik (Manuver, Parpol, Kekuasaan, Pemilu, Diplomasi)
+        // 7. Politik 
         else if (textToAnalyze.match(/\b(politik|partai|pdip|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|deklarasikan|pemilu|pilkada|dpr|koalisi|oposisi|pwnu|muktamar|kampanye|kpu|bawaslu|demokrasi|parlemen|caleg|cagub|cabup|cawalkot|perang|diplomasi internasional)\b/)) {
           kategori = "Politik";
         }
-        // 7. Pemerintahan (Kebijakan, Anggaran, Birokrasi, Subsidi)
+        // 8. Pemerintahan 
         else if (textToAnalyze.match(/\b(pemerintah|presiden|menteri|birokrasi|pelayanan publik|anggaran|program kerja|tata kota|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri)\b/)) {
           kategori = "Pemerintahan";
         }
-        // 8. Sosial (Kesehatan, Gaya Hidup, Buruh, Pendidikan, Fenomena)
+        // 9. Sosial (Default)
         else if (textToAnalyze.match(/\b(sosial|warga|masyarakat|ketimpangan|budaya|konflik|kesenjangan|gerakan sipil|gaya hidup|pekerja|buruh|pendidikan|kesehatan|mental|komunal|kesejahteraan|hepatitis|penyakit|sekolah|kampus|mahasiswa|demo|protes|idap)\b/)) {
           kategori = "Sosial";
         }
@@ -115,7 +118,6 @@ export async function GET(request) {
       }
     }
 
-    // FILTER WAKTU KETAT & SMART FALLBACK
     let filteredItems = rawItems.filter(item => item.diffHours <= hours);
     if (filteredItems.length === 0) {
         filteredItems = rawItems.sort((a, b) => a.diffHours - b.diffHours).slice(0, 12);
