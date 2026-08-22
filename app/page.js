@@ -98,6 +98,7 @@ export default function SocialMediaMonitoring() {
           </button>
           
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-4">
+            
             <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">
               {selectedIssue.topik}
             </h1>
@@ -109,7 +110,9 @@ export default function SocialMediaMonitoring() {
               <span className="text-gray-400 font-medium flex items-center gap-1.5 border-l border-gray-700 pl-4">
                 <Calendar size={16} className="text-gray-500"/> Waktu Rilis: {selectedIssue.pubDate}
               </span>
+              
               <div className="w-full h-px bg-gray-800 my-1"></div>
+              
               {selectedIssue.sourcesList && selectedIssue.sourcesList.length > 0 ? (
                 <a href={selectedIssue.sourcesList[0].url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 w-full">
                   Tap untuk baca artikel asli ke sumber portal <ExternalLink size={14} />
@@ -233,8 +236,8 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {/* REVISI: FILTER MENU TANPA BORDER, TULISAN FILTER DI ATAS, TOMBOL DI BAWAHNYA DALAM 1 BARIS */}
-        <div className="w-full flex flex-col items-start gap-2">
+        {/* REVISI: JARAK DITAMBAH (gap-3) ANTARA TEKS DAN TOMBOL */}
+        <div className="w-full flex flex-col items-start gap-3">
           <div className="flex items-center gap-1.5 text-gray-400">
             <Filter size={14} />
             <span className="text-xs font-semibold tracking-wider uppercase">Filter Kategori:</span>
@@ -262,20 +265,22 @@ export default function SocialMediaMonitoring() {
           </div>
         ) : (
           <>
-            {/* REVISI: GRAFIK MUNCUL NORMAL (DI-FIX HEIGHT-NYA) */}
             <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
               <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
               
               {chartData.length > 0 ? (
                 <>
-                  {/* Container grafik dibikin fixed height biar recharts ga bingung kalau data cuma 1 */}
-                  <div className="w-full" style={{ height: chartData.length > 2 ? '280px' : '150px' }}> 
+                  {/* REVISI: TINGGI DITAMBAH JADI 400px (Lebih lega) */}
+                  <div className="w-full" style={{ height: chartData.length > 2 ? '400px' : '180px' }}> 
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <XAxis type="number" stroke="#4b5563" />
-                        <YAxis dataKey="topik" type="category" width={180} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} />
+                        {/* REVISI: interval={0} memaksa label nampil semua & width 200 supaya teks gampang muat */}
+                        <YAxis dataKey="topik" type="category" width={200} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} interval={0} />
                         <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
-                        <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} />
+                        
+                        {/* REVISI: barSize={32} membuat batang grafik punya ukuran statis, sisanya otomatis jadi jarak spasi antar batang */}
+                        <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} barSize={32} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
