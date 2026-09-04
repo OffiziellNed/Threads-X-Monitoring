@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
@@ -70,8 +71,9 @@ export default function SocialMediaMonitoring() {
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
-    else if (currentPage !== "main" && currentPage !== "detail") {
+    if (currentPage === "puan-yt-analysis") {
+      fetchYoutubeData();
+    } else if (currentPage !== "main" && currentPage !== "detail") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
@@ -158,7 +160,6 @@ export default function SocialMediaMonitoring() {
                 </div>
               </div>
               
-              {/* TOMBOL FILTER TABEL (Warna huruf disamakan abu-abu elegan) */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-xs font-bold text-gray-400 mr-1">Urutkan:</span>
                 <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
@@ -194,7 +195,6 @@ export default function SocialMediaMonitoring() {
                   </thead>
                   <tbody>
                     {sortedYtVideos.map((vid, idx) => (
-                      /* Garis batas baris dibuat menyatu dengan warna layout (#161b22 ke #12161c) */
                       <tr key={vid.id} className="border-b border-[#12161c] hover:bg-[#1c2128] transition-colors group">
                         <td className="py-4 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
                         <td className="py-4 px-2 text-gray-300 whitespace-nowrap">{vid.date}</td>
@@ -294,6 +294,7 @@ export default function SocialMediaMonitoring() {
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold tracking-tight text-white">Public Trend Radar</h1>
             <p className="text-gray-400">Monitoring isu publik terupdate secara real-time.</p>
+            <p className="text-gray-500 text-sm mt-1 italic font-medium">( Sample data diambil dari Google )</p>
           </div>
           
           <div className="space-y-4 pt-4">
@@ -301,12 +302,17 @@ export default function SocialMediaMonitoring() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("12jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring Top News</h3>
+                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("terkini")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Berita Nasional Umum Terkini</h3>
+                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
               <button onClick={() => setCurrentPage("bencana-24jam")} className="md:col-span-2 p-6 bg-[#161b22] border border-orange-900/30 rounded-2xl shadow-lg hover:border-orange-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-orange-500 group-hover:text-orange-400 flex items-center gap-2">🚨 Berita Bencana Terkini</h3>
+                <h3 className="text-xl font-bold text-orange-500 group-hover:text-orange-400 flex items-center gap-2">
+                  🚨 Berita Bencana Terkini
+                </h3>
+                <p className="text-sm text-gray-400">Monitoring khusus insiden dan darurat bencana terbaru tanpa filter algoritma volume.</p>
               </button>
             </div>
           </div>
@@ -318,9 +324,11 @@ export default function SocialMediaMonitoring() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("pdip-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
+                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("pdip-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita PDI Perjuangan Terkini</h3>
+                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
             </div>
           </div>
@@ -332,9 +340,11 @@ export default function SocialMediaMonitoring() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("megawati-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
+                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("megawati-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Megawati Soekarnoputri Terkini</h3>
+                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
             </div>
           </div>
@@ -346,16 +356,18 @@ export default function SocialMediaMonitoring() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button onClick={() => setCurrentPage("puan-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
+                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
               </button>
               <button onClick={() => setCurrentPage("puan-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Puan Maharani Terkini</h3>
+                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
               
               <button onClick={() => setCurrentPage("puan-yt-analysis")} className="md:col-span-2 p-6 bg-red-950/20 border border-red-900/50 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400 flex items-center gap-2">
                   <PlaySquare size={24}/> Data Analysis (YouTube)
                 </h3>
-                <p className="text-sm text-gray-400">Tabel data performa video (Views, Likes, Dislikes) aktual beserta pelacakan Target 10 KOL VIP.</p>
+                <p className="text-sm text-gray-400">Tabel data aktual performa video (Views, Likes, Dislikes) beserta pelacakan Target 10 KOL VIP.</p>
               </button>
             </div>
           </div>
@@ -373,7 +385,8 @@ export default function SocialMediaMonitoring() {
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
             <ArrowLeft size={20} /> Menu Utama
           </button>
-          <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
+          <button onClick={fetchLiveTrends} 
+            className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh Data (Realtime)
           </button>
         </div>
@@ -386,7 +399,15 @@ export default function SocialMediaMonitoring() {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {categories.map((cat) => (
-                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border tracking-wide ${selectedCategory === cat ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'}`}>
+                <button 
+                  key={cat} 
+                  onClick={() => setSelectedCategory(cat)} 
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border tracking-wide ${
+                    selectedCategory === cat 
+                    ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') 
+                    : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
+                  }`}
+                >
                   {cat}
                 </button>
               ))}
@@ -403,6 +424,7 @@ export default function SocialMediaMonitoring() {
             {!isTerkiniMode && (
               <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
                 <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
+                
                 {chartData.length > 0 ? (
                   <>
                     <div className="w-full" style={{ height: chartData.length > 2 ? '600px' : '250px' }}> 
@@ -416,7 +438,9 @@ export default function SocialMediaMonitoring() {
                       </ResponsiveContainer>
                     </div>
                     <div className="mt-5 pt-3 border-t border-[#30363d]">
-                      <p className="text-xs text-gray-500 text-center italic">*Volume pada grafik menunjukkan jumlah publikasi media berbeda yang sedang memberitakan topik tersebut secara bersamaan.</p>
+                      <p className="text-xs text-gray-500 text-center italic">
+                        *Volume pada grafik menunjukkan jumlah publikasi media berbeda yang sedang memberitakan topik tersebut secara bersamaan.
+                      </p>
                     </div>
                   </>
                 ) : (
@@ -435,7 +459,9 @@ export default function SocialMediaMonitoring() {
             )}
 
             <div className="space-y-4 pb-10">
-              <h2 className="text-xl font-bold mt-8 text-white">{isTerkiniMode ? "Log Update Terkini" : "Rincian Pokok Masalah"}</h2>
+              <h2 className="text-xl font-bold mt-8 text-white">
+                {isTerkiniMode ? "Log Update Terkini" : "Rincian Pokok Masalah"}
+              </h2>
               {listData.length > 0 ? listData.map((isu, index) => (
                 <div key={index} className={`bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 ${isBencanaMode ? 'border-l-orange-500' : (isRedTheme ? 'border-l-red-500' : 'border-l-blue-500')}`}>
                   <div className="flex justify-between items-start">
@@ -444,7 +470,10 @@ export default function SocialMediaMonitoring() {
                         {isu.kategori} {isTerkiniMode && " TERKINI"}
                       </span>
                       <h3 className="text-xl font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
-                      <p className="text-xs text-gray-400 mt-2.5 flex items-center gap-1.5 font-medium"><Calendar size={14} className="text-gray-500"/> Dirilis: {isu.pubDate}</p>
+                      
+                      <p className="text-xs text-gray-400 mt-2.5 flex items-center gap-1.5 font-medium">
+                        <Calendar size={14} className="text-gray-500"/> Dirilis: {isu.pubDate}
+                      </p>
                     </div>
                     <button onClick={() => handleOpenDetail(isu)} className={`text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-md shrink-0 transition-colors ${isBencanaMode ? 'bg-orange-600 hover:bg-orange-500' : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')}`}>Buka Detail</button>
                   </div>
