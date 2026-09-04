@@ -2,114 +2,157 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// 4 Proxy Server Invidious untuk memastikan server tidak pernah diblokir YouTube
+const INVIDIOUS_INSTANCES = [
+    'https://invidious.jing.rocks',
+    'https://invidious.nerdvpn.de',
+    'https://inv.tux.pizza',
+    'https://invidious.fdn.fr'
+];
+
+// Daftar Akun VIP yang wajib dilacak di Mode KOL
+const TARGET_KOLS = [
+    "total politik", "akbar faizal", "ferry irwandi", "tempo", "detik", 
+    "antara", "hendri satrio", "hensa", "sisi gelap", "keset politik", "tribunnews", "tribun"
+];
+
 function parseRelativeTime(text) {
     const now = new Date();
-    if (!text) return now;
-    const num = parseInt(text.replace(/[^0-9]/g, '')) || 0;
-    const lowerText = text.toLowerCase();
-    
-    if (lowerText.includes('hour') || lowerText.includes('jam')) {
-        now.setHours(now.getHours() - num);
-    } else if (lowerText.includes('minute') || lowerText.includes('menit')) {
-        now.setMinutes(now.getMinutes() - num);
-    } else if (lowerText.includes('day') || lowerText.includes('hari')) {
-        now.setDate(now.getDate() - num);
-    } else if (lowerText.includes('week') || lowerText.includes('minggu')) {
-        now.setDate(now.getDate() - (num * 7));
-    }
+    if(!text) return now;
+    const n = parseInt(text.replace(/[^0-9]/g, '')) || 1;
+    if(text.includes('hour') || text.includes('jam')) now.setHours(now.getHours() - n);
+    else if(text.includes('minute') || text.includes('menit')) now.setMinutes(now.getMinutes() - n);
+    else if(text.includes('day') || text.includes('hari')) now.setDate(now.getDate() - n);
+    else if(text.includes('week') || text.includes('minggu')) now.setDate(now.getDate() - (n*7));
     return now;
 }
 
-export async function GET() {
-  try {
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent('Puan Maharani OR Ketua DPR')}&sp=EgQIAhAB`;
-    
-    const ytRes = await fetch(searchUrl, { 
-        headers: { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            'Cookie': 'CONSENT=YES+cb.20230101-01-p0.en+FX+478'
-        },
-        cache: 'no-store' 
-    });
-    
-    const html = await ytRes.text();
-    const dataMatch = html.match(/ytInitialData\s*=\s*(\{.+?\});/);
-    if (!dataMatch) throw new Error("Gagal ekstrak data");
-    
-    const ytData = JSON.parse(dataMatch[1]);
-    let rawVideos = [];
-    
-    const findVideos = (obj) => {
-        if (!obj) return;
-        if (obj.videoRenderer && obj.videoRenderer.videoId) {
-            rawVideos.push(obj.videoRenderer);
-        } else if (Array.isArray(obj)) {
-            obj.forEach(findVideos);
-        } else if (typeof obj === 'object') {
-            Object.values(obj).forEach(findVideos);
-        }
-    };
-    findVideos(ytData);
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get('mode') || 'umum'; 
 
-    let strictFilteredVideos = [];
-    let seenIds = new Set();
+  let rawVideos = [];
+  let successFetch = false;
 
-    for (const vid of rawVideos) {
-        if (!vid.videoId || seenIds.has(vid.videoId)) continue;
-        const title = (vid.title?.runs?.[0]?.text || "").toLowerCase();
+  // 1. Tarik Data Pencarian via Invidious (Filter: 1 Minggu Terakhir)
+  for (const instance of INVIDIOUS_INSTANCES) {
+      try {
+          const url1 = `${instance}/api/v1/search?q=puan+maharani+OR+ketua+dpr&sort=date&date=week&page=1`;
+          const url2 = `${instance}/api/v1/search?q=puan+maharani+OR+ketua+dpr&sort=date&date=week&page=2`;
+          
+          const [res1, res2] = await Promise.all([
+              fetch(url1, { cache: 'no-store' }),
+              fetch(url2, { cache: 'no-store' })
+          ]);
 
-        if (title.includes("puan") || title.includes("ketua dpr")) {
-            const viewText = vid.viewCountText?.simpleText || "";
-            const exactViews = parseInt(viewText.replace(/[^0-9]/g, '')) || 0;
-            
-            if (exactViews >= 1000) {
-                strictFilteredVideos.push({
-                    id: vid.videoId,
-                    title: vid.title?.runs?.[0]?.text,
-                    publishedText: vid.publishedTimeText?.simpleText || "Baru saja",
-                    views: exactViews,
-                    channelName: vid.ownerText?.runs?.[0]?.text || "YouTube"
-                });
-                seenIds.add(vid.videoId);
-            }
-        }
-    }
+          if (res1.ok && res2.ok) {
+              const data1 = await res1.json();
+              const data2 = await res2.json();
+              rawVideos = [...data1, ...data2];
+              successFetch = true;
+              break; 
+          }
+      } catch (e) {
+          console.log("Instance sibuk, pindah ke proxy lain...");
+      }
+  }
 
-    strictFilteredVideos = strictFilteredVideos.slice(0, 15);
+  // Fallback Darurat jika Invidious Server Down (Memakai HTML Scrape)
+  if (!successFetch || rawVideos.length === 0) {
+      try {
+         const ytRes = await fetch(`https://www.youtube.com/results?search_query=puan+maharani+OR+ketua+dpr&sp=EgQIAhAB`, {
+             headers: { 'User-Agent': 'Mozilla/5.0' }, cache: 'no-store'
+         });
+         const html = await ytRes.text();
+         const match = html.match(/var ytInitialData = (\{.*?\});/);
+         if(match) {
+             const ytData = JSON.parse(match[1]);
+             const findVids = (obj) => {
+                if(!obj) return;
+                if(obj.videoRenderer && obj.videoRenderer.videoId) {
+                    rawVideos.push({
+                        videoId: obj.videoRenderer.videoId,
+                        title: obj.videoRenderer.title?.runs?.[0]?.text || "",
+                        author: obj.videoRenderer.ownerText?.runs?.[0]?.text || "",
+                        publishedText: obj.videoRenderer.publishedTimeText?.simpleText || "",
+                        viewCount: parseInt(obj.videoRenderer.viewCountText?.simpleText?.replace(/[^0-9]/g, '') || 0)
+                    });
+                } else if(typeof obj === 'object') Object.values(obj).forEach(findVids);
+             };
+             findVids(ytData);
+         }
+      } catch(e) {}
+  }
 
-    const fetchPromises = strictFilteredVideos.map(async (vid) => {
-        let likes = 0, dislikes = 0;
-        let finalViews = vid.views;
+  // 2. Filter Silang & Verifikasi Topik
+  let filteredVideos = [];
+  let seenIds = new Set();
 
-        try {
-            const rydRes = await fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${vid.id}`, { cache: 'no-store' });
-            if(rydRes.ok) {
-                const rydData = await rydRes.json();
-                likes = rydData.likes || 0;
-                dislikes = rydData.dislikes || 0;
-                if (finalViews === 0 && rydData.viewCount) finalViews = rydData.viewCount;
-            }
-        } catch(e) {}
+  for (const v of rawVideos) {
+      if (!v.videoId || seenIds.has(v.videoId)) continue;
+      
+      const title = (v.title || "").toLowerCase();
+      const author = (v.author || "").toLowerCase();
+      
+      // Validasi ketat: Judul wajib menyebutkan entitas
+      const isRelevant = title.includes("puan") || title.includes("ketua dpr");
 
-        const pubDate = parseRelativeTime(vid.publishedText);
+      if (isRelevant) {
+          const views = v.viewCount || 0;
+          
+          if (mode === 'kol') {
+              // Mode KOL: Tarik data asal dari channel Target VIP
+              const isKOL = TARGET_KOLS.some(k => author.includes(k));
+              if (isKOL) {
+                  filteredVideos.push(v);
+                  seenIds.add(v.videoId);
+              }
+          } else {
+              // Mode Umum: Buang video receh di bawah 1000 Views
+              if (views >= 1000) {
+                  filteredVideos.push(v);
+                  seenIds.add(v.videoId);
+              }
+          }
+      }
+  }
 
-        return {
-          id: vid.id,
-          title: vid.title,
-          link: `https://www.youtube.com/watch?v=${vid.id}`,
-          date: pubDate.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' }),
-          time: pubDate.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute:'2-digit' }) + " WIB",
-          views: finalViews,
+  // Ambil 15 Teratas saja agar fetch Likes/Dislikes tidak RTO (Timeout)
+  filteredVideos = filteredVideos.slice(0, 15);
+  
+  // 3. Tarik API Sentimen Mentah (Views Actual, Likes, Dislikes)
+  const results = await Promise.all(filteredVideos.map(async (v) => {
+      let exactViews = v.viewCount || 0;
+      let likes = 0;
+      let dislikes = 0;
+
+      try {
+          const rydRes = await fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${v.videoId}`, { cache: 'no-store' });
+          if (rydRes.ok) {
+              const rydData = await rydRes.json();
+              exactViews = rydData.viewCount || exactViews; // Update ke view terkini
+              likes = rydData.likes || 0;
+              dislikes = rydData.dislikes || 0;
+          }
+      } catch(e) {}
+
+      const pubDate = parseRelativeTime(v.publishedText);
+
+      return {
+          id: v.videoId,
+          title: v.title,
+          author: v.author || "YouTube Account",
+          link: `https://www.youtube.com/watch?v=${v.videoId}`,
+          date: pubDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+          time: pubDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit' }),
+          views: exactViews,
           likes: likes,
           dislikes: dislikes
-        };
-    });
+      };
+  }));
 
-    let finalData = await Promise.all(fetchPromises);
-    finalData.sort((a, b) => b.views - a.views);
+  // Urutkan default dari tayangan (views) terbesar
+  results.sort((a, b) => b.views - a.views);
 
-    return NextResponse.json({ success: true, data: finalData });
-  } catch (error) {
-    return NextResponse.json({ success: false, data: [] });
-  }
+  return NextResponse.json({ success: true, data: results });
 }
