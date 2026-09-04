@@ -111,10 +111,9 @@ export default function SocialMediaMonitoring() {
 
   const isRedTheme = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati") || (currentPage === "detail" && (previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati")));
 
-  // --- HALAMAN YOUTUBE DATA ANALYSIS (TABEL EXCEL STYLE) ---
+  // --- HALAMAN YOUTUBE DATA ANALYSIS ---
   if (currentPage === "puan-yt-analysis") {
     
-    // Sortir data tabel berdasarkan pilihan filter
     let sortedYtVideos = [];
     if (ytData && ytData.length > 0) {
       sortedYtVideos = [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]);
@@ -140,11 +139,10 @@ export default function SocialMediaMonitoring() {
                 <PlaySquare size={28} className="text-red-500" />
                 <div>
                   <h2 className="text-xl font-bold text-white leading-tight">YouTube Data Analysis: Puan Maharani & Ketua DPR</h2>
-                  <p className="text-sm text-gray-400">Menampilkan metrik performansi video secara riil dalam 12 jam terakhir.</p>
+                  <p className="text-sm text-gray-400">Menampilkan metrik performansi video secara riil dalam 7 hari terakhir.</p>
                 </div>
               </div>
               
-              {/* TOMBOL FILTER TABEL */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-xs font-bold text-gray-500 mr-1">Urutkan:</span>
                 <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-white text-black border-white" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
@@ -162,7 +160,6 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* TABEL DATA RAMPING & SIMPLE */}
             {isLoadingYt ? (
               <div className="w-full flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
@@ -208,7 +205,7 @@ export default function SocialMediaMonitoring() {
               </div>
             ) : (
               <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">
-                Tidak ada video aktual terkait tokoh tersebut dalam 12 jam terakhir.
+                Tidak ada video aktual terkait tokoh tersebut dalam 7 hari terakhir.
               </div>
             )}
           </div>
