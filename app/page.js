@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
@@ -159,15 +158,16 @@ export default function SocialMediaMonitoring() {
                 </div>
               </div>
               
+              {/* TOMBOL FILTER TABEL (Warna huruf disamakan abu-abu elegan) */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <span className="text-xs font-bold text-gray-500 mr-1">Urutkan:</span>
-                <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-white text-black border-white" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                <span className="text-xs font-bold text-gray-400 mr-1">Urutkan:</span>
+                <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
                   View Terbesar
                 </button>
-                <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-blue-600 text-white border-blue-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
                   Like Terbesar
                 </button>
-                <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-red-600 text-white border-red-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
                   Dislike Terbesar
                 </button>
               </div>
@@ -181,7 +181,7 @@ export default function SocialMediaMonitoring() {
               <div className="w-full px-6 py-2 overflow-hidden">
                 <table className="w-full border-collapse text-xs md:text-sm">
                   <thead>
-                    <tr className="border-b border-[#30363d] text-gray-400 text-[11px] md:text-xs uppercase tracking-wider">
+                    <tr className="border-b border-[#21262d] text-gray-400 text-[11px] md:text-xs uppercase tracking-wider">
                       <th className="py-4 px-2 font-semibold text-center w-10">No</th>
                       <th className="py-4 px-2 font-semibold text-left whitespace-nowrap w-24">Tanggal</th>
                       <th className="py-4 px-2 font-semibold text-left whitespace-nowrap w-20">Waktu</th>
@@ -194,7 +194,8 @@ export default function SocialMediaMonitoring() {
                   </thead>
                   <tbody>
                     {sortedYtVideos.map((vid, idx) => (
-                      <tr key={vid.id} className="border-b border-gray-800/50 hover:bg-[#1c2128] transition-colors group">
+                      /* Garis batas baris dibuat menyatu dengan warna layout (#161b22 ke #12161c) */
+                      <tr key={vid.id} className="border-b border-[#12161c] hover:bg-[#1c2128] transition-colors group">
                         <td className="py-4 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
                         <td className="py-4 px-2 text-gray-300 whitespace-nowrap">{vid.date}</td>
                         <td className="py-4 px-2 text-gray-300 whitespace-nowrap">{vid.time}</td>
