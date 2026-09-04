@@ -34,11 +34,11 @@ export async function GET(request) {
   let rawVideos = [];
   let successFetch = false;
 
-  // 1. Tarik Data Pencarian via Invidious (Filter: 1 Minggu Terakhir)
+  // 1. Tarik Data Pencarian via Invidious (Dipaksa Bahasa Indonesia dengan hl=id&gl=ID)
   for (const instance of INVIDIOUS_INSTANCES) {
       try {
-          const url1 = `${instance}/api/v1/search?q=puan+maharani+OR+ketua+dpr&sort=date&date=week&page=1`;
-          const url2 = `${instance}/api/v1/search?q=puan+maharani+OR+ketua+dpr&sort=date&date=week&page=2`;
+          const url1 = `${instance}/api/v1/search?q=puan+maharani+OR+ketua+dpr&sort=date&date=week&page=1&hl=id&gl=ID`;
+          const url2 = `${instance}/api/v1/search?q=puan+maharani+OR+ketua+dpr&sort=date&date=week&page=2&hl=id&gl=ID`;
           
           const [res1, res2] = await Promise.all([
               fetch(url1, { cache: 'no-store' }),
@@ -57,11 +57,16 @@ export async function GET(request) {
       }
   }
 
-  // Fallback Darurat jika Invidious Server Down (Memakai HTML Scrape)
+  // Fallback Darurat jika Invidious Server Down (Memakai HTML Scrape Strict Indo)
   if (!successFetch || rawVideos.length === 0) {
       try {
          const ytRes = await fetch(`https://www.youtube.com/results?search_query=puan+maharani+OR+ketua+dpr&sp=EgQIAhAB`, {
-             headers: { 'User-Agent': 'Mozilla/5.0' }, cache: 'no-store'
+             headers: { 
+                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                 'Accept-Language': 'id-ID,id;q=0.9',
+                 'Cookie': 'CONSENT=YES+cb.20230101-01-p0.id+FX+478; PREF=hl=id&gl=ID' // Paksa terjemahan ke ID
+             }, 
+             cache: 'no-store'
          });
          const html = await ytRes.text();
          const match = html.match(/var ytInitialData = (\{.*?\});/);
@@ -84,7 +89,7 @@ export async function GET(request) {
       } catch(e) {}
   }
 
-  // 2. Filter Silang & Verifikasi Topik
+  // 2. Filter Awal Silang & Verifikasi Topik
   let filteredVideos = [];
   let seenIds = new Set();
 
@@ -98,30 +103,26 @@ export async function GET(request) {
       const isRelevant = title.includes("puan") || title.includes("ketua dpr");
 
       if (isRelevant) {
-          const views = v.viewCount || 0;
-          
           if (mode === 'kol') {
-              // Mode KOL: Tarik data asal dari channel Target VIP
+              // Mode KOL: Tarik data asal dari channel Target VIP (tanpa batas views)
               const isKOL = TARGET_KOLS.some(k => author.includes(k));
               if (isKOL) {
                   filteredVideos.push(v);
                   seenIds.add(v.videoId);
               }
           } else {
-              // Mode Umum: Buang video receh di bawah 1000 Views
-              if (views >= 1000) {
-                  filteredVideos.push(v);
-                  seenIds.add(v.videoId);
-              }
+              // Mode Umum: Masukkan dulu semua, filter >1000 dilakukan di akhir setelah RYD update
+              filteredVideos.push(v);
+              seenIds.add(v.videoId);
           }
       }
   }
 
-  // Ambil 15 Teratas saja agar fetch Likes/Dislikes tidak RTO (Timeout)
-  filteredVideos = filteredVideos.slice(0, 15);
+  // Ambil secukupnya agar fetch Likes/Dislikes tidak Timeout
+  filteredVideos = filteredVideos.slice(0, 20);
   
   // 3. Tarik API Sentimen Mentah (Views Actual, Likes, Dislikes)
-  const results = await Promise.all(filteredVideos.map(async (v) => {
+  const fetchPromises = filteredVideos.map(async (v) => {
       let exactViews = v.viewCount || 0;
       let likes = 0;
       let dislikes = 0;
@@ -130,7 +131,7 @@ export async function GET(request) {
           const rydRes = await fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${v.videoId}`, { cache: 'no-store' });
           if (rydRes.ok) {
               const rydData = await rydRes.json();
-              exactViews = rydData.viewCount || exactViews; // Update ke view terkini
+              exactViews = rydData.viewCount || exactViews; // Update ke view terkini yang paling akurat
               likes = rydData.likes || 0;
               dislikes = rydData.dislikes || 0;
           }
@@ -149,10 +150,17 @@ export async function GET(request) {
           likes: likes,
           dislikes: dislikes
       };
-  }));
+  });
+
+  let finalData = await Promise.all(fetchPromises);
+
+  // 4. FILTER FINAL: Pastikan view Aktual RYD di atas 1000 khusus untuk Mode Umum
+  if (mode === 'umum') {
+      finalData = finalData.filter(v => v.views >= 1000);
+  }
 
   // Urutkan default dari tayangan (views) terbesar
-  results.sort((a, b) => b.views - a.views);
+  finalData.sort((a, b) => b.views - a.views);
 
-  return NextResponse.json({ success: true, data: results });
+  return NextResponse.json({ success: true, data: finalData });
 }
