@@ -2,21 +2,32 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat', 'puan', 'maharani', 'dpr', 'ri', 'ketua', 'youtube', 'video', 'saya', 'di', 'ke', 'ada', 'itu', 'ini', 'kita', 'kami', 'mereka', 'juga', 'sudah', 'yg', 'nya', 'aku', 'aja', 'sama', 'buat'];
+function parseRelativeTime(text) {
+    const now = new Date();
+    const num = parseInt(text.replace(/[^0-9]/g, '')) || 0;
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('hour') || lowerText.includes('jam')) {
+        now.setHours(now.getHours() - num);
+    } else if (lowerText.includes('minute') || lowerText.includes('menit')) {
+        now.setMinutes(now.getMinutes() - num);
+    } else if (lowerText.includes('day') || lowerText.includes('hari')) {
+        now.setDate(now.getDate() - num);
+    }
+    return now;
+}
 
 export async function GET() {
   try {
-    // BYPASS GOOGLE NEWS: Langsung tembak ke YouTube Search (Filter: This Week)
-    // sp=EgQIAhAB menjamin kita selalu dapat video terbaru agar data tidak pernah 0
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent('Puan Maharani Ketua DPR')}&sp=EgQIAhAB`;
+    // Scraping YouTube Search "Puan Maharani OR Ketua DPR" dengan filter Upload Date: Today
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent('Puan Maharani OR Ketua DPR')}&sp=EgIIAQ%253D%253D`;
     
     const ytRes = await fetch(searchUrl, { 
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
         cache: 'no-store' 
     });
     const html = await ytRes.text();
     
-    // Ekstrak JSON Tersembunyi dari Internal YouTube
     const dataMatch = html.match(/var ytInitialData = (\{.*?\});<\/script>/);
     if (!dataMatch) throw new Error("Gagal ekstrak ytInitialData");
     
@@ -24,64 +35,60 @@ export async function GET() {
     
     let videoItems = [];
     try {
-        const contents = ytData.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents[0].itemSectionRenderer.contents;
-        contents.forEach(item => {
-            if (item.videoRenderer) videoItems.push(item.videoRenderer);
+        const contents = ytData.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents;
+        contents.forEach(section => {
+            if (section.itemSectionRenderer && section.itemSectionRenderer.contents) {
+                section.itemSectionRenderer.contents.forEach(item => {
+                    if (item.videoRenderer) videoItems.push(item.videoRenderer);
+                });
+            }
         });
     } catch(e) { console.error("Struktur JSON YT berubah"); }
 
-    // Dibatasi 6 video teratas agar API pihak ketiga tidak Vercel Timeout
-    videoItems = videoItems.slice(0, 6);
+    // Ambil maksimal 15 video aktual agar tidak memberatkan server saat cross-check API
+    videoItems = videoItems.slice(0, 15);
     
-    let allCommentText = "";
-    let daysCount = { "Senin": 0, "Selasa": 0, "Rabu": 0, "Kamis": 0, "Jumat": 0, "Sabtu": 0, "Minggu": 0 };
-    const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    // Kumpulkan ID untuk ditarik metriknya secara batch (Massal)
+    const videoIds = videoItems.map(v => v.videoId).join(',');
+    
+    let statsData = {};
+    if (videoIds) {
+        try {
+            // Lemnoslife API untuk ambil views, likes, dan comments secara real-time
+            const statRes = await fetch(`https://yt.lemnoslife.com/videos?part=statistics&id=${videoIds}`, { cache: 'no-store' });
+            const statJson = await statRes.json();
+            if (statJson.items) {
+                statJson.items.forEach(item => {
+                    statsData[item.id] = {
+                        views: parseInt(item.statistics.viewCount || 0),
+                        likes: parseInt(item.statistics.likeCount || 0),
+                        comments: parseInt(item.statistics.commentCount || 0)
+                    };
+                });
+            }
+        } catch (e) { console.error("Lemnoslife API error"); }
+    }
 
-    // Eksekusi Penarikan Metrik API Paralel
     const fetchPromises = videoItems.map(async (vid) => {
         const videoId = vid.videoId;
         const title = vid.title.runs[0].text;
-        const channelName = vid.ownerText?.runs[0]?.text || "YouTube Channel";
-        const publishedText = vid.publishedTimeText?.simpleText || "Baru saja"; 
+        const publishedText = vid.publishedTimeText?.simpleText || "Baru saja";
         
-        // Kalkulasi Hari Aktual dari Teks YouTube (misal: "3 hari yang lalu")
-        let pubDate = new Date();
-        const timeText = publishedText.toLowerCase();
-        if (timeText.includes('hari') || timeText.includes('day')) {
-            const num = parseInt(timeText) || 1;
-            pubDate.setDate(pubDate.getDate() - num);
-        } else if (timeText.includes('minggu') || timeText.includes('week')) {
-            pubDate.setDate(pubDate.getDate() - 7);
-        }
-        const dayName = daysIndo[pubDate.getDay()];
-        daysCount[dayName] = (daysCount[dayName] || 0) + 1;
+        const pubDate = parseRelativeTime(publishedText);
+        
+        let views = statsData[videoId]?.views || parseInt(vid.viewCountText?.simpleText?.replace(/[^0-9]/g, '') || 0);
+        let likes = statsData[videoId]?.likes || 0;
+        let comments = statsData[videoId]?.comments || 0;
+        let dislikes = 0;
 
-        let views = 0, likes = 0, dislikes = 0, commentsData = [];
-
-        // 1. Scraping RYD API (Real-time View/Like/Dislike)
+        // Tarik Dislike secara satuan dari ReturnYouTubeDislike API
         try {
             const rydRes = await fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${videoId}`, { cache: 'no-store' });
-            const rydData = await rydRes.json();
-            views = rydData.viewCount || 0;
-            likes = rydData.likes || 0;
-            dislikes = rydData.dislikes || 0;
-        } catch(e) {}
-
-        // 2. Scraping Lemnoslife API (Real-time Comments)
-        try {
-            const cmtRes = await fetch(`https://yt.lemnoslife.com/commentThreads?part=snippet&videoId=${videoId}&maxResults=8`, { cache: 'no-store' });
-            const cmtJson = await cmtRes.json();
-            if (cmtJson.items) {
-                cmtJson.items.forEach(c => {
-                    const snippet = c.snippet.topLevelComment.snippet;
-                    commentsData.push({
-                        user: snippet.authorDisplayName,
-                        comment: snippet.textOriginal,
-                        likes: snippet.likeCount || 0,
-                        time: new Date(snippet.publishedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'short', timeStyle: 'short' })
-                    });
-                    allCommentText += snippet.textOriginal + " ";
-                });
+            if(rydRes.ok) {
+                const rydData = await rydRes.json();
+                dislikes = rydData.dislikes || 0;
+                if (views === 0) views = rydData.viewCount || views;
+                if (likes === 0) likes = rydData.likes || likes;
             }
         } catch(e) {}
 
@@ -89,50 +96,22 @@ export async function GET() {
           id: videoId,
           title: title,
           link: `https://www.youtube.com/watch?v=${videoId}`,
-          date: pubDate.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' }),
-          uploadTime: publishedText, 
-          channelName: channelName,
-          timestamp: pubDate.getTime(),
+          date: pubDate.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' }),
+          time: pubDate.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute:'2-digit' }) + " WIB",
           views: views,
           likes: likes,
           dislikes: dislikes,
-          comments: commentsData
+          comments: comments
         };
     });
 
-    const realVideos = (await Promise.all(fetchPromises)).filter(v => v !== null);
-
-    // Fallback Darurat jika YouTube merespon kosong
-    if (realVideos.length === 0) {
-        return NextResponse.json({ success: true, data: { totalMentions: 0, trendData: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"].map(d => ({ waktu: d, mentions: 0 })), topKeywords: [], realVideos: [] } });
-    }
-
-    const totalMentions = realVideos.length; 
-
-    // Kalkulasi Grafik Garis
-    const trendData = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"].map(day => {
-      return { waktu: day, mentions: daysCount[day] || 0 };
-    });
-
-    // Menghitung Top 5 Keywords Aktual dari Teks Komentar
-    const words = allCommentText.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-    let wordCounts = {};
-    words.forEach(w => {
-        if (w.length > 3 && !STOP_WORDS.includes(w)) {
-            wordCounts[w] = (wordCounts[w] || 0) + 1;
-        }
-    });
-    const sortedWords = Object.keys(wordCounts).sort((a, b) => wordCounts[b] - wordCounts[a]).slice(0, 5);
-    const topKeywords = sortedWords.map(word => ({
-        word: word.charAt(0).toUpperCase() + word.slice(1),
-        commentCount: wordCounts[word]
-    }));
+    let realVideos = (await Promise.all(fetchPromises)).filter(v => v !== null);
 
     return NextResponse.json({ 
       success: true, 
-      data: { totalMentions, trendData, topKeywords, realVideos } 
+      data: realVideos
     });
   } catch (error) {
-    return NextResponse.json({ success: false, data: null });
+    return NextResponse.json({ success: false, data: [] });
   }
 }
