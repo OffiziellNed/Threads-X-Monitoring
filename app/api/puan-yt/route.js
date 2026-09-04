@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat', 'puan', 'maharani', 'dpr', 'ri', 'ketua', 'youtube', 'video'];
 
-// Fungsi hashing untuk mengunci metrik agar konsisten per video tapi tetap dinamis seiring waktu
 function hashString(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -51,18 +50,24 @@ export async function GET() {
           pureDesc = rawDesc.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
         }
 
+        // ====================================================================
+        // FILTER VALIDASI KETAT: Cuma lolosin video yang bahas Puan/Ketua DPR
+        // ====================================================================
+        const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
+        const isValid = ['puan', 'maharani', 'ketua dpr'].some(keyword => textToAnalyze.includes(keyword));
+        
+        // Kalau video nggak bahas Puan sama sekali (kayak lagu pop/gubernur BI), buang!
+        if (!isValid) continue;
+
         allTextContext += cleanTitle + " " + pureDesc + " ";
         const dayName = daysIndo[pubDate.getDay()];
         daysCount[dayName] += 1;
 
-        // ALGORITMA ESTIMASI METRIK (Berdasarkan bobot Channel & Waktu)
         const hashId = hashString(url);
         const isMajorMedia = sourceName.toLowerCase().match(/(tv|news|kompas|tribun|detik|cnn|cnbc|asumsi|narasi)/);
         
-        // Channel besar view-nya disimulasikan jauh lebih tinggi
         const baseViews = isMajorMedia ? (hashId % 800000) + 100000 : (hashId % 50000) + 1000;
         
-        // Metrik bertambah seiring berjalannya menit sejak di-upload (Efek Real-time)
         const minutesLapsed = Math.floor((now - pubDate) / 60000);
         const currentViews = baseViews + (minutesLapsed * 15);
         const currentLikes = Math.floor(currentViews * 0.045);
@@ -84,10 +89,21 @@ export async function GET() {
       }
     }
 
-    // 1. TOTAL MENTIONS
+    // Jaga-jaga kalau filter terlalu ketat dan hasil RSS murni zonk
+    if (realVideos.length === 0) {
+      return NextResponse.json({ 
+        success: true, 
+        data: { 
+          totalMentions: 0, 
+          trendData: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"].map(d => ({ waktu: d, mentions: 0, trigger: "Sepi Pembicaraan" })), 
+          topKeywords: [{ word: "Tidak ada data", commentCount: 0 }], 
+          realVideos: [] 
+        } 
+      });
+    }
+
     const totalMentions = realVideos.length * 25 + Math.floor(Math.random() * 50) + 300; 
 
-    // 2. TREND DATA REAL
     const trendData = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"].map(day => {
       const isToday = daysIndo[now.getDay()] === day;
       const count = isToday ? realVideos.length * 15 + 150 : daysCount[day] * 12 + Math.floor(Math.random() * 20);
@@ -99,7 +115,6 @@ export async function GET() {
       return { waktu: day, mentions: count, trigger: trigger };
     });
 
-    // 3. TOP KEYWORDS REAL (Dikonversi ke "Jumlah Komentar" berdasarkan estimasi frekuensi)
     const words = allTextContext.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
     let wordCounts = {};
     words.forEach(w => {
@@ -111,11 +126,9 @@ export async function GET() {
     const sortedWords = Object.keys(wordCounts).sort((a, b) => wordCounts[b] - wordCounts[a]).slice(0, 5);
     const topKeywords = sortedWords.map((word, index) => ({
         word: word.charAt(0).toUpperCase() + word.slice(1),
-        // Simulasi jumlah komentar yang menyematkan kata ini (berdasarkan frekuensi kemunculan * multiplier acak)
         commentCount: (wordCounts[word] * 150) + Math.floor(Math.random() * 500) + 2000 
     }));
 
-    // 4. RECENT VIDEOS (Diurutkan dari View Terbesar ke Terkecil)
     realVideos.sort((a, b) => b.views - a.views);
 
     return NextResponse.json({ 
