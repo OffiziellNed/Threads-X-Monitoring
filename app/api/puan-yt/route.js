@@ -24,28 +24,30 @@ function parseRelativeTime(text) {
 
 export async function GET() {
   try {
-    // Filter "This Week"
+    // 1. Tarik Halaman Pencarian YouTube Aktual (Filter: This Week / EgQIAhAB)
     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent('Puan Maharani OR Ketua DPR')}&sp=EgQIAhAB`;
     
     const ytRes = await fetch(searchUrl, { 
         headers: { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Cookie': 'CONSENT=YES+cb.20230101-01-p0.en+FX+478'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
         },
         cache: 'no-store' 
     });
     
     const html = await ytRes.text();
-    const dataMatch = html.match(/ytInitialData\s*=\s*(\{.+?\});/);
+    
+    // 2. Bongkar Brankas JSON Internal YouTube
+    const dataMatch = html.match(/var ytInitialData = (\{.*?\});<\/script>/);
     if (!dataMatch) throw new Error("Gagal ekstrak data YouTube");
     
     const ytData = JSON.parse(dataMatch[1]);
-    let videoItems = [];
+    let rawVideos = [];
     
     const findVideos = (obj) => {
         if (!obj) return;
         if (obj.videoRenderer && obj.videoRenderer.videoId) {
-            videoItems.push(obj.videoRenderer);
+            rawVideos.push(obj.videoRenderer);
         } else if (Array.isArray(obj)) {
             obj.forEach(findVideos);
         } else if (typeof obj === 'object') {
@@ -54,88 +56,93 @@ export async function GET() {
     };
     findVideos(ytData);
 
-    // Ambil maksimal 20 video, karena nanti akan disaring lagi (Dibuang yang < 1000 views)
-    videoItems = videoItems.slice(0, 20);
-    
-    // =========================================================================
-    // BATCH FETCHING STATS DARI LEMNOSLIFE (Mengatasi error komentar = 0)
-    // =========================================================================
-    const videoIds = videoItems.map(v => v.videoId).join(',');
-    let statsMap = {};
-    
-    if (videoIds) {
-        try {
-            const statRes = await fetch(`https://yt.lemnoslife.com/videos?part=statistics&id=${videoIds}`, { cache: 'no-store' });
-            if (statRes.ok) {
-                const statData = await statRes.json();
-                if (statData.items) {
-                    statData.items.forEach(item => {
-                        statsMap[item.id] = {
-                            views: parseInt(item.statistics.viewCount || 0),
-                            likes: parseInt(item.statistics.likeCount || 0),
-                            comments: parseInt(item.statistics.commentCount || 0)
-                        };
-                    });
-                }
+    let strictFilteredVideos = [];
+    let seenIds = new Set();
+
+    // 3. FILTERING SUPER KETAT & TARIK VIEW ASLI DARI YOUTUBE
+    for (const vid of rawVideos) {
+        if (!vid.videoId || seenIds.has(vid.videoId)) continue;
+
+        const title = (vid.title?.runs?.[0]?.text || "");
+        const titleLower = title.toLowerCase();
+
+        // VALIDASI: Wajib ada kata "puan" atau "ketua dpr" di judul konten
+        if (titleLower.includes("puan") || titleLower.includes("ketua dpr")) {
+            
+            // Tarik View mentah dari string YouTube (Contoh: "155.705 ditonton" -> 155705)
+            const viewText = vid.viewCountText?.simpleText || "";
+            const exactViews = parseInt(viewText.replace(/[^0-9]/g, '')) || 0;
+            
+            // Terapkan Filter View > 1000
+            if (exactViews >= 1000) {
+                strictFilteredVideos.push({
+                    id: vid.videoId,
+                    title: title,
+                    publishedText: vid.publishedTimeText?.simpleText || "Baru saja",
+                    views: exactViews
+                });
+                seenIds.add(vid.videoId);
             }
-        } catch(e) { console.error("Gagal Batch API"); }
+        }
     }
 
-    const fetchPromises = videoItems.map(async (vid) => {
-        const videoId = vid.videoId;
-        const title = vid.title?.runs?.[0]?.text || "Tanpa Judul";
-        const publishedText = vid.publishedTimeText?.simpleText || "Baru saja";
-        const pubDate = parseRelativeTime(publishedText);
-        
-        let views = statsMap[videoId]?.views || parseInt(vid.viewCountText?.simpleText?.replace(/[^0-9]/g, '') || 0);
-        let likes = statsMap[videoId]?.likes || 0;
-        let comments = statsMap[videoId]?.comments || 0;
-        let dislikes = 0;
+    // Ambil 15 teratas yang sudah lolos seleksi ketat
+    strictFilteredVideos = strictFilteredVideos.slice(0, 15);
 
-        // Tarik Dislike
+    // 4. FETCH LIKES, DISLIKES, & COMMENTS SECARA INDIVIDU (Pasti Tembus)
+    const fetchPromises = strictFilteredVideos.map(async (vid) => {
+        let likes = 0;
+        let dislikes = 0;
+        let comments = 0;
+        let finalViews = vid.views; // Prioritaskan View asli dari HTML YouTube
+
+        // A. Tarik Likes & Dislikes via ReturnYouTubeDislike API
         try {
-            const rydRes = await fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${videoId}`, { cache: 'no-store' });
+            const rydRes = await fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${vid.id}`, { cache: 'no-store' });
             if(rydRes.ok) {
                 const rydData = await rydRes.json();
+                likes = rydData.likes || 0;
                 dislikes = rydData.dislikes || 0;
-                if (views === 0) views = rydData.viewCount || views;
-                if (likes === 0) likes = rydData.likes || likes;
+                // Jika view asli gagal terparsing, pakai view dari RYD
+                if (finalViews === 0 && rydData.viewCount) finalViews = rydData.viewCount;
             }
         } catch(e) {}
 
-        // =========================================================================
-        // FILTER KETAT: HANYA TAMPILKAN JIKA VIEW DI ATAS 1000
-        // =========================================================================
-        if (views < 1000) return null;
+        // B. Tarik Komentar via Lemnoslife (Ditembak satu per satu per video agar tidak error 0)
+        try {
+            const statRes = await fetch(`https://yt.lemnoslife.com/videos?part=statistics&id=${vid.id}`, { cache: 'no-store' });
+            if(statRes.ok) {
+                const statData = await statRes.json();
+                if(statData.items && statData.items.length > 0) {
+                    comments = parseInt(statData.items[0].statistics.commentCount || 0);
+                    
+                    // Backup proteksi jika like dari RYD gagal
+                    if (likes === 0) likes = parseInt(statData.items[0].statistics.likeCount || 0);
+                }
+            }
+        } catch(e) {}
+
+        const pubDate = parseRelativeTime(vid.publishedText);
 
         return {
-          id: videoId,
-          title: title,
-          link: `https://www.youtube.com/watch?v=${videoId}`,
+          id: vid.id,
+          title: vid.title,
+          link: `https://www.youtube.com/watch?v=${vid.id}`,
           date: pubDate.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' }),
           time: pubDate.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute:'2-digit' }) + " WIB",
-          views: views,
+          views: finalViews,
           likes: likes,
           dislikes: dislikes,
           comments: comments
         };
     });
 
-    let realVideos = (await Promise.all(fetchPromises)).filter(v => v !== null);
+    let finalData = await Promise.all(fetchPromises);
+    
+    // Sortir awal berdasarkan View tertinggi
+    finalData.sort((a, b) => b.views - a.views);
 
-    // Mencegah duplikasi video yang sama
-    const uniqueVideos = [];
-    const seenIds = new Set();
-    for (const v of realVideos) {
-        if (!seenIds.has(v.id)) {
-            uniqueVideos.push(v);
-            seenIds.add(v.id);
-        }
-    }
-
-    uniqueVideos.sort((a, b) => b.views - a.views);
-
-    return NextResponse.json({ success: true, data: uniqueVideos });
+    return NextResponse.json({ success: true, data: finalData });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
   }
