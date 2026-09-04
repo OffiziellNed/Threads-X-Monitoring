@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// PERBAIKAN: Tambah LineChart dan Line untuk grafik tren waktu
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, Youtube, TrendingUp, MessageSquare, Users, Hash } from "lucide-react";
+// PERBAIKAN: Youtube diganti jadi PlaySquare biar support di semua versi lucide-react
+import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, MessageSquare, Users, Hash } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -132,7 +132,8 @@ export default function SocialMediaMonitoring() {
           </div>
 
           <div className="bg-red-950/20 border border-red-900/50 p-6 rounded-2xl shadow-lg mb-4 flex items-center gap-4">
-            <div className="p-4 bg-red-600 rounded-full"><Youtube size={32} className="text-white" /></div>
+            {/* PERBAIKAN: Youtube diganti PlaySquare */}
+            <div className="p-4 bg-red-600 rounded-full"><PlaySquare size={32} className="text-white" /></div>
             <div>
               <h1 className="text-2xl font-bold text-red-500">YouTube Data Analysis: Puan Maharani & Ketua DPR</h1>
               <p className="text-gray-400 mt-1 text-sm">Scraping data komentar, tren pencarian, dan Key Opinion Leaders (KOL).</p>
@@ -355,10 +356,10 @@ export default function SocialMediaMonitoring() {
                 <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
               
-              {/* TOMBOL BARU: YOUTUBE DATA ANALYSIS */}
+              {/* TOMBOL BARU: YOUTUBE DATA ANALYSIS - PlaySquare menggantikan Youtube */}
               <button onClick={() => setCurrentPage("puan-yt-analysis")} className="md:col-span-2 p-6 bg-red-950/20 border border-red-900/50 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400 flex items-center gap-2">
-                  <Youtube size={24}/> Data Analysis (YouTube)
+                  <PlaySquare size={24}/> Data Analysis (YouTube)
                 </h3>
                 <p className="text-sm text-gray-400">Analisis volume percakapan, KOL, sentimen, dan tren komentar secara real-time di YouTube.</p>
               </button>
