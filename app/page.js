@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, MessageSquare, Hash, Eye, ThumbsUp, ThumbsDown, MessageCircle } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -12,7 +12,7 @@ export default function SocialMediaMonitoring() {
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [ytData, setYtData] = useState(null);
+  const [ytData, setYtData] = useState([]);
   const [isLoadingYt, setIsLoadingYt] = useState(false);
   const [ytSortMode, setYtSortMode] = useState("views"); 
   
@@ -111,176 +111,107 @@ export default function SocialMediaMonitoring() {
 
   const isRedTheme = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati") || (currentPage === "detail" && (previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati")));
 
-
-  // --- HALAMAN YOUTUBE DATA ANALYSIS ---
+  // --- HALAMAN YOUTUBE DATA ANALYSIS (TABEL EXCEL STYLE) ---
   if (currentPage === "puan-yt-analysis") {
     
-    // Sortir Log Video berdasarkan filter yang dipilih aktual
+    // Sortir data tabel berdasarkan pilihan filter
     let sortedYtVideos = [];
-    let highestTrendDay = null;
-
-    if (ytData && ytData.realVideos) {
-      sortedYtVideos = [...ytData.realVideos].sort((a, b) => b[ytSortMode] - a[ytSortMode]);
-      highestTrendDay = ytData.trendData.reduce((max, obj) => obj.mentions > max.mentions ? obj : max, ytData.trendData[0]);
+    if (ytData && ytData.length > 0) {
+      sortedYtVideos = [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]);
     }
 
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-        <div className="w-full max-w-5xl space-y-6 mt-4">
+        <div className="w-full max-w-6xl space-y-6 mt-4">
+          
           <div className="flex justify-between items-center">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
               <ArrowLeft size={20} /> Menu Utama
             </button>
             <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
-              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Analytics
+              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data (Actual)
             </button>
           </div>
 
-          <div className="bg-red-950/20 border border-red-900/50 p-6 rounded-2xl shadow-lg mb-4 flex items-center gap-4">
-            <div className="p-4 bg-red-600 rounded-full"><PlaySquare size={32} className="text-white" /></div>
-            <div>
-              <h1 className="text-2xl font-bold text-red-500">YouTube Data Analysis: Puan Maharani & Ketua DPR</h1>
-              <p className="text-gray-400 mt-1 text-sm">Scraping performa video, tren pencarian, dan komentar secara 100% aktual di YouTube.</p>
-            </div>
-          </div>
-
-          {isLoadingYt || !ytData ? (
-            <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div></div>
-          ) : (
-            <div className="space-y-6">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden flex flex-col items-center">
+            
+            <div className="w-full p-6 border-b border-[#30363d] flex flex-col lg:flex-row justify-between items-center gap-6">
+              <div className="flex items-center gap-3">
+                <PlaySquare size={28} className="text-red-500" />
+                <div>
+                  <h2 className="text-xl font-bold text-white leading-tight">YouTube Data Analysis: Puan Maharani & Ketua DPR</h2>
+                  <p className="text-sm text-gray-400">Menampilkan metrik performansi video secara riil dalam 12 jam terakhir.</p>
+                </div>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center">
-                  <PlaySquare size={24} className="text-gray-400 mb-2" />
-                  <p className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Video Baru (24 Jam)</p>
-                  <h2 className="text-5xl font-black text-white mt-2">{ytData.totalMentions.toLocaleString()}</h2>
-                </div>
-                
-                <div className="md:col-span-2 bg-[#161b22] border border-[#30363d] p-6 rounded-2xl shadow-lg">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><TrendingUp size={18} className="text-red-500"/> Trend Garis Waktu Publikasi</h3>
-                  <div className="w-full h-40">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={ytData.trendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
-                        <XAxis dataKey="waktu" stroke="#4b5563" tick={{fontSize: 12}} />
-                        <YAxis stroke="#4b5563" tick={{fontSize: 12}} />
-                        <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
-                        <Line type="monotone" dataKey="mentions" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, fill: '#ef4444' }} activeDot={{ r: 6 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  {/* PENJELASAN TREND */}
-                  <div className="mt-4 p-3 bg-[#0d1117] rounded-lg border border-[#30363d]">
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      <span className="font-bold text-gray-200">Cara Membaca:</span> Grafik ini melacak jumlah video yang diunggah terkait tokoh. Puncak tertinggi minggu ini jatuh pada hari <span className="font-bold text-red-400">{highestTrendDay.waktu} ({highestTrendDay.mentions} Video)</span>. Penyebab umum lonjakan biasanya dipicu oleh pernyataan media, sidang dewan, atau liputan kunjungan kerja aktual.
-                    </p>
-                  </div>
-                </div>
+              {/* TOMBOL FILTER TABEL */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <span className="text-xs font-bold text-gray-500 mr-1">Urutkan:</span>
+                <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-white text-black border-white" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                  View Terbesar
+                </button>
+                <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-blue-600 text-white border-blue-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                  Like Terbesar
+                </button>
+                <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-red-600 text-white border-red-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                  Dislike Terbesar
+                </button>
+                <button onClick={() => setYtSortMode("comments")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "comments" ? "bg-yellow-600 text-white border-yellow-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                  Komentar Terbesar
+                </button>
               </div>
-
-              {/* TOP 5 KEYWORDS DARI KOMENTAR ACTUAL */}
-              <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-2xl shadow-lg">
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Hash size={18} className="text-blue-400"/> Top 5 Keywords Teratas (Dari Komentar Aktual)</h3>
-                <p className="text-xs text-gray-500 mb-4">Membaca teks setiap komentar dalam 24 jam terakhir dan merekam frekuensi penyebutan kata.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                  {ytData.topKeywords.map((item, idx) => (
-                    <div key={idx} className="flex flex-col items-center justify-center bg-[#0d1117] p-4 rounded-lg border border-[#30363d] text-center gap-2">
-                      <span className="text-xs font-bold text-gray-500 uppercase">Peringkat #{idx + 1}</span>
-                      <span className="font-black text-xl text-gray-100">{item.word}</span>
-                      <span className="text-xs bg-blue-900/30 text-blue-400 font-bold px-3 py-1 rounded">
-                        {item.commentCount.toLocaleString()} Komentar
-                      </span>
-                    </div>
-                  ))}
-                  {ytData.topKeywords.length === 0 && <p className="text-sm text-gray-500">Belum ada data komentar cukup.</p>}
-                </div>
-              </div>
-
-              {/* LOG VIDEO REAL-TIME & KOMENTAR AKUN */}
-              <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-2xl shadow-lg">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2"><MessageCircle size={20} className="text-yellow-500"/> Real-Time Komentar Video</h3>
-                    <p className="text-xs text-gray-400 mt-1">Data ditarik secara langsung mencakup metrik aktual, akun netizen, dan isi komentarnya.</p>
-                  </div>
-                  
-                  {/* TOMBOL FILTER & REFRESH */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-bold text-gray-500 mr-1">Filter:</span>
-                    <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-green-600 text-white border-green-500" : "bg-[#0d1117] text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
-                      View Terbesar
-                    </button>
-                    <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-blue-600 text-white border-blue-500" : "bg-[#0d1117] text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
-                      Likes Terbesar
-                    </button>
-                    <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-red-600 text-white border-red-500" : "bg-[#0d1117] text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
-                      Dislikes Terbesar
-                    </button>
-                    <button onClick={fetchYoutubeData} className="p-1.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 border border-gray-600 ml-1 flex items-center gap-1.5 text-xs font-bold px-3">
-                      <RefreshCw size={14} className={isLoadingYt ? "animate-spin" : ""} /> Update Live
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  {sortedYtVideos.map((vid, idx) => (
-                    <div key={idx} className="bg-[#0d1117] p-5 rounded-xl border border-[#30363d] flex flex-col gap-4">
-                      
-                      {/* HEADER INFO VIDEO */}
-                      <div className="flex flex-col gap-1 border-b border-gray-800 pb-3">
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-bold text-base text-blue-400 leading-snug">{vid.title}</h4>
-                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs font-bold bg-red-900/30 text-red-400 hover:bg-red-900/50 hover:text-red-300 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors border border-red-900/50">
-                            <PlaySquare size={14}/> Nonton Sumber
-                          </a>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1 text-xs text-gray-400 font-medium">
-                          <span className="text-gray-300 font-bold">{vid.channelName}</span>
-                          <span>•</span>
-                          <span>Tanggal: {vid.date}</span>
-                          <span>•</span>
-                          <span>Waktu: {vid.uploadTime} WIB</span>
-                        </div>
-                        
-                        {/* METRIK VIDEO ASLI */}
-                        <div className="flex items-center gap-4 text-[11px] font-bold mt-2 bg-[#161b22] px-3 py-2 rounded-lg w-max border border-[#30363d]">
-                          <span className="flex items-center gap-1.5 text-gray-300"><Eye size={14}/> {vid.views.toLocaleString()}</span>
-                          <span className="flex items-center gap-1.5 text-blue-400"><ThumbsUp size={14}/> {vid.likes.toLocaleString()}</span>
-                          <span className="flex items-center gap-1.5 text-red-400"><ThumbsDown size={14}/> {vid.dislikes.toLocaleString()}</span>
-                        </div>
-                      </div>
-
-                      {/* DAFTAR KOMENTAR AKUN */}
-                      <div className="flex flex-col gap-3">
-                        <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Top Komentar Netizen:</h5>
-                        {vid.comments && vid.comments.length > 0 ? (
-                          vid.comments.map((cmt, cIdx) => (
-                            <div key={cIdx} className="bg-[#161b22] p-3 rounded-lg border border-[#30363d] flex flex-col gap-1.5">
-                              <div className="flex justify-between items-center">
-                                <span className="font-bold text-sm text-green-400">{cmt.user}</span>
-                                <span className="text-[10px] text-gray-500">{cmt.time}</span>
-                              </div>
-                              <p className="text-sm text-gray-200 leading-relaxed">"{cmt.comment}"</p>
-                              <div className="flex justify-end items-center gap-1 mt-1 text-[11px] text-gray-400 font-bold">
-                                <ThumbsUp size={12}/> {cmt.likes.toLocaleString()}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="bg-[#161b22] p-3 rounded-lg border border-[#30363d] text-center text-xs text-gray-500 italic">
-                            Komentar dinonaktifkan atau belum ada data tersedia.
-                          </div>
-                        )}
-                      </div>
-
-                    </div>
-                  ))}
-                  {sortedYtVideos.length === 0 && <p className="text-center text-sm text-gray-500 py-4">Belum ada video relevan hari ini.</p>}
-                </div>
-              </div>
-
             </div>
-          )}
+
+            {/* TABEL DATA RAMPING & SIMPLE */}
+            {isLoadingYt ? (
+              <div className="w-full flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
+              </div>
+            ) : sortedYtVideos.length > 0 ? (
+              <div className="w-full p-6 overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-[#30363d] text-gray-400 text-xs uppercase tracking-wider">
+                      <th className="py-3 px-3 font-semibold text-center w-12">No</th>
+                      <th className="py-3 px-3 font-semibold text-left">Tanggal</th>
+                      <th className="py-3 px-3 font-semibold text-left">Waktu</th>
+                      <th className="py-3 px-3 font-semibold text-left w-1/3">Judul Konten</th>
+                      <th className="py-3 px-3 font-semibold text-right">View</th>
+                      <th className="py-3 px-3 font-semibold text-right">Like</th>
+                      <th className="py-3 px-3 font-semibold text-right">Dislike</th>
+                      <th className="py-3 px-3 font-semibold text-right">Komentar</th>
+                      <th className="py-3 px-3 font-semibold text-center">Link</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedYtVideos.map((vid, idx) => (
+                      <tr key={vid.id} className="border-b border-gray-800/50 hover:bg-[#1c2128] transition-colors group">
+                        <td className="py-4 px-3 text-center text-gray-500 font-medium">{idx + 1}</td>
+                        <td className="py-4 px-3 text-gray-300 whitespace-nowrap">{vid.date}</td>
+                        <td className="py-4 px-3 text-gray-300 whitespace-nowrap">{vid.time}</td>
+                        <td className="py-4 px-3 text-gray-100 font-medium leading-snug">
+                          <div className="line-clamp-2" title={vid.title}>{vid.title}</div>
+                        </td>
+                        <td className="py-4 px-3 text-right text-gray-200 font-semibold">{vid.views.toLocaleString()}</td>
+                        <td className="py-4 px-3 text-right text-blue-400 font-medium">{vid.likes.toLocaleString()}</td>
+                        <td className="py-4 px-3 text-right text-red-400 font-medium">{vid.dislikes.toLocaleString()}</td>
+                        <td className="py-4 px-3 text-right text-yellow-500 font-medium">{vid.comments.toLocaleString()}</td>
+                        <td className="py-4 px-3 text-center">
+                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center text-gray-500 hover:text-red-400 transition-colors" title="Buka Video">
+                            <ExternalLink size={18} />
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">
+                Tidak ada video aktual terkait tokoh tersebut dalam 12 jam terakhir.
+              </div>
+            )}
+          </div>
         </div>
       </main>
     );
@@ -422,7 +353,7 @@ export default function SocialMediaMonitoring() {
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400 flex items-center gap-2">
                   <PlaySquare size={24}/> Data Analysis (YouTube)
                 </h3>
-                <p className="text-sm text-gray-400">Analisis volume percakapan, tren video terbaru, dan metrik performa secara real-time di YouTube.</p>
+                <p className="text-sm text-gray-400">Tabel data aktual performa video (Views, Likes, Comments) secara riil dari YouTube.</p>
               </button>
             </div>
           </div>
