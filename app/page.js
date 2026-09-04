@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare, Crosshair } from "lucide-react";
+import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -12,10 +11,11 @@ export default function SocialMediaMonitoring() {
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
+  // State YouTube
   const [ytData, setYtData] = useState([]);
-  const [kolData, setKolData] = useState([]);
   const [isLoadingYt, setIsLoadingYt] = useState(false);
   const [ytSortMode, setYtSortMode] = useState("views"); 
+  const [ytFetchMode, setYtFetchMode] = useState("umum"); // 'umum' atau 'kol'
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
@@ -45,40 +45,31 @@ export default function SocialMediaMonitoring() {
         if (currentPage.includes('terkini')) endpoint = `/api/news?hours=24&mode=terkini&t=${Date.now()}`;
         else endpoint = `/api/news?hours=12&t=${Date.now()}`;
       }
-      
       const response = await fetch(endpoint, { cache: 'no-store' });
       const result = await response.json();
       if (result.success) setIssuesData(result.data);
-    } catch (error) {
-      console.error("Gagal memuat tren:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (error) {} 
+    finally { setIsLoading(false); }
   };
 
   const fetchYoutubeData = async () => {
     setIsLoadingYt(true);
     try {
-      if (currentPage === "kol-targeted") {
-          const response = await fetch(`/api/kol-yt?t=${Date.now()}`, { cache: 'no-store' });
-          const result = await response.json();
-          if (result.success) setKolData(result.data);
-      } else {
-          const response = await fetch(`/api/puan-yt?t=${Date.now()}`, { cache: 'no-store' });
-          const result = await response.json();
-          if (result.success) setYtData(result.data);
-      }
+      // Fetch berdasarkan Tab yang aktif (Umum / KOL)
+      const response = await fetch(`/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, { cache: 'no-store' });
+      const result = await response.json();
+      if (result.success) setYtData(result.data);
     } catch (error) {} 
     finally { setIsLoadingYt(false); }
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis" || currentPage === "kol-targeted") fetchYoutubeData();
+    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
     else if (currentPage !== "main" && currentPage !== "detail") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
-  }, [currentPage]);
+  }, [currentPage, ytFetchMode]);
 
   const handleOpenDetail = (isu) => {
     setSelectedIssue(isu);
@@ -109,73 +100,15 @@ export default function SocialMediaMonitoring() {
   const isBencanaMode = currentPage === "bencana-24jam" || (currentPage === "detail" && previousPage === "bencana-24jam");
   const isTerkiniMode = currentPage.includes("terkini") || isBencanaMode || (currentPage === "detail" && (previousPage.includes("terkini") || previousPage === "bencana-24jam"));
   const filteredData = isTerkiniMode ? issuesData : (selectedCategory === "Semua" ? issuesData : issuesData.filter(issue => issue.kategori === selectedCategory));
-  const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, isTerkiniMode ? 20 : 10); 
   const isRedTheme = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati") || (currentPage === "detail" && (previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati")));
 
   // =========================================================================
-  // HALAMAN BARU: TARGETED KOL & MEDIA RADAR
-  // =========================================================================
-  if (currentPage === "kol-targeted") {
-    return (
-      <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-        <div className="w-full max-w-4xl space-y-6 mt-4">
-          <div className="flex justify-between items-center">
-            <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
-              <ArrowLeft size={20} /> Menu Utama
-            </button>
-            <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
-              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Update Pemantauan
-            </button>
-          </div>
-
-          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden p-8">
-            <div className="flex items-center gap-4 border-b border-[#30363d] pb-6 mb-6">
-              <div className="p-4 bg-blue-600 rounded-full"><Crosshair size={28} className="text-white" /></div>
-              <div>
-                <h2 className="text-2xl font-bold text-white leading-tight">Radar Target KOL & Media Nasional</h2>
-                <p className="text-sm text-gray-400">Pemantauan spesifik 10 Akun VIP di YouTube dalam 7 hari terakhir (Filter: Puan Maharani / Ketua DPR).</p>
-              </div>
-            </div>
-
-            {isLoadingYt ? (
-              <div className="w-full flex justify-center items-center h-40">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {kolData.map((kol, idx) => (
-                  <div key={idx} className={`p-5 rounded-xl border ${kol.hasContent ? 'bg-[#0d1117] border-blue-900/50' : 'bg-[#161b22] border-[#30363d] opacity-70'} flex flex-col sm:flex-row justify-between sm:items-center gap-4`}>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-bold text-gray-200">@{kol.name.toUpperCase()}</span>
-                      {kol.hasContent ? (
-                        <h4 className="text-base font-bold text-blue-400 leading-snug">{kol.video.title}</h4>
-                      ) : (
-                        <span className="text-sm text-gray-500 italic">Belum ada unggahan terkait dalam 7 hari terakhir.</span>
-                      )}
-                    </div>
-                    {kol.hasContent && (
-                      <div className="flex flex-col items-end shrink-0 gap-2">
-                        <span className="text-xs text-gray-500">{kol.video.timeText}</span>
-                        <a href={kol.video.link} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold bg-blue-900/40 text-blue-400 hover:text-blue-300 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors border border-blue-900/50">
-                          Buka <ExternalLink size={14} />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  // =========================================================================
-  // HALAMAN YOUTUBE DATA ANALYSIS (PUAN - RAMPING & TANPA KOMENTAR)
+  // HALAMAN YOUTUBE DATA ANALYSIS (TABEL EXCEL STYLE)
   // =========================================================================
   if (currentPage === "puan-yt-analysis") {
+    
+    // Sortir data tabel berdasarkan pilihan filter secara lokal
     let sortedYtVideos = [];
     if (ytData && ytData.length > 0) {
       sortedYtVideos = [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]);
@@ -183,76 +116,93 @@ export default function SocialMediaMonitoring() {
 
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-        <div className="w-full max-w-5xl space-y-6 mt-4">
+        <div className="w-full max-w-6xl space-y-6 mt-4">
           
           <div className="flex justify-between items-center">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
               <ArrowLeft size={20} /> Menu Utama
             </button>
             <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
-              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data
+              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data (Actual)
             </button>
           </div>
 
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden flex flex-col items-center">
             
+            {/* TAB MENU: UMUM VS KOL */}
+            <div className="w-full bg-[#0d1117] flex items-center border-b border-[#30363d]">
+              <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "umum" ? "border-red-500 text-red-500 bg-red-950/10" : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"}`}>
+                Pemantauan Semua Saluran
+              </button>
+              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "kol" ? "border-blue-500 text-blue-500 bg-blue-950/10" : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"}`}>
+                KOL / Berita (Targeted 10 Media)
+              </button>
+            </div>
+
             <div className="w-full p-6 border-b border-[#30363d] flex flex-col lg:flex-row justify-between items-center gap-6">
               <div className="flex items-center gap-3">
-                <PlaySquare size={28} className="text-red-500" />
+                <PlaySquare size={28} className={ytFetchMode === "kol" ? "text-blue-500" : "text-red-500"} />
                 <div>
-                  <h2 className="text-xl font-bold text-white leading-tight">YouTube Analysis: Puan Maharani & Ketua DPR</h2>
-                  <p className="text-sm text-gray-400">Menampilkan metrik performansi riil dalam 7 hari (Filter &gt; 1.000 Views).</p>
+                  <h2 className="text-xl font-bold text-white leading-tight">YouTube Data Analysis: Puan Maharani & Ketua DPR</h2>
+                  <p className="text-sm text-gray-400">
+                    {ytFetchMode === "kol" ? "Melacak 10 Akun VIP Media & KOL dalam 7 hari terakhir." : "Menampilkan rilis publik 7 hari terakhir (Difilter > 1.000 Views)."}
+                  </p>
                 </div>
               </div>
               
+              {/* TOMBOL FILTER TABEL */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <span className="text-xs font-bold text-gray-500 mr-1">Filter Terbesar:</span>
+                <span className="text-xs font-bold text-gray-500 mr-1">Urutkan:</span>
                 <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-white text-black border-white" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
-                  View
+                  View Terbesar
                 </button>
                 <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-blue-600 text-white border-blue-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
-                  Like
+                  Like Terbesar
                 </button>
                 <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-red-600 text-white border-red-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
-                  Dislike
+                  Dislike Terbesar
                 </button>
               </div>
             </div>
 
+            {/* TABEL DATA EXCEL STYLE */}
             {isLoadingYt ? (
               <div className="w-full flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
+                <div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div>
               </div>
             ) : sortedYtVideos.length > 0 ? (
-              <div className="w-full p-6">
-                <table className="w-full border-collapse text-sm">
+              <div className="w-full px-6 py-2 overflow-hidden">
+                <table className="w-full border-collapse text-xs md:text-sm">
                   <thead>
-                    <tr className="border-b border-[#30363d] text-gray-400 text-xs uppercase tracking-wider">
-                      <th className="py-3 px-3 font-semibold text-center w-10">No</th>
-                      <th className="py-3 px-3 font-semibold text-left w-24">Tanggal</th>
-                      <th className="py-3 px-3 font-semibold text-left w-20">Waktu</th>
-                      <th className="py-3 px-3 font-semibold text-left">Judul Konten</th>
-                      <th className="py-3 px-3 font-semibold text-right w-20">View</th>
-                      <th className="py-3 px-3 font-semibold text-right w-20">Like</th>
-                      <th className="py-3 px-3 font-semibold text-right w-20">Dislike</th>
-                      <th className="py-3 px-3 font-semibold text-center w-16">Link</th>
+                    <tr className="border-b border-[#30363d] text-gray-400 text-[11px] md:text-xs uppercase tracking-wider">
+                      <th className="py-4 px-2 font-semibold text-center w-10">No</th>
+                      <th className="py-4 px-2 font-semibold text-left whitespace-nowrap w-24">Tanggal</th>
+                      <th className="py-4 px-2 font-semibold text-left whitespace-nowrap w-20">Waktu</th>
+                      <th className="py-4 px-3 font-semibold text-left w-1/3">Judul Konten</th>
+                      <th className="py-4 px-2 font-semibold text-right w-20">View</th>
+                      <th className="py-4 px-2 font-semibold text-right w-20">Like</th>
+                      <th className="py-4 px-2 font-semibold text-right w-20">Dislike</th>
+                      <th className="py-4 px-2 font-semibold text-center w-16">Link</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedYtVideos.map((vid, idx) => (
                       <tr key={vid.id} className="border-b border-gray-800/50 hover:bg-[#1c2128] transition-colors group">
-                        <td className="py-4 px-3 text-center text-gray-500 font-medium">{idx + 1}</td>
-                        <td className="py-4 px-3 text-gray-300 whitespace-nowrap">{vid.date}</td>
-                        <td className="py-4 px-3 text-gray-300 whitespace-nowrap">{vid.time}</td>
-                        <td className="py-4 px-3 text-gray-100 font-medium leading-snug">
-                          {vid.title}
+                        <td className="py-4 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
+                        <td className="py-4 px-2 text-gray-300 whitespace-nowrap">{vid.date}</td>
+                        <td className="py-4 px-2 text-gray-300 whitespace-nowrap">{vid.time}</td>
+                        <td className="py-4 px-3 text-gray-100 font-medium flex flex-col gap-1">
+                          <span className={`text-[10px] md:text-xs font-black uppercase tracking-wide ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>
+                            @{vid.author}
+                          </span>
+                          <span className="leading-snug">{vid.title}</span>
                         </td>
-                        <td className="py-4 px-3 text-right text-gray-200 font-semibold">{vid.views.toLocaleString()}</td>
-                        <td className="py-4 px-3 text-right text-blue-400 font-medium">{vid.likes.toLocaleString()}</td>
-                        <td className="py-4 px-3 text-right text-red-400 font-medium">{vid.dislikes.toLocaleString()}</td>
-                        <td className="py-4 px-3 text-center">
-                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center text-gray-500 hover:text-red-400 transition-colors">
-                            <ExternalLink size={18} />
+                        <td className="py-4 px-2 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
+                        <td className="py-4 px-2 text-right text-blue-400 font-medium">{vid.likes.toLocaleString()}</td>
+                        <td className="py-4 px-2 text-right text-red-400 font-medium">{vid.dislikes.toLocaleString()}</td>
+                        <td className="py-4 px-2 text-center">
+                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center text-gray-500 hover:text-white transition-colors" title="Buka Video">
+                            <ExternalLink size={16} />
                           </a>
                         </td>
                       </tr>
@@ -262,7 +212,7 @@ export default function SocialMediaMonitoring() {
               </div>
             ) : (
               <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">
-                Tidak ada video aktual terkait tokoh tersebut dalam 7 hari terakhir (dengan filter di atas 1000 views).
+                {ytFetchMode === "kol" ? "Belum ada KOL/Media terpilih yang membahas topik tersebut minggu ini." : "Tidak ada video relevan terkait tokoh tersebut (Filter > 1.000 Views)."}
               </div>
             )}
           </div>
@@ -276,10 +226,19 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-3xl space-y-6 mt-6">
-          <button onClick={() => setCurrentPage(previousPage)} className="flex items-center gap-2 text-gray-400 hover:text-blue-400 font-medium transition-colors"><ArrowLeft size={20} /> Kembali</button>
+          <button onClick={() => setCurrentPage(previousPage)} className="flex items-center gap-2 text-gray-400 hover:text-blue-400 font-medium transition-colors">
+            <ArrowLeft size={20} /> Kembali
+          </button>
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-4">
             <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">{selectedIssue.topik}</h1>
-            <p className="text-gray-300">{selectedIssue.articleDesc}</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm bg-[#0d1117] px-4 py-3 rounded-lg border border-[#30363d]">
+              <span className="text-gray-400 font-medium flex items-center gap-1.5"><Building2 size={16} className="text-gray-500"/> Sumber: {selectedIssue.source || "Sistem"}</span>
+              <span className="text-gray-400 font-medium flex items-center gap-1.5 border-l border-gray-700 pl-4"><Calendar size={16} className="text-gray-500"/> Waktu Rilis: {selectedIssue.pubDate}</span>
+            </div>
+            <div className="border-y border-[#30363d] py-6 space-y-2">
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Informasi Analisis / Deskripsi:</h4>
+              <p className="text-gray-300 leading-relaxed">{selectedIssue.articleDesc}</p>
+            </div>
           </div>
         </div>
       </main>
@@ -296,7 +255,6 @@ export default function SocialMediaMonitoring() {
             <p className="text-gray-400">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          {/* BERITA NASIONAL */}
           <div className="space-y-4 pt-4">
             <h2 className="text-2xl font-bold text-white border-b border-[#30363d] pb-2">Berita Nasional Umum</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -306,41 +264,8 @@ export default function SocialMediaMonitoring() {
               <button onClick={() => setCurrentPage("terkini")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Berita Nasional Umum Terkini</h3>
               </button>
-              
-              {/* TOMBOL BARU: KOL TARGETED */}
-              <button onClick={() => setCurrentPage("kol-targeted")} className="md:col-span-2 p-6 bg-blue-950/20 border border-blue-900/50 rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-blue-500 group-hover:text-blue-400 flex items-center gap-2">
-                  <Crosshair size={24}/> Monitoring KOL / Berita (Targeted)
-                </h3>
-                <p className="text-sm text-gray-400">Pantau 10 Akun VIP (Total Politik, Akbar Faizal, dll) yang menyinggung Puan dalam 7 hari terakhir.</p>
-              </button>
-
               <button onClick={() => setCurrentPage("bencana-24jam")} className="md:col-span-2 p-6 bg-[#161b22] border border-orange-900/30 rounded-2xl shadow-lg hover:border-orange-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-orange-500 group-hover:text-orange-400 flex items-center gap-2">🚨 Berita Bencana Terkini</h3>
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-6">
-            <h2 className="text-2xl font-bold text-red-500 border-b border-red-900/50 pb-2">PDI Perjuangan</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => setCurrentPage("pdip-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
-              </button>
-              <button onClick={() => setCurrentPage("pdip-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita PDI Perjuangan Terkini</h3>
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-6">
-            <h2 className="text-2xl font-bold text-red-500 border-b border-red-900/50 pb-2">Megawati Soekarnoputri</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => setCurrentPage("megawati-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
-              </button>
-              <button onClick={() => setCurrentPage("megawati-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Megawati Soekarnoputri Terkini</h3>
               </button>
             </div>
           </div>
@@ -359,7 +284,7 @@ export default function SocialMediaMonitoring() {
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400 flex items-center gap-2">
                   <PlaySquare size={24}/> Data Analysis (YouTube)
                 </h3>
-                <p className="text-sm text-gray-400">Tabel data performa video (Views, Likes, Dislikes) aktual tanpa kolom komentar.</p>
+                <p className="text-sm text-gray-400">Tabel data performa video (Views, Likes, Dislikes) aktual beserta pelacakan Target 10 KOL VIP.</p>
               </button>
             </div>
           </div>
@@ -372,14 +297,11 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
-        
         <div className="flex justify-between items-center">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
             <ArrowLeft size={20} /> Menu Utama
           </button>
         </div>
-
-        {/* ... (Daftar rincian berita umum disingkat di sini agar code tidak over-limit) ... */}
         {isLoading ? (
            <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div></div>
         ) : (
