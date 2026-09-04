@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-// PERBAIKAN: Youtube diganti jadi PlaySquare biar support di semua versi lucide-react
-import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, MessageSquare, Users, Hash } from "lucide-react";
+import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, MessageSquare, Hash } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -13,12 +12,11 @@ export default function SocialMediaMonitoring() {
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // STATE KHUSUS YOUTUBE ANALYSIS
   const [ytData, setYtData] = useState(null);
   const [isLoadingYt, setIsLoadingYt] = useState(false);
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
-  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
+  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Tekнологи", "Finansial"];
 
   const [isScraping, setIsScraping] = useState(false);
   const [scrapedResult, setScrapedResult] = useState("");
@@ -28,7 +26,6 @@ export default function SocialMediaMonitoring() {
     setIsLoading(true);
     try {
       let endpoint = '';
-      
       if (currentPage === 'bencana-24jam') endpoint = `/api/bencana?t=${Date.now()}`;
       else if (currentPage.includes('pdip')) {
         if (currentPage.includes('terkini')) endpoint = `/api/pdip?hours=24&mode=terkini&t=${Date.now()}`;
@@ -71,9 +68,8 @@ export default function SocialMediaMonitoring() {
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis") {
-      fetchYoutubeData();
-    } else if (currentPage !== "main" && currentPage !== "detail") {
+    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
+    else if (currentPage !== "main" && currentPage !== "detail") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
@@ -112,9 +108,7 @@ export default function SocialMediaMonitoring() {
   const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, isTerkiniMode ? 20 : 10); 
 
-  const isRedTheme = 
-    currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati") || 
-    (currentPage === "detail" && (previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati")));
+  const isRedTheme = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati") || (currentPage === "detail" && (previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati")));
 
 
   // --- HALAMAN YOUTUBE DATA ANALYSIS ---
@@ -132,11 +126,10 @@ export default function SocialMediaMonitoring() {
           </div>
 
           <div className="bg-red-950/20 border border-red-900/50 p-6 rounded-2xl shadow-lg mb-4 flex items-center gap-4">
-            {/* PERBAIKAN: Youtube diganti PlaySquare */}
             <div className="p-4 bg-red-600 rounded-full"><PlaySquare size={32} className="text-white" /></div>
             <div>
               <h1 className="text-2xl font-bold text-red-500">YouTube Data Analysis: Puan Maharani & Ketua DPR</h1>
-              <p className="text-gray-400 mt-1 text-sm">Scraping data komentar, tren pencarian, dan Key Opinion Leaders (KOL).</p>
+              <p className="text-gray-400 mt-1 text-sm">Scraping data komentar, tren pencarian, dan pergerakan wacana publik secara real-time di YouTube.</p>
             </div>
           </div>
 
@@ -168,38 +161,44 @@ export default function SocialMediaMonitoring() {
                 </div>
               </div>
 
-              {/* WORD CLOUD & INFLUENCERS */}
+              {/* REVISI: TOP KEYWORDS & VIDEO TERKINI YOUTUBE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* 5 Kata Kunci Kebawah */}
                 <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-2xl shadow-lg">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Hash size={18} className="text-blue-400"/> Top Keywords / Word Cloud</h3>
-                  <div className="flex flex-wrap gap-3 items-center justify-center p-4">
-                    {ytData.wordCloud.map((item, idx) => (
-                      <span key={idx} style={{ fontSize: `${Math.max(12, item.weight / 3)}px`, opacity: item.weight / 100 }} className="font-bold text-white tracking-wide">
-                        {item.word}
-                      </span>
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Hash size={18} className="text-blue-400"/> Top 5 Keywords Teratas</h3>
+                  <div className="space-y-3">
+                    {ytData.topKeywords.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-[#0d1117] p-3 rounded-lg border border-[#30363d]">
+                        <span className="font-bold text-gray-200">#{idx + 1} {item.word}</span>
+                        <span className="text-xs bg-blue-900/30 text-blue-400 font-bold px-2 py-1 rounded">
+                          Skor: {item.weight}%
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
 
+                {/* Video Terkini (12 Jam Terakhir) Menggantikan KOL */}
                 <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-2xl shadow-lg">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Users size={18} className="text-green-400"/> Top Influencers (KOL)</h3>
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><PlaySquare size={18} className="text-green-400"/> Video Terbaru (12 Jam)</h3>
                   <div className="space-y-3">
-                    {ytData.influencers.map((inf, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-[#0d1117] p-3 rounded-lg border border-[#30363d]">
-                        <div>
-                          <h4 className="font-bold text-sm text-gray-200">{inf.name}</h4>
-                          <p className="text-[10px] text-gray-500 uppercase">{inf.type} • {inf.subs} Subs</p>
+                    {ytData.recentVideos.map((vid, idx) => (
+                      <div key={idx} className="flex flex-col bg-[#0d1117] p-3 rounded-lg border border-[#30363d] gap-2">
+                        <h4 className="font-bold text-sm text-gray-200 leading-snug">{vid.title}</h4>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] font-medium text-gray-500">{vid.channelName} • {vid.uploadTime}</p>
+                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold bg-red-900/40 text-red-500 hover:text-red-400 px-2 py-1 rounded flex items-center gap-1 transition-colors">
+                            Tonton <ExternalLink size={10}/>
+                          </a>
                         </div>
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${inf.stance === 'Pro' ? 'bg-blue-900/50 text-blue-400' : inf.stance === 'Kontra' ? 'bg-red-900/50 text-red-400' : 'bg-gray-800 text-gray-300'}`}>
-                          Kubu: {inf.stance}
-                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* LIVE COMMENTS */}
+              {/* LIVE COMMENTS DENGAN LINK VIDEO */}
               <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-2xl shadow-lg">
                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><MessageSquare size={18} className="text-yellow-500"/> Real-Time Top Comments</h3>
                 <div className="space-y-4">
@@ -210,9 +209,17 @@ export default function SocialMediaMonitoring() {
                         <span className="text-xs text-gray-500">{com.time}</span>
                       </div>
                       <p className="text-sm text-gray-300 leading-relaxed">"{com.comment}"</p>
-                      <div className="flex items-center justify-end gap-1 text-xs text-gray-500 font-semibold mt-1">
-                        ❤️ {com.likes.toLocaleString()} Likes
+                      
+                      {/* REVISI: Tambahan Link ke Video Asli */}
+                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-800/50">
+                        <a href={com.videoLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1.5">
+                          <ExternalLink size={12}/> Lihat komentar di video asli
+                        </a>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 font-bold bg-[#161b22] px-2 py-1 rounded-md">
+                          ❤️ {com.likes.toLocaleString()} Likes
+                        </div>
                       </div>
+
                     </div>
                   ))}
                 </div>
@@ -356,12 +363,11 @@ export default function SocialMediaMonitoring() {
                 <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
               </button>
               
-              {/* TOMBOL BARU: YOUTUBE DATA ANALYSIS - PlaySquare menggantikan Youtube */}
               <button onClick={() => setCurrentPage("puan-yt-analysis")} className="md:col-span-2 p-6 bg-red-950/20 border border-red-900/50 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
                 <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400 flex items-center gap-2">
                   <PlaySquare size={24}/> Data Analysis (YouTube)
                 </h3>
-                <p className="text-sm text-gray-400">Analisis volume percakapan, KOL, sentimen, dan tren komentar secara real-time di YouTube.</p>
+                <p className="text-sm text-gray-400">Analisis volume percakapan, tren video terbaru, dan komentar secara real-time di YouTube.</p>
               </button>
             </div>
           </div>
@@ -374,7 +380,6 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
-        
         <div className="flex justify-between items-center">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
             <ArrowLeft size={20} /> Menu Utama
