@@ -24,12 +24,12 @@ function parseRelativeTime(text) {
 
 export async function GET() {
   try {
-    // Filter YouTube "This Week" (EgQIAhAB) untuk relevansi dan rentang waktu 7 hari terakhir
+    // Filter "This Week"
     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent('Puan Maharani OR Ketua DPR')}&sp=EgQIAhAB`;
     
     const ytRes = await fetch(searchUrl, { 
         headers: { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Cookie': 'CONSENT=YES+cb.20230101-01-p0.en+FX+478'
         },
         cache: 'no-store' 
@@ -54,42 +54,59 @@ export async function GET() {
     };
     findVideos(ytData);
 
-    // Dibatasi 12 video teratas agar tarikan ke API Komentar stabil
-    videoItems = videoItems.slice(0, 12);
+    // Ambil maksimal 20 video, karena nanti akan disaring lagi (Dibuang yang < 1000 views)
+    videoItems = videoItems.slice(0, 20);
     
+    // =========================================================================
+    // BATCH FETCHING STATS DARI LEMNOSLIFE (Mengatasi error komentar = 0)
+    // =========================================================================
+    const videoIds = videoItems.map(v => v.videoId).join(',');
+    let statsMap = {};
+    
+    if (videoIds) {
+        try {
+            const statRes = await fetch(`https://yt.lemnoslife.com/videos?part=statistics&id=${videoIds}`, { cache: 'no-store' });
+            if (statRes.ok) {
+                const statData = await statRes.json();
+                if (statData.items) {
+                    statData.items.forEach(item => {
+                        statsMap[item.id] = {
+                            views: parseInt(item.statistics.viewCount || 0),
+                            likes: parseInt(item.statistics.likeCount || 0),
+                            comments: parseInt(item.statistics.commentCount || 0)
+                        };
+                    });
+                }
+            }
+        } catch(e) { console.error("Gagal Batch API"); }
+    }
+
     const fetchPromises = videoItems.map(async (vid) => {
         const videoId = vid.videoId;
         const title = vid.title?.runs?.[0]?.text || "Tanpa Judul";
         const publishedText = vid.publishedTimeText?.simpleText || "Baru saja";
-        
         const pubDate = parseRelativeTime(publishedText);
         
-        let views = parseInt(vid.viewCountText?.simpleText?.replace(/[^0-9]/g, '') || 0);
-        let likes = 0;
+        let views = statsMap[videoId]?.views || parseInt(vid.viewCountText?.simpleText?.replace(/[^0-9]/g, '') || 0);
+        let likes = statsMap[videoId]?.likes || 0;
+        let comments = statsMap[videoId]?.comments || 0;
         let dislikes = 0;
-        let comments = 0;
 
-        // 1. Penarikan Likes & Dislikes (Individu)
+        // Tarik Dislike
         try {
             const rydRes = await fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${videoId}`, { cache: 'no-store' });
             if(rydRes.ok) {
                 const rydData = await rydRes.json();
                 dislikes = rydData.dislikes || 0;
-                likes = rydData.likes || 0;
-                if (rydData.viewCount) views = rydData.viewCount;
+                if (views === 0) views = rydData.viewCount || views;
+                if (likes === 0) likes = rydData.likes || likes;
             }
         } catch(e) {}
 
-        // 2. Penarikan Komentar (Dipanggil per individu untuk menghindari kegagalan batch)
-        try {
-            const statRes = await fetch(`https://yt.lemnoslife.com/videos?part=statistics&id=${videoId}`, { cache: 'no-store' });
-            if(statRes.ok) {
-                const statData = await statRes.json();
-                if (statData.items && statData.items.length > 0) {
-                    comments = parseInt(statData.items[0].statistics.commentCount || 0);
-                }
-            }
-        } catch(e) {}
+        // =========================================================================
+        // FILTER KETAT: HANYA TAMPILKAN JIKA VIEW DI ATAS 1000
+        // =========================================================================
+        if (views < 1000) return null;
 
         return {
           id: videoId,
@@ -106,10 +123,19 @@ export async function GET() {
 
     let realVideos = (await Promise.all(fetchPromises)).filter(v => v !== null);
 
-    // Mengurutkan dari tayangan tertinggi secara default
-    realVideos.sort((a, b) => b.views - a.views);
+    // Mencegah duplikasi video yang sama
+    const uniqueVideos = [];
+    const seenIds = new Set();
+    for (const v of realVideos) {
+        if (!seenIds.has(v.id)) {
+            uniqueVideos.push(v);
+            seenIds.add(v.id);
+        }
+    }
 
-    return NextResponse.json({ success: true, data: realVideos });
+    uniqueVideos.sort((a, b) => b.views - a.views);
+
+    return NextResponse.json({ success: true, data: uniqueVideos });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
   }
