@@ -111,7 +111,7 @@ export default function SocialMediaMonitoring() {
 
   const isRedTheme = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati") || (currentPage === "detail" && (previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati")));
 
-  // --- HALAMAN YOUTUBE DATA ANALYSIS ---
+  // --- HALAMAN YOUTUBE DATA ANALYSIS (TABEL EXCEL STYLE) ---
   if (currentPage === "puan-yt-analysis") {
     
     let sortedYtVideos = [];
@@ -139,7 +139,7 @@ export default function SocialMediaMonitoring() {
                 <PlaySquare size={28} className="text-red-500" />
                 <div>
                   <h2 className="text-xl font-bold text-white leading-tight">YouTube Data Analysis: Puan Maharani & Ketua DPR</h2>
-                  <p className="text-sm text-gray-400">Menampilkan metrik performansi video secara riil dalam 7 hari terakhir.</p>
+                  <p className="text-sm text-gray-400">Menampilkan video rilis 7 hari terakhir (Difilter &gt; 1.000 Views).</p>
                 </div>
               </div>
               
@@ -205,7 +205,7 @@ export default function SocialMediaMonitoring() {
               </div>
             ) : (
               <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">
-                Tidak ada video aktual terkait tokoh tersebut dalam 7 hari terakhir.
+                Tidak ada video aktual terkait tokoh tersebut dalam 7 hari terakhir (dengan filter di atas 1000 views).
               </div>
             )}
           </div>
