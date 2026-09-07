@@ -122,32 +122,20 @@ export default function SocialMediaMonitoring() {
     currentPage === "bencana-24jam" || 
     (currentPage === "detail" && previousPage === "bencana-24jam");
 
-  const isTerkiniMode = 
-    currentPage.includes("terkini") || 
-    isBencanaMode || 
-    (currentPage === "detail" && (
-      previousPage.includes("terkini") || 
-      previousPage === "bencana-24jam"
-    ));
+  const prevTerkini = previousPage.includes("terkini") || previousPage === "bencana-24jam";
+  const isTerkiniMode = currentPage.includes("terkini") || isBencanaMode || (currentPage === "detail" && prevTerkini);
   
-  const filteredData = isTerkiniMode 
-    ? issuesData 
-    : (selectedCategory === "Semua" 
-        ? issuesData 
-        : issuesData.filter(issue => issue.kategori === selectedCategory));
+  const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
+  const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
+  const isRedTheme = isRedCurr || (currentPage === "detail" && isRedPrev);
+
+  let filteredData = issuesData;
+  if (!isTerkiniMode && selectedCategory !== "Semua") {
+    filteredData = issuesData.filter(issue => issue.kategori === selectedCategory);
+  }
 
   const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, isTerkiniMode ? 20 : 10); 
-
-  const isRedTheme = 
-    currentPage.includes("pdip") || 
-    currentPage.includes("puan") || 
-    currentPage.includes("megawati") || 
-    (currentPage === "detail" && (
-      previousPage.includes("pdip") || 
-      previousPage.includes("puan") || 
-      previousPage.includes("megawati")
-    ));
 
   // =========================================================================
   // HALAMAN YOUTUBE DATA ANALYSIS
@@ -333,7 +321,9 @@ export default function SocialMediaMonitoring() {
                   onClick={handleSedotData} 
                   disabled={isScraping} 
                   className={`flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-colors ${
-                    isBencanaMode ? 'bg-orange-600 hover:bg-orange-500' : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')
+                    isBencanaMode 
+                      ? 'bg-orange-600 hover:bg-orange-500' 
+                      : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')
                   }`}
                 >
                   {isScraping ? <><RefreshCw size={16} className="animate-spin" /> Ekstraksi Teks...</> : <><DownloadCloud size={16} /> Sedot & Buat Prompt</>}
@@ -384,8 +374,10 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Berita Nasional" 
               />
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-white mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
+              {/* PERUBAHAN: Overlay bg-black/85 dan backdrop-blur-md agar gelap pekat */}
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                {/* PERUBAHAN: drop-shadow-2xl agar tulisan sangat kontras */}
+                <h2 className="text-2xl font-black text-white mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
                   Berita Nasional Umum
                 </h2>
                 <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
@@ -407,8 +399,8 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Bencana Terkini" 
               />
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-orange-400 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-orange-400 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
                   Berita Bencana Terkini
                 </h2>
                 <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
@@ -427,8 +419,8 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="PDI Perjuangan" 
               />
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
                   PDI Perjuangan
                 </h2>
                 <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
@@ -450,8 +442,8 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Megawati Soekarnoputri" 
               />
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
                   Megawati Soekarnoputri
                 </h2>
                 <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
@@ -465,7 +457,7 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* CARD 5: PUAN MAHARANI (Diubah jadi ukuran standar 1 kolom) */}
+            {/* CARD 5: PUAN MAHARANI */}
             <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
               <img 
                 src="https://drive.google.com/thumbnail?id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS&sz=w1000" 
@@ -473,8 +465,8 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110" 
                 alt="Puan Maharani" 
               />
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-3xl font-black text-red-500 mb-8 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
                   Puan Maharani
                 </h2>
                 <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
