@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare } from "lucide-react";
+import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, Zap, AlertTriangle } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -12,11 +12,10 @@ export default function SocialMediaMonitoring() {
   const [issuesData, setIssuesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // State YouTube
   const [ytData, setYtData] = useState([]);
   const [isLoadingYt, setIsLoadingYt] = useState(false);
   const [ytSortMode, setYtSortMode] = useState("views"); 
-  const [ytFetchMode, setYtFetchMode] = useState("umum"); // 'umum' atau 'kol'
+  const [ytFetchMode, setYtFetchMode] = useState("umum"); 
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
@@ -71,9 +70,8 @@ export default function SocialMediaMonitoring() {
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis") {
-      fetchYoutubeData();
-    } else if (currentPage !== "main" && currentPage !== "detail") {
+    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
+    else if (currentPage !== "main" && currentPage !== "detail") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
@@ -118,7 +116,6 @@ export default function SocialMediaMonitoring() {
   // HALAMAN YOUTUBE DATA ANALYSIS (TABEL EXCEL STYLE)
   // =========================================================================
   if (currentPage === "puan-yt-analysis") {
-    
     let sortedYtVideos = [];
     if (ytData && ytData.length > 0) {
       sortedYtVideos = [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]);
@@ -127,7 +124,6 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-6xl space-y-6 mt-4">
-          
           <div className="flex justify-between items-center">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
               <ArrowLeft size={20} /> Menu Utama
@@ -138,8 +134,6 @@ export default function SocialMediaMonitoring() {
           </div>
 
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden flex flex-col items-center">
-            
-            {/* TAB MENU: UMUM VS KOL */}
             <div className="w-full bg-[#0d1117] flex items-center border-b border-[#30363d]">
               <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "umum" ? "border-red-500 text-red-500 bg-red-950/10" : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"}`}>
                 Pemantauan Semua Saluran
@@ -239,9 +233,7 @@ export default function SocialMediaMonitoring() {
           </button>
           
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-4">
-            <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">
-              {selectedIssue.topik}
-            </h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">{selectedIssue.topik}</h1>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm bg-[#0d1117] px-4 py-3 rounded-lg border border-[#30363d]">
               <span className="text-gray-400 font-medium flex items-center gap-1.5"><Building2 size={16} className="text-gray-500"/> Sumber: {selectedIssue.source || "Sistem"}</span>
               <span className="text-gray-400 font-medium flex items-center gap-1.5 border-l border-gray-700 pl-4"><Calendar size={16} className="text-gray-500"/> Waktu Rilis: {selectedIssue.pubDate}</span>
@@ -286,90 +278,115 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN UTAMA ---
+  // =========================================================================
+  // HALAMAN UTAMA (REDESIGN UI BERBASIS POSTER GAMBAR)
+  // =========================================================================
   if (currentPage === "main") {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-        <div className="w-full max-w-4xl space-y-8 mt-10 pb-16">
+        <div className="w-full max-w-6xl space-y-10 mt-6 pb-16">
+          
+          {/* Header Title */}
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-white">Public Trend Radar</h1>
-            <p className="text-gray-400">Monitoring isu publik terupdate secara real-time.</p>
-            <p className="text-gray-500 text-sm mt-1 italic font-medium">( Sample data diambil dari Google )</p>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+              Public Trend Radar
+            </h1>
+            <p className="text-gray-400 font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          <div className="space-y-4 pt-4">
-            <h2 className="text-2xl font-bold text-white border-b border-[#30363d] pb-2">Berita Nasional Umum</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => setCurrentPage("12jam")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Monitoring Top News</h3>
-                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
-              </button>
-              <button onClick={() => setCurrentPage("terkini")} className="p-6 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-lg hover:border-blue-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">Berita Nasional Umum Terkini</h3>
-                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
-              </button>
-              <button onClick={() => setCurrentPage("bencana-24jam")} className="md:col-span-2 p-6 bg-[#161b22] border border-orange-900/30 rounded-2xl shadow-lg hover:border-orange-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-orange-500 group-hover:text-orange-400 flex items-center gap-2">
-                  🚨 Berita Bencana Terkini
-                </h3>
-                <p className="text-sm text-gray-400">Monitoring khusus insiden dan darurat bencana terbaru tanpa filter algoritma volume.</p>
-              </button>
+          {/* GRID LAYOUT UNTUK KARTU GAMBAR (3 Kolom) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* CARD 1: BERITA NASIONAL */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
+              <img src="https://drive.google.com/uc?export=view&id=10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Berita Nasional" />
+              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <h2 className="text-2xl font-black text-white mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+                  Berita Nasional Umum
+                </h2>
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                  <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
+                    <TrendingUp size={16}/> Monitoring Top News
+                  </button>
+                  <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
+                    <Zap size={16}/> Berita Terkini
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-4 pt-6">
-            <div className="border-b border-red-900/50 pb-2 space-y-1">
-              <h2 className="text-2xl font-bold text-red-500">PDI Perjuangan</h2>
+            {/* CARD 2: BENCANA TERKINI */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
+              <img src="https://drive.google.com/uc?export=view&id=1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Bencana Terkini" />
+              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <h2 className="text-2xl font-black text-orange-400 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+                  Berita Bencana Terkini
+                </h2>
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                  <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
+                    <AlertTriangle size={16}/> Monitoring Bencana
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => setCurrentPage("pdip-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
-                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
-              </button>
-              <button onClick={() => setCurrentPage("pdip-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita PDI Perjuangan Terkini</h3>
-                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
-              </button>
-            </div>
-          </div>
 
-          <div className="space-y-4 pt-6">
-            <div className="border-b border-red-900/50 pb-2 space-y-1">
-              <h2 className="text-2xl font-bold text-red-500">Megawati Soekarnoputri</h2>
+            {/* CARD 3: PDI PERJUANGAN */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
+              <img src="https://drive.google.com/uc?export=view&id=115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="PDI Perjuangan" />
+              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+                  PDI Perjuangan
+                </h2>
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                  <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
+                    <TrendingUp size={16}/> Monitoring Top News
+                  </button>
+                  <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
+                    <Zap size={16}/> Berita Terkini
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => setCurrentPage("megawati-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
-                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
-              </button>
-              <button onClick={() => setCurrentPage("megawati-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Megawati Soekarnoputri Terkini</h3>
-                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
-              </button>
-            </div>
-          </div>
 
-          <div className="space-y-4 pt-6">
-            <div className="border-b border-red-900/50 pb-2 space-y-1">
-              <h2 className="text-2xl font-bold text-red-500">Puan Maharani</h2>
+            {/* CARD 4: MEGAWATI SOEKARNOPUTRI */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
+              <img src="https://drive.google.com/uc?export=view&id=1gyS0kXpnjFtBl0z31490E7MPZUUTShMl" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Megawati Soekarnoputri" />
+              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+                  Megawati Soekarnoputri
+                </h2>
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                  <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
+                    <TrendingUp size={16}/> Monitoring Top News
+                  </button>
+                  <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
+                    <Zap size={16}/> Berita Terkini
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => setCurrentPage("puan-12jam")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Monitoring Top News</h3>
-                <p className="text-sm text-gray-400">Berdasarkan volume pemberitaan dalam 12 jam terakhir.</p>
-              </button>
-              <button onClick={() => setCurrentPage("puan-terkini")} className="p-6 bg-[#161b22] border border-red-900/30 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400">Berita Puan Maharani Terkini</h3>
-                <p className="text-sm text-gray-400">Berita update terkini tanpa filter algoritma volume.</p>
-              </button>
-              
-              <button onClick={() => setCurrentPage("puan-yt-analysis")} className="md:col-span-2 p-6 bg-red-950/20 border border-red-900/50 rounded-2xl shadow-lg hover:border-red-500 text-left space-y-2 group transition-colors">
-                <h3 className="text-xl font-bold text-red-500 group-hover:text-red-400 flex items-center gap-2">
-                  <PlaySquare size={24}/> Data Analysis (YouTube)
-                </h3>
-                <p className="text-sm text-gray-400">Tabel data aktual performa video (Views, Likes, Dislikes) beserta pelacakan Target 10 KOL VIP.</p>
-              </button>
+
+            {/* CARD 5: PUAN MAHARANI (Membentang Penuh 2 Kolom di Desktop) */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22] md:col-span-2 lg:col-span-2">
+              <img src="https://drive.google.com/uc?export=view&id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS" className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110" alt="Puan Maharani" />
+              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <h2 className="text-3xl font-black text-red-500 mb-8 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+                  Puan Maharani
+                </h2>
+                <div className="flex flex-col md:flex-row gap-4 w-full max-w-[90%] justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                  <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 flex-1 flex items-center justify-center gap-2">
+                    <TrendingUp size={16}/> Top News
+                  </button>
+                  <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 flex-1 flex items-center justify-center gap-2">
+                    <Zap size={16}/> Berita Terkini
+                  </button>
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-red-950 hover:bg-red-900 border border-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 flex-1 flex items-center justify-center gap-2">
+                    <PlaySquare size={16}/> YouTube Analysis
+                  </button>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
       </main>
