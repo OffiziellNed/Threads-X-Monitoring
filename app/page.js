@@ -237,33 +237,33 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, STABILIZED IMAGE RENDERING)
+  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, UKURAN KARTU DIPERKECIL JADI 240px)
   // =========================================================================
   if (currentPage === "main") {
-    // Ukuran kartu 320x320 px (1:1) dengan relative layout yang stabil
-    const boxCard = "relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] w-[320px] h-[320px] flex-shrink-0";
+    // Ukuran kartu diperkecil dari 320px ke 240px agar muat satu halaman penuh tanpa scroll
+    const boxCard = "relative group overflow-hidden rounded-2xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[240px] h-[240px]";
 
     return (
-      <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-        <div className="w-full max-w-[1080px] space-y-10 mt-6 pb-16">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black text-white">Public Trend Radar</h1>
-            <p className="text-gray-400 font-medium">Monitoring isu publik terupdate secara real-time.</p>
+      <main className="min-h-screen p-6 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
+        <div className="w-full max-w-[850px] space-y-6 mt-2 pb-10">
+          <div className="text-center space-y-1">
+            <h1 className="text-3xl md:text-4xl font-black text-white">Public Trend Radar</h1>
+            <p className="text-gray-400 text-sm font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          <div className="flex flex-col items-center gap-8 w-full">
+          <div className="flex flex-col items-center gap-5 w-full">
             
             {/* BARIS ATAS: 2 CARD (Berita Nasional & Bencana) */}
-            <div className="flex flex-wrap justify-center gap-8 w-full">
+            <div className="flex flex-wrap justify-center gap-5 w-full">
               
               {/* CARD 1: Berita Nasional */}
               <div className={boxCard}>
                 <img src="/nasional.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" />
-                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <h2 className="text-2xl font-black text-white mb-6 drop-shadow-md text-center">Berita Nasional Umum</h2>
-                  <div className="flex flex-col gap-3 w-full max-w-[240px]">
-                    <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
-                    <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
+                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <h2 className="text-lg font-black text-white mb-4 drop-shadow-md text-center leading-snug">Berita Nasional Umum</h2>
+                  <div className="flex flex-col gap-2 w-full max-w-[190px]">
+                    <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5"><TrendingUp size={14}/> Top News</button>
+                    <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5"><Zap size={14}/> Terkini</button>
                   </div>
                 </div>
               </div>
@@ -271,10 +271,10 @@ export default function SocialMediaMonitoring() {
               {/* CARD 2: Bencana Terkini */}
               <div className={boxCard}>
                 <img src="/bencana.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" />
-                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <h2 className="text-2xl font-black text-orange-400 mb-6 drop-shadow-md text-center">Berita Bencana Terkini</h2>
-                  <div className="flex flex-col gap-3 w-full max-w-[240px]">
-                    <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><AlertTriangle size={16}/> Radar Bencana</button>
+                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <h2 className="text-lg font-black text-orange-400 mb-4 drop-shadow-md text-center leading-snug">Berita Bencana Terkini</h2>
+                  <div className="flex flex-col gap-2 w-full max-w-[190px]">
+                    <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5"><AlertTriangle size={14}/> Radar Bencana</button>
                   </div>
                 </div>
               </div>
@@ -282,16 +282,16 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {/* BARIS BAWAH: 3 CARD (PDIP, Megawati, Puan) */}
-            <div className="flex flex-wrap justify-center gap-8 w-full">
+            <div className="flex flex-wrap justify-center gap-5 w-full">
 
               {/* CARD 3: PDI Perjuangan */}
               <div className={boxCard}>
                 <img src="/pdip.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" />
-                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">PDI Perjuangan</h2>
-                  <div className="flex flex-col gap-3 w-full max-w-[240px]">
-                    <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
-                    <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
+                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <h2 className="text-lg font-black text-red-500 mb-4 drop-shadow-md text-center leading-snug">PDI Perjuangan</h2>
+                  <div className="flex flex-col gap-2 w-full max-w-[190px]">
+                    <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5"><TrendingUp size={14}/> Top News</button>
+                    <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5"><Zap size={14}/> Terkini</button>
                   </div>
                 </div>
               </div>
@@ -299,11 +299,11 @@ export default function SocialMediaMonitoring() {
               {/* CARD 4: Megawati */}
               <div className={boxCard}>
                 <img src="/megawati.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" />
-                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Megawati Soekarnoputri</h2>
-                  <div className="flex flex-col gap-3 w-full max-w-[240px]">
-                    <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
-                    <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
+                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <h2 className="text-lg font-black text-red-500 mb-4 drop-shadow-md text-center leading-snug">Megawati Soekarnoputri</h2>
+                  <div className="flex flex-col gap-2 w-full max-w-[190px]">
+                    <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5"><TrendingUp size={14}/> Top News</button>
+                    <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5"><Zap size={14}/> Terkini</button>
                   </div>
                 </div>
               </div>
@@ -311,12 +311,12 @@ export default function SocialMediaMonitoring() {
               {/* CARD 5: Puan Maharani */}
               <div className={boxCard}>
                 <img src="/puan.png" className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" />
-                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Puan Maharani</h2>
-                  <div className="flex flex-col gap-3 w-full max-w-[240px]">
-                    <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
-                    <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
-                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-red-950 border border-red-500 hover:bg-red-900 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><PlaySquare size={16}/> YouTube Data</button>
+                <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <h2 className="text-lg font-black text-red-500 mb-4 drop-shadow-md text-center leading-snug">Puan Maharani</h2>
+                  <div className="flex flex-col gap-2 w-full max-w-[190px]">
+                    <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 py-1.5 rounded-lg text-[11px] font-bold w-full flex items-center justify-center gap-1"><TrendingUp size={13}/> Top News</button>
+                    <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 py-1.5 rounded-lg text-[11px] font-bold w-full flex items-center justify-center gap-1"><Zap size={13}/> Terkini</button>
+                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-red-950 border border-red-500 hover:bg-red-900 py-1.5 rounded-lg text-[11px] font-bold w-full flex items-center justify-center gap-1"><PlaySquare size={13}/> YouTube Data</button>
                   </div>
                 </div>
               </div>
