@@ -237,10 +237,11 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (2 DI ATAS, 3 DI BAWAH, RATA TENGAH, KOTAK 1:1)
+  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, KOTAK 1:1)
   // =========================================================================
   if (currentPage === "main") {
-    // Kelas kartu dengan ukuran fix 320x320 agar Tailwind tidak nge-purge ukurannya
+    // KELAS KARTU: Menggunakan link gambar placeholder sementara yang 100% aktif & dijamin nampil, 
+    // atau ganti dengan link publik gambar Anda sendiri yang sudah di-set "Anyone with the link can view".
     const boxCard = "relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]";
 
     return (
@@ -258,7 +259,7 @@ export default function SocialMediaMonitoring() {
               
               {/* CARD 1: Berita Nasional */}
               <div className={boxCard}>
-                <img src="https://drive.google.com/uc?export=download&id=10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" referrerPolicy="no-referrer" />
+                <img src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-white mb-6 drop-shadow-md text-center">Berita Nasional Umum</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -270,7 +271,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 2: Bencana Terkini */}
               <div className={boxCard}>
-                <img src="https://drive.google.com/uc?export=download&id=1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" referrerPolicy="no-referrer" />
+                <img src="https://images.unsplash.com/photo-1547683905-f686c993aae5?w=800&q=80" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-orange-400 mb-6 drop-shadow-md text-center">Berita Bencana Terkini</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -286,7 +287,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 3: PDI Perjuangan */}
               <div className={boxCard}>
-                <img src="https://drive.google.com/uc?export=download&id=115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" referrerPolicy="no-referrer" />
+                <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&q=80" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">PDI Perjuangan</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -298,7 +299,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 4: Megawati */}
               <div className={boxCard}>
-                <img src="https://drive.google.com/uc?export=download&id=1gyS0kXpnjFtBl0z31490E7MPZUUTShMl" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" referrerPolicy="no-referrer" />
+                <img src="https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&q=80" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Megawati Soekarnoputri</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -310,7 +311,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 5: Puan Maharani */}
               <div className={boxCard}>
-                <img src="https://drive.google.com/uc?export=download&id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" referrerPolicy="no-referrer" />
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Puan Maharani</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
