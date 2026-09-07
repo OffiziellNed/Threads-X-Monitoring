@@ -237,10 +237,11 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, LOCAL PUBLIC PNG)
+  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, STABILIZED IMAGE RENDERING)
   // =========================================================================
   if (currentPage === "main") {
-    const boxCard = "relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]";
+    // Ukuran kartu 320x320 px (1:1) dengan relative layout yang stabil
+    const boxCard = "relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] w-[320px] h-[320px] flex-shrink-0";
 
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -257,7 +258,7 @@ export default function SocialMediaMonitoring() {
               
               {/* CARD 1: Berita Nasional */}
               <div className={boxCard}>
-                <img src="/nasional.png" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" />
+                <img src="/nasional.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-white mb-6 drop-shadow-md text-center">Berita Nasional Umum</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -269,7 +270,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 2: Bencana Terkini */}
               <div className={boxCard}>
-                <img src="/bencana.png" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" />
+                <img src="/bencana.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-orange-400 mb-6 drop-shadow-md text-center">Berita Bencana Terkini</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -285,7 +286,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 3: PDI Perjuangan */}
               <div className={boxCard}>
-                <img src="/pdip.png" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" />
+                <img src="/pdip.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">PDI Perjuangan</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -297,7 +298,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 4: Megawati */}
               <div className={boxCard}>
-                <img src="/megawati.png" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" />
+                <img src="/megawati.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Megawati Soekarnoputri</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -309,7 +310,7 @@ export default function SocialMediaMonitoring() {
 
               {/* CARD 5: Puan Maharani */}
               <div className={boxCard}>
-                <img src="/puan.png" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" />
+                <img src="/puan.png" className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" />
                 <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                   <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Puan Maharani</h2>
                   <div className="flex flex-col gap-3 w-full max-w-[240px]">
