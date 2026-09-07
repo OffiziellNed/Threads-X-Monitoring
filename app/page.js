@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, 
   DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, Zap, 
-  AlertTriangle, Crosshair 
+  AlertTriangle 
 } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
@@ -17,16 +17,12 @@ export default function SocialMediaMonitoring() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [ytData, setYtData] = useState([]);
-  const [kolData, setKolData] = useState([]);
   const [isLoadingYt, setIsLoadingYt] = useState(false);
   const [ytSortMode, setYtSortMode] = useState("views"); 
   const [ytFetchMode, setYtFetchMode] = useState("umum"); 
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
-  const categories = [
-    "Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", 
-    "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"
-  ];
+  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
   const [isScraping, setIsScraping] = useState(false);
   const [scrapedResult, setScrapedResult] = useState("");
@@ -39,53 +35,35 @@ export default function SocialMediaMonitoring() {
       if (currentPage === 'bencana-24jam') {
         endpoint = `/api/bencana?t=${Date.now()}`;
       } else if (currentPage.includes('pdip')) {
-        endpoint = currentPage.includes('terkini') 
-          ? `/api/pdip?hours=24&mode=terkini&t=${Date.now()}` 
-          : `/api/pdip?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') ? `/api/pdip?hours=24&mode=terkini&t=${Date.now()}` : `/api/pdip?hours=12&t=${Date.now()}`;
       } else if (currentPage.includes('megawati')) {
-        endpoint = currentPage.includes('terkini') 
-          ? `/api/megawati?hours=24&mode=terkini&t=${Date.now()}` 
-          : `/api/megawati?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') ? `/api/megawati?hours=24&mode=terkini&t=${Date.now()}` : `/api/megawati?hours=12&t=${Date.now()}`;
       } else if (currentPage.includes('puan')) {
-        endpoint = currentPage.includes('terkini') 
-          ? `/api/puan?hours=24&mode=terkini&t=${Date.now()}` 
-          : `/api/puan?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') ? `/api/puan?hours=24&mode=terkini&t=${Date.now()}` : `/api/puan?hours=12&t=${Date.now()}`;
       } else {
-        endpoint = currentPage.includes('terkini') 
-          ? `/api/news?hours=24&mode=terkini&t=${Date.now()}` 
-          : `/api/news?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') ? `/api/news?hours=24&mode=terkini&t=${Date.now()}` : `/api/news?hours=12&t=${Date.now()}`;
       }
       
       const response = await fetch(endpoint, { cache: 'no-store' });
       const result = await response.json();
       if (result.success) setIssuesData(result.data);
-    } catch (error) {
-      console.error("Gagal memuat tren:", error);
-    } finally { 
-      setIsLoading(false); 
-    }
+    } catch (error) {} 
+    finally { setIsLoading(false); }
   };
 
   const fetchYoutubeData = async () => {
     setIsLoadingYt(true);
     try {
-      const response = await fetch(
-        `/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, 
-        { cache: 'no-store' }
-      );
+      const response = await fetch(`/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, { cache: 'no-store' });
       const result = await response.json();
       if (result.success) setYtData(result.data);
-    } catch (error) {
-      console.error("Gagal memuat data YouTube:", error);
-    } finally { 
-      setIsLoadingYt(false); 
-    }
+    } catch (error) {} 
+    finally { setIsLoadingYt(false); }
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis") {
-      fetchYoutubeData();
-    } else if (currentPage !== "main" && currentPage !== "detail") {
+    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
+    else if (currentPage !== "main" && currentPage !== "detail") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
@@ -103,8 +81,7 @@ export default function SocialMediaMonitoring() {
     setIsScraping(true);
     setIsCopied(false);
     setTimeout(() => {
-      const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, " + 
-                                "10 dalam konteks pro dan 10 dalam konteks kontra.";
+      const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, 10 dalam konteks pro dan 10 dalam konteks kontra.";
       const title = selectedIssue.topik || "Tanpa Judul"; 
       const content = selectedIssue.articleDesc || "Tidak ada deskripsi rinci.";
       setScrapedResult(`${promptInstruction}\n\n[JUDUL TOPIK]\n${title}\n\n[DESKRIPSI & ISI KONTEN]\n${content}`);
@@ -118,10 +95,7 @@ export default function SocialMediaMonitoring() {
     setTimeout(() => setIsCopied(false), 3000); 
   };
 
-  const isBencanaMode = 
-    currentPage === "bencana-24jam" || 
-    (currentPage === "detail" && previousPage === "bencana-24jam");
-
+  const isBencanaMode = currentPage === "bencana-24jam" || (currentPage === "detail" && previousPage === "bencana-24jam");
   const prevTerkini = previousPage.includes("terkini") || previousPage === "bencana-24jam";
   const isTerkiniMode = currentPage.includes("terkini") || isBencanaMode || (currentPage === "detail" && prevTerkini);
   
@@ -141,10 +115,7 @@ export default function SocialMediaMonitoring() {
   // HALAMAN YOUTUBE DATA ANALYSIS
   // =========================================================================
   if (currentPage === "puan-yt-analysis") {
-    let sortedYtVideos = [];
-    if (ytData && ytData.length > 0) {
-      sortedYtVideos = [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]);
-    }
+    let sortedYtVideos = ytData && ytData.length > 0 ? [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]) : [];
 
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
@@ -153,35 +124,18 @@ export default function SocialMediaMonitoring() {
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
               <ArrowLeft size={20} /> Menu Utama
             </button>
-            <button 
-              onClick={fetchYoutubeData} 
-              className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors"
-            >
-              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data (Actual)
+            <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
+              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data
             </button>
           </div>
 
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden flex flex-col items-center">
             <div className="w-full bg-[#0d1117] flex items-center border-b border-[#30363d]">
-              <button 
-                onClick={() => setYtFetchMode("umum")} 
-                className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
-                  ytFetchMode === "umum" 
-                    ? "border-red-500 text-red-500 bg-red-950/10" 
-                    : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"
-                }`}
-              >
-                Pemantauan Semua Saluran
+              <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "umum" ? "border-red-500 text-red-500 bg-red-950/10" : "border-transparent text-gray-400 hover:bg-[#161b22]"}`}>
+                Semua Saluran
               </button>
-              <button 
-                onClick={() => setYtFetchMode("kol")} 
-                className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
-                  ytFetchMode === "kol" 
-                    ? "border-blue-500 text-blue-500 bg-blue-950/10" 
-                    : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"
-                }`}
-              >
-                KOL / Berita (Targeted 10 Media)
+              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "kol" ? "border-blue-500 text-blue-500 bg-blue-950/10" : "border-transparent text-gray-400 hover:bg-[#161b22]"}`}>
+                KOL / Berita (Targeted)
               </button>
             </div>
 
@@ -189,57 +143,30 @@ export default function SocialMediaMonitoring() {
               <div className="flex items-center gap-3">
                 <PlaySquare size={28} className={ytFetchMode === "kol" ? "text-blue-500" : "text-red-500"} />
                 <div>
-                  <h2 className="text-xl font-bold text-white leading-tight">YouTube Data Analysis: Puan Maharani & Ketua DPR</h2>
-                  <p className="text-sm text-gray-400">
-                    {ytFetchMode === "kol" 
-                      ? "Melacak 10 Akun VIP Media & KOL dalam 7 hari terakhir." 
-                      : "Menampilkan rilis publik 7 hari terakhir (Difilter > 1.000 Views)."}
-                  </p>
+                  <h2 className="text-xl font-bold text-white leading-tight">YouTube Analysis: Puan Maharani</h2>
+                  <p className="text-sm text-gray-400">Menampilkan data 7 hari terakhir (Filter &gt; 1.000 Views).</p>
                 </div>
               </div>
               
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-xs font-bold text-gray-400 mr-1">Urutkan:</span>
-                <button 
-                  onClick={() => setYtSortMode("views")} 
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                    ytSortMode === "views" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"
-                  }`}
-                >
-                  View Terbesar
-                </button>
-                <button 
-                  onClick={() => setYtSortMode("likes")} 
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                    ytSortMode === "likes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"
-                  }`}
-                >
-                  Like Terbesar
-                </button>
-                <button 
-                  onClick={() => setYtSortMode("dislikes")} 
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                    ytSortMode === "dislikes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"
-                  }`}
-                >
-                  Dislike Terbesar
-                </button>
+                <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>View</button>
+                <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>Like</button>
+                <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>Dislike</button>
               </div>
             </div>
 
             {isLoadingYt ? (
-              <div className="w-full flex justify-center items-center h-64">
-                <div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div>
-              </div>
+              <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <div className="w-full px-6 py-2 overflow-hidden">
                 <table className="w-full border-collapse text-xs md:text-sm">
                   <thead>
-                    <tr className="border-b border-[#21262d] text-gray-400 text-[11px] md:text-xs uppercase tracking-wider">
+                    <tr className="border-b border-[#21262d] text-gray-400 uppercase tracking-wider">
                       <th className="py-4 px-2 font-semibold text-center w-10">No</th>
-                      <th className="py-4 px-2 font-semibold text-left whitespace-nowrap w-24">Tanggal</th>
-                      <th className="py-4 px-2 font-semibold text-left whitespace-nowrap w-20">Waktu</th>
-                      <th className="py-4 px-3 font-semibold text-left w-1/3">Judul Konten</th>
+                      <th className="py-4 px-2 font-semibold text-left w-24">Tanggal</th>
+                      <th className="py-4 px-2 font-semibold text-left w-20">Waktu</th>
+                      <th className="py-4 px-3 font-semibold text-left">Judul Konten</th>
                       <th className="py-4 px-2 font-semibold text-right w-20">View</th>
                       <th className="py-4 px-2 font-semibold text-right w-20">Like</th>
                       <th className="py-4 px-2 font-semibold text-right w-20">Dislike</th>
@@ -248,23 +175,19 @@ export default function SocialMediaMonitoring() {
                   </thead>
                   <tbody>
                     {sortedYtVideos.map((vid, idx) => (
-                      <tr key={vid.id} className="border-b border-[#12161c] hover:bg-[#1c2128] transition-colors group">
+                      <tr key={vid.id} className="border-b border-[#12161c] hover:bg-[#1c2128] transition-colors">
                         <td className="py-4 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
-                        <td className="py-4 px-2 text-gray-300 whitespace-nowrap">{vid.date}</td>
-                        <td className="py-4 px-2 text-gray-300 whitespace-nowrap">{vid.time}</td>
-                        <td className="py-4 px-3 text-gray-100 font-medium flex flex-col gap-1">
-                          <span className={`text-[10px] md:text-xs font-black uppercase tracking-wide ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>
-                            @{vid.author}
-                          </span>
-                          <span className="leading-snug">{vid.title}</span>
+                        <td className="py-4 px-2 text-gray-300">{vid.date}</td>
+                        <td className="py-4 px-2 text-gray-300">{vid.time}</td>
+                        <td className="py-4 px-3 text-gray-100 flex flex-col gap-1">
+                          <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                          <span>{vid.title}</span>
                         </td>
                         <td className="py-4 px-2 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
-                        <td className="py-4 px-2 text-right text-blue-400 font-medium">{vid.likes.toLocaleString()}</td>
-                        <td className="py-4 px-2 text-right text-red-400 font-medium">{vid.dislikes.toLocaleString()}</td>
+                        <td className="py-4 px-2 text-right text-blue-400">{vid.likes.toLocaleString()}</td>
+                        <td className="py-4 px-2 text-right text-red-400">{vid.dislikes.toLocaleString()}</td>
                         <td className="py-4 px-2 text-center">
-                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center text-gray-500 hover:text-white transition-colors" title="Buka Video">
-                            <ExternalLink size={16} />
-                          </a>
+                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-gray-500 hover:text-white"><ExternalLink size={16} /></a>
                         </td>
                       </tr>
                     ))}
@@ -272,11 +195,7 @@ export default function SocialMediaMonitoring() {
                 </table>
               </div>
             ) : (
-              <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">
-                {ytFetchMode === "kol" 
-                  ? "Belum ada KOL/Media terpilih yang membahas topik tersebut minggu ini." 
-                  : "Tidak ada video relevan terkait tokoh tersebut (Filter > 1.000 Views)."}
-              </div>
+              <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">Tidak ada video terkait.</div>
             )}
           </div>
         </div>
@@ -289,60 +208,28 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-3xl space-y-6 mt-6">
-          <button onClick={() => setCurrentPage(previousPage)} className="flex items-center gap-2 text-gray-400 hover:text-blue-400 font-medium transition-colors">
-            <ArrowLeft size={20} /> Kembali ke Daftar Isu
-          </button>
-          
+          <button onClick={() => setCurrentPage(previousPage)} className="flex items-center gap-2 text-gray-400 hover:text-blue-400"><ArrowLeft size={20} /> Kembali</button>
           <div className="bg-[#161b22] p-8 rounded-2xl shadow-xl border border-[#30363d] space-y-4">
-            <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">
-              {selectedIssue.topik}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm bg-[#0d1117] px-4 py-3 rounded-lg border border-[#30363d]">
-              <span className="text-gray-400 font-medium flex items-center gap-1.5"><Building2 size={16} className="text-gray-500"/> Sumber: {selectedIssue.source || "Sistem"}</span>
-              <span className="text-gray-400 font-medium flex items-center gap-1.5 border-l border-gray-700 pl-4"><Calendar size={16} className="text-gray-500"/> Waktu Rilis: {selectedIssue.pubDate}</span>
-              <div className="w-full h-px bg-gray-800 my-1"></div>
-              {selectedIssue.sourcesList && selectedIssue.sourcesList.length > 0 ? (
-                <a href={selectedIssue.sourcesList[0].url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 w-full">
-                  Tap untuk baca artikel asli ke sumber portal <ExternalLink size={14} />
-                </a>
-              ) : (<span className="text-gray-500 italic w-full">Link tidak tersedia</span>)}
+            <h1 className="text-2xl md:text-3xl font-bold text-white">{selectedIssue.topik}</h1>
+            <div className="flex gap-4 text-sm text-gray-400 border border-[#30363d] p-3 rounded-lg bg-[#0d1117]">
+              <span>Sumber: {selectedIssue.source}</span> | <span>Rilis: {selectedIssue.pubDate}</span>
             </div>
-            <div className="border-y border-[#30363d] py-6 space-y-2">
-              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Informasi Analisis / Deskripsi:</h4>
-              <p className="text-gray-300 leading-relaxed">{selectedIssue.articleDesc}</p>
+            <p className="text-gray-300 leading-relaxed py-4 border-y border-[#30363d]">{selectedIssue.articleDesc}</p>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-lg font-bold text-white">Pembuat Opini AI</span>
+              <button onClick={handleSedotData} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2">
+                <DownloadCloud size={16} /> Sedot Prompt
+              </button>
             </div>
-            <div className="pt-2 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-white">Pembuat Opini AI</h3>
-                  <p className="text-sm text-gray-400">Merangkum isu ini menjadi prompt utas kontroversial.</p>
+            {scrapedResult && (
+              <div className="mt-4 bg-[#0d1117] rounded-xl border border-[#30363d] p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-semibold">Hasil Prompt</span>
+                  <button onClick={handleCopyPrompt} className="text-sm text-gray-300 flex items-center gap-1"><Copy size={14}/> Salin</button>
                 </div>
-                <button 
-                  onClick={handleSedotData} 
-                  disabled={isScraping} 
-                  className={`flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-colors ${
-                    isBencanaMode 
-                      ? 'bg-orange-600 hover:bg-orange-500' 
-                      : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')
-                  }`}
-                >
-                  {isScraping ? <><RefreshCw size={16} className="animate-spin" /> Ekstraksi Teks...</> : <><DownloadCloud size={16} /> Sedot & Buat Prompt</>}
-                </button>
+                <pre className="text-sm whitespace-pre-wrap">{scrapedResult}</pre>
               </div>
-              {scrapedResult && (
-                <div className="mt-4 bg-[#0d1117] rounded-xl border border-[#30363d] overflow-hidden">
-                  <div className="flex items-center justify-between bg-[#161b22] px-4 py-3 border-b border-[#30363d]">
-                    <span className="text-sm font-semibold text-gray-300">Hasil Prompt (Siap Salin)</span>
-                    <button onClick={handleCopyPrompt} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isCopied ? 'bg-green-900/40 text-green-400' : 'bg-[#0d1117] text-gray-300 hover:bg-[#1c2128]'}`}>
-                      {isCopied ? <><CheckCircle2 size={14} /> Tersalin!</> : <><Copy size={14} /> Salin</>}
-                    </button>
-                  </div>
-                  <div className="p-4 overflow-x-auto">
-                    <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">{scrapedResult}</pre>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </main>
@@ -350,135 +237,80 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (REDESIGN UI BERBASIS POSTER GAMBAR)
+  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, KOTAK 1:1)
   // =========================================================================
   if (currentPage === "main") {
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-        <div className="w-full max-w-6xl space-y-10 mt-6 pb-16">
-          
+        <div className="w-full max-w-[1080px] space-y-10 mt-6 pb-16">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-              Public Trend Radar
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-black text-white">Public Trend Radar</h1>
             <p className="text-gray-400 font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* FLEX WRAP JUSTIFY-CENTER: Maksimal lebar pas buat 3 item di bawah dan 2 di atas agar posisinya presisi */}
+          <div className="flex flex-wrap justify-center gap-8 w-full">
             
-            {/* CARD 1: BERITA NASIONAL */}
-            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
-              <img 
-                src="https://drive.google.com/thumbnail?id=10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO&sz=w1000" 
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                alt="Berita Nasional" 
-              />
-              {/* PERUBAHAN: Overlay bg-black/85 dan backdrop-blur-md agar gelap pekat */}
-              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                {/* PERUBAHAN: drop-shadow-2xl agar tulisan sangat kontras */}
-                <h2 className="text-2xl font-black text-white mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
-                  Berita Nasional Umum
-                </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                  <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <TrendingUp size={16}/> Monitoring Top News
-                  </button>
-                  <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <Zap size={16}/> Berita Terkini
-                  </button>
+            {/* --- BARIS ATAS (2 CARD: Berita Nasional & Bencana) --- */}
+            
+            {/* CARD 1: Berita Nasional */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-white mb-6 drop-shadow-md text-center">Berita Nasional Umum</h2>
+                <div className="flex flex-col gap-3 w-full max-w-[240px]">
+                  <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
+                  <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
                 </div>
               </div>
             </div>
 
-            {/* CARD 2: BENCANA TERKINI */}
-            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
-              <img 
-                src="https://drive.google.com/thumbnail?id=1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf&sz=w1000" 
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                alt="Bencana Terkini" 
-              />
-              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-orange-400 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
-                  Berita Bencana Terkini
-                </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                  <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <AlertTriangle size={16}/> Monitoring Bencana
-                  </button>
+            {/* CARD 2: Bencana Terkini */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-orange-400 mb-6 drop-shadow-md text-center">Berita Bencana Terkini</h2>
+                <div className="flex flex-col gap-3 w-full max-w-[240px]">
+                  <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><AlertTriangle size={16}/> Radar Bencana</button>
                 </div>
               </div>
             </div>
 
-            {/* CARD 3: PDI PERJUANGAN */}
-            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
-              <img 
-                src="https://drive.google.com/thumbnail?id=115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85&sz=w1000" 
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                alt="PDI Perjuangan" 
-              />
-              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
-                  PDI Perjuangan
-                </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                  <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <TrendingUp size={16}/> Monitoring Top News
-                  </button>
-                  <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <Zap size={16}/> Berita Terkini
-                  </button>
+            {/* --- BARIS BAWAH (3 CARD: PDIP, Megawati, Puan) --- */}
+
+            {/* CARD 3: PDI Perjuangan */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">PDI Perjuangan</h2>
+                <div className="flex flex-col gap-3 w-full max-w-[240px]">
+                  <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
+                  <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
                 </div>
               </div>
             </div>
 
-            {/* CARD 4: MEGAWATI SOEKARNOPUTRI */}
-            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
-              <img 
-                src="https://drive.google.com/thumbnail?id=1gyS0kXpnjFtBl0z31490E7MPZUUTShMl&sz=w1000" 
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                alt="Megawati Soekarnoputri" 
-              />
-              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
-                  Megawati Soekarnoputri
-                </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                  <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <TrendingUp size={16}/> Monitoring Top News
-                  </button>
-                  <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <Zap size={16}/> Berita Terkini
-                  </button>
+            {/* CARD 4: Megawati */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=1gyS0kXpnjFtBl0z31490E7MPZUUTShMl&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Megawati Soekarnoputri</h2>
+                <div className="flex flex-col gap-3 w-full max-w-[240px]">
+                  <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
+                  <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
                 </div>
               </div>
             </div>
 
-            {/* CARD 5: PUAN MAHARANI */}
-            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
-              <img 
-                src="https://drive.google.com/thumbnail?id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS&sz=w1000" 
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110" 
-                alt="Puan Maharani" 
-              />
-              <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h2 className="text-3xl font-black text-red-500 mb-8 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-2xl">
-                  Puan Maharani
-                </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                  <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <TrendingUp size={16}/> Top News
-                  </button>
-                  <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <Zap size={16}/> Berita Terkini
-                  </button>
-                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-red-950 hover:bg-red-900 border border-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
-                    <PlaySquare size={16}/> YouTube Analysis
-                  </button>
+            {/* CARD 5: Puan Maharani */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS&sz=w1000" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Puan Maharani</h2>
+                <div className="flex flex-col gap-3 w-full max-w-[240px]">
+                  <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
+                  <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><Zap size={16}/> Terkini</button>
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-red-950 border border-red-500 hover:bg-red-900 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><PlaySquare size={16}/> YouTube Data</button>
                 </div>
               </div>
             </div>
@@ -493,125 +325,59 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-6 mt-4">
-        
         <div className="flex justify-between items-center">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
             <ArrowLeft size={20} /> Menu Utama
           </button>
-          <button 
-            onClick={fetchLiveTrends} 
-            className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors"
-          >
-            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh Data (Realtime)
+          <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh Data
           </button>
         </div>
 
         {!isTerkiniMode && (
-          <div className="w-full flex flex-col items-start gap-3">
-            <div className="flex items-center gap-1.5 text-gray-400">
-              <Filter size={14} />
-              <span className="text-xs font-semibold tracking-wider uppercase">Filter Kategori:</span>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {categories.map((cat) => (
-                <button 
-                  key={cat} 
-                  onClick={() => setSelectedCategory(cat)} 
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border tracking-wide ${
-                    selectedCategory === cat 
-                    ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') 
-                    : 'bg-[#161b22] text-gray-400 border-[#30363d] hover:bg-[#1c2128]'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+          <div className="w-full flex flex-wrap items-center gap-2">
+            <Filter size={14} className="text-gray-400"/>
+            {categories.map((cat) => (
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border ${selectedCategory === cat ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#161b22] text-gray-400 border-[#30363d]'}`}>
+                {cat}
+              </button>
+            ))}
           </div>
         )}
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${
-              isBencanaMode ? 'border-orange-500' : (isRedTheme ? 'border-red-500' : 'border-blue-500')
-            }`}></div>
-          </div>
+          <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div></div>
         ) : (
           <>
-            {!isTerkiniMode && (
+            {!isTerkiniMode && chartData.length > 0 && (
               <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
                 <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
-                
-                {chartData.length > 0 ? (
-                  <>
-                    <div className="w-full" style={{ height: chartData.length > 2 ? '600px' : '250px' }}> 
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                          <XAxis type="number" stroke="#4b5563" />
-                          <YAxis dataKey="topik" type="category" width={200} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} interval={0} />
-                          <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
-                          <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} barSize={32} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-5 pt-3 border-t border-[#30363d]">
-                      <p className="text-xs text-gray-500 text-center italic">
-                        *Volume pada grafik menunjukkan jumlah publikasi media berbeda yang sedang memberitakan topik tersebut secara bersamaan.
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-[280px] text-gray-500">Belum ada data tersedia.</div>
-                )}
-              </div>
-            )}
-
-            {isTerkiniMode && (
-              <div className={`border p-6 rounded-2xl shadow-lg mb-4 ${
-                isBencanaMode ? 'bg-orange-950/20 border-orange-900/50' : (isRedTheme ? 'bg-red-950/20 border-red-900/50' : 'bg-blue-950/20 border-blue-900/50')
-              }`}>
-                <h1 className={`text-2xl font-bold ${isBencanaMode ? 'text-orange-500' : (isRedTheme ? 'text-red-500' : 'text-blue-500')}`}>
-                  {isBencanaMode ? "🚨 Peringatan & Info Bencana Terkini" : "⚡ Berita Update Terkini"}
-                </h1>
-                <p className="text-gray-400 mt-2 text-sm">
-                  Daftar di bawah ini diurutkan murni berdasarkan waktu publikasi berita paling baru. Sistem tidak menggunakan klasterisasi volume agar Anda tidak ketinggalan informasi krusial.
-                </p>
+                <div className="w-full h-[250px]"> 
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <XAxis type="number" stroke="#4b5563" />
+                      <YAxis dataKey="topik" type="category" width={200} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} interval={~-1 ? 0 : 0} />
+                      <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
+                      <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} barSize={32} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             )}
 
             <div className="space-y-4 pb-10">
-              <h2 className="text-xl font-bold mt-8 text-white">
-                {isTerkiniMode ? "Log Update Terkini" : "Rincian Pokok Masalah"}
-              </h2>
+              <h2 className="text-xl font-bold mt-8 text-white">{isTerkiniMode ? "Log Update Terkini" : "Rincian Pokok Masalah"}</h2>
               {listData.length > 0 ? listData.map((isu, index) => (
-                <div key={index} className={`bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 ${
-                  isBencanaMode ? 'border-l-orange-500' : (isRedTheme ? 'border-l-red-500' : 'border-l-blue-500')
-                }`}>
-                  <div className="flex justify-between items-start">
-                    <div className="pr-4 w-full">
-                      <span className={`text-xs font-semibold uppercase tracking-wider ${
-                        isBencanaMode ? 'text-orange-400' : (isRedTheme ? 'text-red-400' : 'text-blue-400')
-                      }`}>
-                        {isu.kategori} {isTerkiniMode && " TERKINI"}
-                      </span>
-                      <h3 className="text-xl font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
-                      
-                      <p className="text-xs text-gray-400 mt-2.5 flex items-center gap-1.5 font-medium">
-                        <Calendar size={14} className="text-gray-500"/> Dirilis: {isu.pubDate}
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => handleOpenDetail(isu)} 
-                      className={`text-white px-6 py-2.5 rounded-xl text-sm font-medium shadow-md shrink-0 transition-colors ${
-                        isBencanaMode ? 'bg-orange-600 hover:bg-orange-500' : (isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500')
-                      }`}
-                    >
-                      Buka Detail
-                    </button>
+                <div key={index} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 flex justify-between items-start">
+                  <div className="pr-4 w-full">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">{isu.kategori}</span>
+                    <h3 className="text-lg font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
+                    <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5"><Calendar size={14}/> Dirilis: {isu.pubDate}</p>
                   </div>
+                  <button onClick={() => handleOpenDetail(isu)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm shrink-0">Detail</button>
                 </div>
               )) : (
-                <p className="text-gray-500 bg-[#161b22] p-6 rounded-xl border border-[#30363d] text-center">Data kosong / sistem masih memproses API.</p>
+                <p className="text-gray-500 text-center">Data kosong / memproses API.</p>
               )}
             </div>
           </>
