@@ -237,7 +237,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, LOKAL FOLDER SUPPORT)
+  // HALAMAN UTAMA (2 ATAS, 3 BAWAH, RATA TENGAH, LOCAL PUBLIC PNG)
   // =========================================================================
   if (currentPage === "main") {
     const boxCard = "relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]";
@@ -384,4 +384,12 @@ export default function SocialMediaMonitoring() {
                   <button onClick={() => handleOpenDetail(isu)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm shrink-0">Detail</button>
                 </div>
               )) : (
-                <p className="text-
+                <p className="text-gray-500 text-center">Data kosong / memproses API.</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
