@@ -237,7 +237,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (UKURAN TETAP, EFEK HOVER GELAP DIPAKSA PAKAI INLINE STYLE)
+  // HALAMAN UTAMA (UKURAN 260px - NORMAL) & EFEK GELAP INLINE STYLE 
   // =========================================================================
   if (currentPage === "main") {
     const boxCard = "relative group overflow-hidden rounded-2xl shadow-xl border border-[#30363d] bg-[#161b22] cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(0,0,0,0.8)]";
@@ -245,7 +245,7 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-4">
         
-        <div className="flex flex-col items-center gap-8 w-full">
+        <div className="flex flex-col items-center gap-8 w-full max-w-5xl">
           
           <div className="text-center space-y-2">
             <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">Public Trend Radar</h1>
@@ -258,34 +258,33 @@ export default function SocialMediaMonitoring() {
             <div className="flex flex-wrap justify-center gap-6">
               
               {/* Nasional */}
-              <div className={boxCard} style={{ width: '220px', height: '220px' }}>
+              <div className={boxCard} style={{ width: '260px', height: '260px' }}>
                 <img src="/nasional.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Nasional" />
                 
-                {/* LAYER KONTEN & BACKGROUND GELAP: Pakai inline style rgba biar 1000% tembus di Vercel */}
+                {/* LAYER KONTEN & BACKGROUND GELAP INLINE */}
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-4 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-5 z-20"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-white font-bold text-lg mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Berita Nasional</h2>
-                  <div className="flex flex-col gap-2 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={14}/> Top News</button>
-                    <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={14}/> Terkini</button>
+                  <h2 className="text-white font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Berita Nasional</h2>
+                  <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={16}/> Top News</button>
+                    <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={16}/> Terkini</button>
                   </div>
                 </div>
               </div>
 
               {/* Bencana */}
-              <div className={boxCard} style={{ width: '220px', height: '220px' }}>
+              <div className={boxCard} style={{ width: '260px', height: '260px' }}>
                 <img src="/bencana.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Bencana" />
                 
-                {/* LAYER KONTEN & BACKGROUND GELAP: Pakai inline style rgba biar 1000% tembus di Vercel */}
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-4 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-5 z-20"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-orange-400 font-bold text-lg mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Bencana Terkini</h2>
-                  <div className="flex flex-col gap-2 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 text-white py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><AlertTriangle size={14}/> Radar Bencana</button>
+                  <h2 className="text-orange-400 font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Bencana Terkini</h2>
+                  <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><AlertTriangle size={16}/> Radar Bencana</button>
                   </div>
                 </div>
               </div>
@@ -296,53 +295,50 @@ export default function SocialMediaMonitoring() {
             <div className="flex flex-wrap justify-center gap-6">
 
               {/* PDIP */}
-              <div className={boxCard} style={{ width: '220px', height: '220px' }}>
+              <div className={boxCard} style={{ width: '260px', height: '260px' }}>
                 <img src="/pdip.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="PDIP" />
                 
-                {/* LAYER KONTEN & BACKGROUND GELAP: Pakai inline style rgba biar 1000% tembus di Vercel */}
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-4 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-5 z-20"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-red-400 font-bold text-lg mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">PDI Perjuangan</h2>
-                  <div className="flex flex-col gap-2 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={14}/> Top News</button>
-                    <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={14}/> Terkini</button>
+                  <h2 className="text-red-400 font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">PDI Perjuangan</h2>
+                  <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={16}/> Top News</button>
+                    <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={16}/> Terkini</button>
                   </div>
                 </div>
               </div>
 
               {/* Megawati */}
-              <div className={boxCard} style={{ width: '220px', height: '220px' }}>
+              <div className={boxCard} style={{ width: '260px', height: '260px' }}>
                 <img src="/megawati.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Megawati" />
                 
-                {/* LAYER KONTEN & BACKGROUND GELAP: Pakai inline style rgba biar 1000% tembus di Vercel */}
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-4 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-5 z-20"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-red-400 font-bold text-lg mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Megawati</h2>
-                  <div className="flex flex-col gap-2 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={14}/> Top News</button>
-                    <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={14}/> Terkini</button>
+                  <h2 className="text-red-400 font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Megawati</h2>
+                  <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={16}/> Top News</button>
+                    <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={16}/> Terkini</button>
                   </div>
                 </div>
               </div>
 
               {/* Puan Maharani */}
-              <div className={boxCard} style={{ width: '220px', height: '220px' }}>
+              <div className={boxCard} style={{ width: '260px', height: '260px' }}>
                 <img src="/puan.png" className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" alt="Puan Maharani" />
                 
-                {/* LAYER KONTEN & BACKGROUND GELAP: Pakai inline style rgba biar 1000% tembus di Vercel */}
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-4 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-5 z-20"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-red-400 font-bold text-lg mb-3 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Puan Maharani</h2>
-                  <div className="flex flex-col gap-1.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1 shadow-md"><TrendingUp size={12}/> Top News</button>
-                    <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1 shadow-md"><Zap size={12}/> Terkini</button>
-                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] border border-red-500 text-red-400 hover:bg-red-900/40 py-1.5 rounded-lg text-xs font-bold w-full flex items-center justify-center gap-1 shadow-md"><PlaySquare size={12}/> YouTube</button>
+                  <h2 className="text-red-400 font-bold text-xl mb-3 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Puan Maharani</h2>
+                  <div className="flex flex-col gap-2 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1 shadow-md"><TrendingUp size={14}/> Top News</button>
+                    <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1 shadow-md"><Zap size={14}/> Terkini</button>
+                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] border border-red-500 text-red-400 hover:bg-red-900/40 py-2 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1 shadow-md"><PlaySquare size={14}/> YouTube</button>
                   </div>
                 </div>
               </div>
