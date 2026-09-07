@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, 
   DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, Zap, 
-  AlertTriangle 
+  AlertTriangle, Search
 } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
@@ -13,7 +13,9 @@ export default function SocialMediaMonitoring() {
   const [previousPage, setPreviousPage] = useState("main");
   const [selectedIssue, setSelectedIssue] = useState(null);
   
-  const [issuesData, setIssuesData] = useState([]);
+  // State baru untuk 2 kolom
+  const [topNewsData, setTopNewsData] = useState([]);
+  const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
   const [ytData, setYtData] = useState([]);
@@ -28,26 +30,46 @@ export default function SocialMediaMonitoring() {
   const [scrapedResult, setScrapedResult] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
+  // Fetching data digabung untuk 2 kolom (Top News & Terkini)
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
-      let endpoint = '';
-      if (currentPage === 'bencana-24jam') {
-        endpoint = `/api/bencana?t=${Date.now()}`;
-      } else if (currentPage.includes('pdip')) {
-        endpoint = currentPage.includes('terkini') ? `/api/pdip?hours=24&mode=terkini&t=${Date.now()}` : `/api/pdip?hours=12&t=${Date.now()}`;
-      } else if (currentPage.includes('megawati')) {
-        endpoint = currentPage.includes('terkini') ? `/api/megawati?hours=24&mode=terkini&t=${Date.now()}` : `/api/megawati?hours=12&t=${Date.now()}`;
-      } else if (currentPage.includes('puan')) {
-        endpoint = currentPage.includes('terkini') ? `/api/puan?hours=24&mode=terkini&t=${Date.now()}` : `/api/puan?hours=12&t=${Date.now()}`;
-      } else {
-        endpoint = currentPage.includes('terkini') ? `/api/news?hours=24&mode=terkini&t=${Date.now()}` : `/api/news?hours=12&t=${Date.now()}`;
+      let epTop = '';
+      let epTerkini = '';
+
+      if (currentPage === 'bencana') {
+        epTop = `/api/bencana?t=${Date.now()}`;
+        epTerkini = `/api/bencana?t=${Date.now()}`;
+      } else if (currentPage === 'pdip') {
+        epTop = `/api/pdip?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/pdip?hours=24&mode=terkini&t=${Date.now()}`;
+      } else if (currentPage === 'megawati') {
+        epTop = `/api/megawati?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/megawati?hours=24&mode=terkini&t=${Date.now()}`;
+      } else if (currentPage === 'puan') {
+        epTop = `/api/puan?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/puan?hours=24&mode=terkini&t=${Date.now()}`;
+      } else if (currentPage === 'nasional') {
+        epTop = `/api/news?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/news?hours=24&mode=terkini&t=${Date.now()}`;
       }
-      
-      const response = await fetch(endpoint, { cache: 'no-store' });
-      const result = await response.json();
-      if (result.success) setIssuesData(result.data);
-    } catch (error) {} 
+
+      if (epTop && epTerkini) {
+        const [resTop, resTerkini] = await Promise.all([
+          fetch(epTop, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []})),
+          fetch(epTerkini, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []}))
+        ]);
+        
+        if (resTop.success) setTopNewsData(resTop.data);
+        else setTopNewsData([]);
+
+        if (resTerkini.success) setTerkiniData(resTerkini.data);
+        else setTerkiniData([]);
+      }
+    } catch (error) {
+      setTopNewsData([]);
+      setTerkiniData([]);
+    } 
     finally { setIsLoading(false); }
   };
 
@@ -95,21 +117,22 @@ export default function SocialMediaMonitoring() {
     setTimeout(() => setIsCopied(false), 3000); 
   };
 
-  const isBencanaMode = currentPage === "bencana-24jam" || (currentPage === "detail" && previousPage === "bencana-24jam");
-  const prevTerkini = previousPage.includes("terkini") || previousPage === "bencana-24jam";
-  const isTerkiniMode = currentPage.includes("terkini") || isBencanaMode || (currentPage === "detail" && prevTerkini);
-  
+  // Konfigurasi Tema & Filter
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
   const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
   const isRedTheme = isRedCurr || (currentPage === "detail" && isRedPrev);
 
-  let filteredData = issuesData;
-  if (!isTerkiniMode && selectedCategory !== "Semua") {
-    filteredData = issuesData.filter(issue => issue.kategori === selectedCategory);
+  let filteredTop = topNewsData || [];
+  let filteredTerkini = terkiniData || [];
+
+  if (selectedCategory !== "Semua") {
+    filteredTop = filteredTop.filter(issue => issue.kategori === selectedCategory);
+    filteredTerkini = filteredTerkini.filter(issue => issue.kategori === selectedCategory);
   }
 
-  const chartData = filteredData.slice(0, 5); 
-  const listData = filteredData.slice(0, isTerkiniMode ? 20 : 10); 
+  const chartData = filteredTop.slice(0, 5); 
+  const topListData = filteredTop.slice(0, 10); 
+  const terkiniListData = filteredTerkini.slice(0, 20); 
 
   // =========================================================================
   // HALAMAN YOUTUBE DATA ANALYSIS
@@ -237,7 +260,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (UKURAN 260px - NORMAL) & EFEK GELAP INLINE STYLE 
+  // HALAMAN UTAMA (UKURAN 260px - NORMAL) KODE PERSIS YANG LU MINTA + TOMBOL GABUNGAN 
   // =========================================================================
   if (currentPage === "main") {
     const boxCard = "relative group overflow-hidden rounded-2xl shadow-xl border border-[#30363d] bg-[#161b22] cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(0,0,0,0.8)]";
@@ -268,8 +291,7 @@ export default function SocialMediaMonitoring() {
                 >
                   <h2 className="text-white font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Berita Nasional</h2>
                   <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={16}/> Top News</button>
-                    <button onClick={() => setCurrentPage("terkini")} className="bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={16}/> Terkini</button>
+                    <button onClick={() => setCurrentPage("nasional")} className="bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2 shadow-md"><Search size={16}/> Cek Sekarang</button>
                   </div>
                 </div>
               </div>
@@ -284,7 +306,7 @@ export default function SocialMediaMonitoring() {
                 >
                   <h2 className="text-orange-400 font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Bencana Terkini</h2>
                   <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><AlertTriangle size={16}/> Radar Bencana</button>
+                    <button onClick={() => setCurrentPage("bencana")} className="bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2 shadow-md"><Search size={16}/> Cek Sekarang</button>
                   </div>
                 </div>
               </div>
@@ -304,8 +326,7 @@ export default function SocialMediaMonitoring() {
                 >
                   <h2 className="text-red-400 font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">PDI Perjuangan</h2>
                   <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={16}/> Top News</button>
-                    <button onClick={() => setCurrentPage("pdip-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={16}/> Terkini</button>
+                    <button onClick={() => setCurrentPage("pdip")} className="bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2 shadow-md"><Search size={16}/> Cek Sekarang</button>
                   </div>
                 </div>
               </div>
@@ -320,8 +341,7 @@ export default function SocialMediaMonitoring() {
                 >
                   <h2 className="text-red-400 font-bold text-xl mb-4 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Megawati</h2>
                   <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><TrendingUp size={16}/> Top News</button>
-                    <button onClick={() => setCurrentPage("megawati-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Zap size={16}/> Terkini</button>
+                    <button onClick={() => setCurrentPage("megawati")} className="bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2 shadow-md"><Search size={16}/> Cek Sekarang</button>
                   </div>
                 </div>
               </div>
@@ -335,10 +355,9 @@ export default function SocialMediaMonitoring() {
                   style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
                   <h2 className="text-red-400 font-bold text-xl mb-3 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Puan Maharani</h2>
-                  <div className="flex flex-col gap-2 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1 shadow-md"><TrendingUp size={14}/> Top News</button>
-                    <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1 shadow-md"><Zap size={14}/> Terkini</button>
-                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] border border-red-500 text-red-400 hover:bg-red-900/40 py-2 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1 shadow-md"><PlaySquare size={14}/> YouTube</button>
+                  <div className="flex flex-col gap-2.5 w-full px-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("puan")} className="bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><Search size={14}/> Cek Sekarang</button>
+                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] border border-red-500 text-red-400 hover:bg-red-900/40 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-1.5 shadow-md"><PlaySquare size={14}/> YouTube</button>
                   </div>
                 </div>
               </div>
@@ -351,10 +370,10 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING BERITA UMUM ---
+  // --- HALAMAN DAFTAR MONITORING BERITA (2 KOLOM: TOP NEWS & TERKINI) ---
   return (
-    <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-      <div className="w-full max-w-5xl space-y-6 mt-4">
+    <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
+      <div className="w-full max-w-[1400px] space-y-6 mt-4">
         <div className="flex justify-between items-center">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
             <ArrowLeft size={20} /> Menu Utama
@@ -364,23 +383,22 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {!isTerkiniMode && (
-          <div className="w-full flex flex-wrap items-center gap-2">
-            <Filter size={14} className="text-gray-400"/>
-            {categories.map((cat) => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border ${selectedCategory === cat ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#161b22] text-gray-400 border-[#30363d]'}`}>
-                {cat}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="w-full flex flex-wrap items-center gap-2">
+          <Filter size={14} className="text-gray-400"/>
+          {categories.map((cat) => (
+            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border ${selectedCategory === cat ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#161b22] text-gray-400 border-[#30363d]'}`}>
+              {cat}
+            </button>
+          ))}
+        </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div></div>
+          <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>
         ) : (
           <>
-            {!isTerkiniMode && chartData.length > 0 && (
-              <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d]">
+            {/* GRAFIK TOP 5 */}
+            {chartData.length > 0 && (
+              <div className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] mb-8">
                 <h2 className="text-lg font-semibold mb-6 text-white">Grafik Top 5 Topik Berita</h2>
                 <div className="w-full h-[250px]"> 
                   <ResponsiveContainer width="100%" height="100%">
@@ -395,20 +413,53 @@ export default function SocialMediaMonitoring() {
               </div>
             )}
 
-            <div className="space-y-4 pb-10">
-              <h2 className="text-xl font-bold mt-8 text-white">{isTerkiniMode ? "Log Update Terkini" : "Rincian Pokok Masalah"}</h2>
-              {listData.length > 0 ? listData.map((isu, index) => (
-                <div key={index} className="bg-[#161b22] p-6 rounded-2xl shadow-lg border border-[#30363d] border-l-4 border-l-blue-500 flex justify-between items-start">
-                  <div className="pr-4 w-full">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">{isu.kategori}</span>
-                    <h3 className="text-lg font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
-                    <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5"><Calendar size={14}/> Dirilis: {isu.pubDate}</p>
+            {/* SPLIT 2 KOLOM (KIRI TOP NEWS, KANAN TERKINI) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10 w-full">
+              
+              {/* KOLOM KIRI: TOP NEWS */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-[#30363d] pb-2 flex items-center gap-2">
+                  <TrendingUp size={22} className="text-blue-400" />
+                  Top News (12 Jam)
+                </h2>
+                {topListData.length > 0 ? topListData.map((isu, index) => (
+                  <div key={`top-${index}`} className={`bg-[#161b22] p-5 rounded-2xl shadow-lg border border-[#30363d] border-l-4 flex justify-between items-start ${isRedTheme ? 'border-l-red-500' : 'border-l-blue-500'}`}>
+                    <div className="pr-4 w-full">
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${isRedTheme ? 'text-red-400' : 'text-blue-400'}`}>{isu.kategori}</span>
+                      <h3 className="text-base md:text-lg font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
+                      <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5"><Calendar size={14}/> Dirilis: {isu.pubDate}</p>
+                    </div>
+                    <button onClick={() => handleOpenDetail(isu)} className={`${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} text-white px-5 py-2 rounded-xl text-sm shrink-0 shadow-md`}>Detail</button>
                   </div>
-                  <button onClick={() => handleOpenDetail(isu)} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm shrink-0">Detail</button>
-                </div>
-              )) : (
-                <p className="text-gray-500 text-center">Data kosong / memproses API.</p>
-              )}
+                )) : (
+                  <div className="flex flex-col items-center justify-center p-8 bg-[#161b22] rounded-2xl border border-[#30363d]">
+                    <p className="text-gray-500 text-center">Data Top News memproses / kosong.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* KOLOM KANAN: TERKINI */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-white mb-4 border-b border-[#30363d] pb-2 flex items-center gap-2">
+                  <Zap size={22} className="text-orange-400" />
+                  Update Terkini (24 Jam)
+                </h2>
+                {terkiniListData.length > 0 ? terkiniListData.map((isu, index) => (
+                  <div key={`terkini-${index}`} className={`bg-[#161b22] p-5 rounded-2xl shadow-lg border border-[#30363d] border-l-4 flex justify-between items-start ${isRedTheme ? 'border-l-red-500' : 'border-l-orange-500'}`}>
+                    <div className="pr-4 w-full">
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${isRedTheme ? 'text-red-400' : 'text-orange-400'}`}>{isu.kategori}</span>
+                      <h3 className="text-base md:text-lg font-bold text-white mt-1 leading-snug">#{index + 1} - {isu.topik}</h3>
+                      <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5"><Calendar size={14}/> Dirilis: {isu.pubDate}</p>
+                    </div>
+                    <button onClick={() => handleOpenDetail(isu)} className={`${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-orange-600 hover:bg-orange-500'} text-white px-5 py-2 rounded-xl text-sm shrink-0 shadow-md`}>Detail</button>
+                  </div>
+                )) : (
+                  <div className="flex flex-col items-center justify-center p-8 bg-[#161b22] rounded-2xl border border-[#30363d]">
+                    <p className="text-gray-500 text-center">Data Update Terkini memproses / kosong.</p>
+                  </div>
+                )}
+              </div>
+
             </div>
           </>
         )}
