@@ -248,14 +248,13 @@ export default function SocialMediaMonitoring() {
             <p className="text-gray-400 font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          {/* FLEX WRAP JUSTIFY-CENTER: Maksimal lebar pas buat 3 item di bawah dan 2 di atas agar posisinya presisi */}
           <div className="flex flex-wrap justify-center gap-8 w-full">
             
             {/* --- BARIS ATAS (2 CARD: Berita Nasional & Bencana) --- */}
             
             {/* CARD 1: Berita Nasional */}
             <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
-              <img src="https://drive.google.com/thumbnail?id=10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" referrerPolicy="no-referrer" />
+              <img src="https://lh3.googleusercontent.com/d/10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" />
               <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-white mb-6 drop-shadow-md text-center">Berita Nasional Umum</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -267,7 +266,7 @@ export default function SocialMediaMonitoring() {
 
             {/* CARD 2: Bencana Terkini */}
             <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
-              <img src="https://drive.google.com/thumbnail?id=1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" referrerPolicy="no-referrer" />
+              <img src="https://lh3.googleusercontent.com/d/1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" />
               <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-orange-400 mb-6 drop-shadow-md text-center">Berita Bencana Terkini</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -280,7 +279,7 @@ export default function SocialMediaMonitoring() {
 
             {/* CARD 3: PDI Perjuangan */}
             <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
-              <img src="https://drive.google.com/thumbnail?id=115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" referrerPolicy="no-referrer" />
+              <img src="https://lh3.googleusercontent.com/d/115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" />
               <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">PDI Perjuangan</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -292,7 +291,7 @@ export default function SocialMediaMonitoring() {
 
             {/* CARD 4: Megawati */}
             <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
-              <img src="https://drive.google.com/thumbnail?id=1gyS0kXpnjFtBl0z31490E7MPZUUTShMl&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" referrerPolicy="no-referrer" />
+              <img src="https://lh3.googleusercontent.com/d/1gyS0kXpnjFtBl0z31490E7MPZUUTShMl" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" />
               <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Megawati Soekarnoputri</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -304,7 +303,7 @@ export default function SocialMediaMonitoring() {
 
             {/* CARD 5: Puan Maharani */}
             <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
-              <img src="https://drive.google.com/thumbnail?id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS&sz=w1000" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" referrerPolicy="no-referrer" />
+              <img src="https://lh3.googleusercontent.com/d/1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" />
               <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Puan Maharani</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
@@ -356,7 +355,7 @@ export default function SocialMediaMonitoring() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <XAxis type="number" stroke="#4b5563" />
-                      <YAxis dataKey="topik" type="category" width={200} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} interval={~-1 ? 0 : 0} />
+                      <YAxis dataKey="topik" type="category" width={200} tick={{fontSize: 11, fill: '#e5e7eb', fontWeight: 'bold'}} interval={0} />
                       <Tooltip cursor={{fill: '#1f2937'}} contentStyle={{backgroundColor: '#0d1117', borderColor: '#30363d', color: '#fff'}} />
                       <Bar dataKey="volume" fill={isRedTheme ? '#ef4444' : '#3b82f6'} radius={[0, 4, 4, 0]} barSize={32} />
                     </BarChart>
