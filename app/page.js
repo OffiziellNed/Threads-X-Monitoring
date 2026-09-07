@@ -144,7 +144,7 @@ export default function SocialMediaMonitoring() {
                 <PlaySquare size={28} className={ytFetchMode === "kol" ? "text-blue-500" : "text-red-500"} />
                 <div>
                   <h2 className="text-xl font-bold text-white leading-tight">YouTube Analysis: Puan Maharani</h2>
-                  <p className="text-sm text-gray-400">Menampilkan data 7 hari terakhir (Filter > 1.000 Views).</p>
+                  <p className="text-sm text-gray-400">Menampilkan data 7 hari terakhir (Filter &gt; 1.000 Views).</p>
                 </div>
               </div>
               
@@ -237,7 +237,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (POSTER GAMBAR 1:1 CENTERED)
+  // HALAMAN UTAMA (POSTER GAMBAR RATA TENGAH, 3 ATAS 2 BAWAH)
   // =========================================================================
   if (currentPage === "main") {
     const cardClass = "relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] h-80 md:h-[380px]";
