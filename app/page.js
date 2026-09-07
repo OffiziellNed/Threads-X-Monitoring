@@ -237,12 +237,9 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (POSTER GAMBAR 1:1 CENTERED 3-2 LAYOUT)
+  // HALAMAN UTAMA (POSTER GAMBAR 1:1 CENTERED 3-2 LAYOUT, ANTI-GAGAL)
   // =========================================================================
   if (currentPage === "main") {
-    // KELAS BULLETPROOF: Ukuran pasti 320x320 pixel. Mencegah error compiler Tailwind.
-    const containerClasses = "relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px] mx-auto";
-    
     return (
       <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-6xl space-y-10 mt-6 pb-16">
@@ -251,14 +248,13 @@ export default function SocialMediaMonitoring() {
             <p className="text-gray-400 font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          {/* FLEX WRAP JUSTIFY-CENTER: Ini yang bikin format otomatis 3 di atas, 2 di bawah pas di desktop */}
-          <div className="flex flex-wrap justify-center gap-8 w-full">
+          {/* FLEX WRAP JUSTIFY-CENTER: Otomatis 3 baris atas, 2 baris bawah rata tengah */}
+          <div className="flex flex-wrap justify-center gap-6 md:gap-8 w-full">
             
             {/* CARD 1 */}
-            <div className={containerClasses}>
-              <img src="https://lh3.googleusercontent.com/d/10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" />
-              {/* OVERLAY BG-BLACK BG-OPACITY-70 TERTULIS LANGSUNG BIAR GAK ERROR */}
-              <div className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=10oOUO4rb2wP-JzF_eE2TXAQ2gV_dDkBO&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Nasional" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-white mb-6 drop-shadow-md text-center">Berita Nasional Umum</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
                   <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
@@ -268,9 +264,9 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {/* CARD 2 */}
-            <div className={containerClasses}>
-              <img src="https://lh3.googleusercontent.com/d/1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" />
-              <div className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=1e2yhUF7xAhVZ_44D1j2XlOKVZSP7POrf&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Bencana" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-orange-400 mb-6 drop-shadow-md text-center">Berita Bencana Terkini</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
                   <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><AlertTriangle size={16}/> Radar Bencana</button>
@@ -279,9 +275,9 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {/* CARD 3 */}
-            <div className={containerClasses}>
-              <img src="https://lh3.googleusercontent.com/d/115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" />
-              <div className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=115VrF5CGaY-xW4pDLVA1K-P1ox_fAY85&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="PDIP" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">PDI Perjuangan</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
                   <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
@@ -291,9 +287,9 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {/* CARD 4 */}
-            <div className={containerClasses}>
-              <img src="https://lh3.googleusercontent.com/d/1gyS0kXpnjFtBl0z31490E7MPZUUTShMl" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" />
-              <div className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=1gyS0kXpnjFtBl0z31490E7MPZUUTShMl&sz=w1000" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Megawati" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Megawati Soekarnoputri</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
                   <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 py-3 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
@@ -303,9 +299,9 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {/* CARD 5 */}
-            <div className={containerClasses}>
-              <img src="https://lh3.googleusercontent.com/d/1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" />
-              <div className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl border border-[#30363d] bg-[#161b22] flex-none w-[320px] h-[320px]">
+              <img src="https://drive.google.com/thumbnail?id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS&sz=w1000" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500" alt="Puan Maharani" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <h2 className="text-2xl font-black text-red-500 mb-6 drop-shadow-md text-center">Puan Maharani</h2>
                 <div className="flex flex-col gap-3 w-full max-w-[240px]">
                   <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 py-2.5 rounded-xl text-sm font-bold w-full flex items-center justify-center gap-2"><TrendingUp size={16}/> Top News</button>
