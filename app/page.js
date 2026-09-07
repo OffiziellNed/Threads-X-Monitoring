@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, Zap, AlertTriangle, Crosshair } from "lucide-react";
+import { 
+  ArrowLeft, RefreshCw, ExternalLink, Calendar, Building2, Filter, 
+  DownloadCloud, Copy, CheckCircle2, PlaySquare, TrendingUp, Zap, 
+  AlertTriangle, Crosshair 
+} from "lucide-react";
 
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
@@ -19,7 +23,10 @@ export default function SocialMediaMonitoring() {
   const [ytFetchMode, setYtFetchMode] = useState("umum"); 
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
-  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
+  const categories = [
+    "Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", 
+    "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"
+  ];
 
   const [isScraping, setIsScraping] = useState(false);
   const [scrapedResult, setScrapedResult] = useState("");
@@ -32,35 +39,53 @@ export default function SocialMediaMonitoring() {
       if (currentPage === 'bencana-24jam') {
         endpoint = `/api/bencana?t=${Date.now()}`;
       } else if (currentPage.includes('pdip')) {
-        endpoint = currentPage.includes('terkini') ? `/api/pdip?hours=24&mode=terkini&t=${Date.now()}` : `/api/pdip?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') 
+          ? `/api/pdip?hours=24&mode=terkini&t=${Date.now()}` 
+          : `/api/pdip?hours=12&t=${Date.now()}`;
       } else if (currentPage.includes('megawati')) {
-        endpoint = currentPage.includes('terkini') ? `/api/megawati?hours=24&mode=terkini&t=${Date.now()}` : `/api/megawati?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') 
+          ? `/api/megawati?hours=24&mode=terkini&t=${Date.now()}` 
+          : `/api/megawati?hours=12&t=${Date.now()}`;
       } else if (currentPage.includes('puan')) {
-        endpoint = currentPage.includes('terkini') ? `/api/puan?hours=24&mode=terkini&t=${Date.now()}` : `/api/puan?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') 
+          ? `/api/puan?hours=24&mode=terkini&t=${Date.now()}` 
+          : `/api/puan?hours=12&t=${Date.now()}`;
       } else {
-        endpoint = currentPage.includes('terkini') ? `/api/news?hours=24&mode=terkini&t=${Date.now()}` : `/api/news?hours=12&t=${Date.now()}`;
+        endpoint = currentPage.includes('terkini') 
+          ? `/api/news?hours=24&mode=terkini&t=${Date.now()}` 
+          : `/api/news?hours=12&t=${Date.now()}`;
       }
       
       const response = await fetch(endpoint, { cache: 'no-store' });
       const result = await response.json();
       if (result.success) setIssuesData(result.data);
-    } catch (error) {} 
-    finally { setIsLoading(false); }
+    } catch (error) {
+      console.error("Gagal memuat tren:", error);
+    } finally { 
+      setIsLoading(false); 
+    }
   };
 
   const fetchYoutubeData = async () => {
     setIsLoadingYt(true);
     try {
-      const response = await fetch(`/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, { cache: 'no-store' });
+      const response = await fetch(
+        `/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, 
+        { cache: 'no-store' }
+      );
       const result = await response.json();
       if (result.success) setYtData(result.data);
-    } catch (error) {} 
-    finally { setIsLoadingYt(false); }
+    } catch (error) {
+      console.error("Gagal memuat data YouTube:", error);
+    } finally { 
+      setIsLoadingYt(false); 
+    }
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
-    else if (currentPage !== "main" && currentPage !== "detail") {
+    if (currentPage === "puan-yt-analysis") {
+      fetchYoutubeData();
+    } else if (currentPage !== "main" && currentPage !== "detail") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
     }
@@ -78,7 +103,8 @@ export default function SocialMediaMonitoring() {
     setIsScraping(true);
     setIsCopied(false);
     setTimeout(() => {
-      const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, 10 dalam konteks pro dan 10 dalam konteks kontra.";
+      const promptInstruction = "Buatkan saya opini singkat untuk postingan threads atau X, " + 
+                                "10 dalam konteks pro dan 10 dalam konteks kontra.";
       const title = selectedIssue.topik || "Tanpa Judul"; 
       const content = selectedIssue.articleDesc || "Tidak ada deskripsi rinci.";
       setScrapedResult(`${promptInstruction}\n\n[JUDUL TOPIK]\n${title}\n\n[DESKRIPSI & ISI KONTEN]\n${content}`);
@@ -92,23 +118,36 @@ export default function SocialMediaMonitoring() {
     setTimeout(() => setIsCopied(false), 3000); 
   };
 
-  // PERBAIKAN: Logika dipisah ke variabel pendek agar bebas dari pemotongan Terminal
-  const isBencanaMode = currentPage === "bencana-24jam" || (currentPage === "detail" && previousPage === "bencana-24jam");
-  
-  const prevTerkini = previousPage.includes("terkini") || previousPage === "bencana-24jam";
-  const isTerkiniMode = currentPage.includes("terkini") || isBencanaMode || (currentPage === "detail" && prevTerkini);
-  
-  const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
-  const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
-  const isRedTheme = isRedCurr || (currentPage === "detail" && isRedPrev);
+  const isBencanaMode = 
+    currentPage === "bencana-24jam" || 
+    (currentPage === "detail" && previousPage === "bencana-24jam");
 
-  let filteredData = issuesData;
-  if (!isTerkiniMode && selectedCategory !== "Semua") {
-    filteredData = issuesData.filter(issue => issue.kategori === selectedCategory);
-  }
+  const isTerkiniMode = 
+    currentPage.includes("terkini") || 
+    isBencanaMode || 
+    (currentPage === "detail" && (
+      previousPage.includes("terkini") || 
+      previousPage === "bencana-24jam"
+    ));
+  
+  const filteredData = isTerkiniMode 
+    ? issuesData 
+    : (selectedCategory === "Semua" 
+        ? issuesData 
+        : issuesData.filter(issue => issue.kategori === selectedCategory));
 
   const chartData = filteredData.slice(0, 5); 
   const listData = filteredData.slice(0, isTerkiniMode ? 20 : 10); 
+
+  const isRedTheme = 
+    currentPage.includes("pdip") || 
+    currentPage.includes("puan") || 
+    currentPage.includes("megawati") || 
+    (currentPage === "detail" && (
+      previousPage.includes("pdip") || 
+      previousPage.includes("puan") || 
+      previousPage.includes("megawati")
+    ));
 
   // =========================================================================
   // HALAMAN YOUTUBE DATA ANALYSIS
@@ -126,17 +165,34 @@ export default function SocialMediaMonitoring() {
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
               <ArrowLeft size={20} /> Menu Utama
             </button>
-            <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
+            <button 
+              onClick={fetchYoutubeData} 
+              className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors"
+            >
               <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data (Actual)
             </button>
           </div>
 
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden flex flex-col items-center">
             <div className="w-full bg-[#0d1117] flex items-center border-b border-[#30363d]">
-              <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "umum" ? "border-red-500 text-red-500 bg-red-950/10" : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"}`}>
+              <button 
+                onClick={() => setYtFetchMode("umum")} 
+                className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
+                  ytFetchMode === "umum" 
+                    ? "border-red-500 text-red-500 bg-red-950/10" 
+                    : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"
+                }`}
+              >
                 Pemantauan Semua Saluran
               </button>
-              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "kol" ? "border-blue-500 text-blue-500 bg-blue-950/10" : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"}`}>
+              <button 
+                onClick={() => setYtFetchMode("kol")} 
+                className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
+                  ytFetchMode === "kol" 
+                    ? "border-blue-500 text-blue-500 bg-blue-950/10" 
+                    : "border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#161b22]"
+                }`}
+              >
                 KOL / Berita (Targeted 10 Media)
               </button>
             </div>
@@ -147,20 +203,37 @@ export default function SocialMediaMonitoring() {
                 <div>
                   <h2 className="text-xl font-bold text-white leading-tight">YouTube Data Analysis: Puan Maharani & Ketua DPR</h2>
                   <p className="text-sm text-gray-400">
-                    {ytFetchMode === "kol" ? "Melacak 10 Akun VIP Media & KOL dalam 7 hari terakhir." : "Menampilkan rilis publik 7 hari terakhir (Difilter > 1.000 Views)."}
+                    {ytFetchMode === "kol" 
+                      ? "Melacak 10 Akun VIP Media & KOL dalam 7 hari terakhir." 
+                      : "Menampilkan rilis publik 7 hari terakhir (Difilter > 1.000 Views)."}
                   </p>
                 </div>
               </div>
               
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-xs font-bold text-gray-400 mr-1">Urutkan:</span>
-                <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                <button 
+                  onClick={() => setYtSortMode("views")} 
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                    ytSortMode === "views" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"
+                  }`}
+                >
                   View Terbesar
                 </button>
-                <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                <button 
+                  onClick={() => setYtSortMode("likes")} 
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                    ytSortMode === "likes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"
+                  }`}
+                >
                   Like Terbesar
                 </button>
-                <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>
+                <button 
+                  onClick={() => setYtSortMode("dislikes")} 
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                    ytSortMode === "dislikes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"
+                  }`}
+                >
                   Dislike Terbesar
                 </button>
               </div>
@@ -212,7 +285,9 @@ export default function SocialMediaMonitoring() {
               </div>
             ) : (
               <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">
-                {ytFetchMode === "kol" ? "Belum ada KOL/Media terpilih yang membahas topik tersebut minggu ini." : "Tidak ada video relevan terkait tokoh tersebut (Filter > 1.000 Views)."}
+                {ytFetchMode === "kol" 
+                  ? "Belum ada KOL/Media terpilih yang membahas topik tersebut minggu ini." 
+                  : "Tidak ada video relevan terkait tokoh tersebut (Filter > 1.000 Views)."}
               </div>
             )}
           </div>
@@ -309,11 +384,11 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Berita Nasional" 
               />
-              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <h2 className="text-2xl font-black text-white mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-white mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
                   Berita Nasional Umum
                 </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                   <button onClick={() => setCurrentPage("12jam")} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
                     <TrendingUp size={16}/> Monitoring Top News
                   </button>
@@ -332,11 +407,11 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Bencana Terkini" 
               />
-              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <h2 className="text-2xl font-black text-orange-400 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-orange-400 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
                   Berita Bencana Terkini
                 </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                   <button onClick={() => setCurrentPage("bencana-24jam")} className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
                     <AlertTriangle size={16}/> Monitoring Bencana
                   </button>
@@ -352,11 +427,11 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="PDI Perjuangan" 
               />
-              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
                   PDI Perjuangan
                 </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                   <button onClick={() => setCurrentPage("pdip-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
                     <TrendingUp size={16}/> Monitoring Top News
                   </button>
@@ -375,11 +450,11 @@ export default function SocialMediaMonitoring() {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Megawati Soekarnoputri" 
               />
-              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
                   Megawati Soekarnoputri
                 </h2>
-                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                   <button onClick={() => setCurrentPage("megawati-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
                     <TrendingUp size={16}/> Monitoring Top News
                   </button>
@@ -390,26 +465,26 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* CARD 5: PUAN MAHARANI */}
-            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22] md:col-span-2 lg:col-span-2">
+            {/* CARD 5: PUAN MAHARANI (Diubah jadi ukuran standar 1 kolom) */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-xl h-80 border border-[#30363d] bg-[#161b22]">
               <img 
                 src="https://drive.google.com/thumbnail?id=1eyDRQ31YYop8cQByWpyc6O3P-JBWUDoS&sz=w1000" 
                 referrerPolicy="no-referrer"
                 className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110" 
                 alt="Puan Maharani" 
               />
-              <div className="absolute inset-0 bg-[#0d1117]/85 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <h2 className="text-3xl font-black text-red-500 mb-8 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 drop-shadow-md">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <h2 className="text-2xl font-black text-red-500 mb-6 text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-md">
                   Puan Maharani
                 </h2>
-                <div className="flex flex-col md:flex-row gap-4 w-full max-w-[90%] justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
-                  <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 flex-1 flex items-center justify-center gap-2">
+                <div className="flex flex-col gap-3 w-full max-w-[90%] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                  <button onClick={() => setCurrentPage("puan-12jam")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
                     <TrendingUp size={16}/> Top News
                   </button>
-                  <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 flex-1 flex items-center justify-center gap-2">
+                  <button onClick={() => setCurrentPage("puan-terkini")} className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
                     <Zap size={16}/> Berita Terkini
                   </button>
-                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-red-950 hover:bg-red-900 border border-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 flex-1 flex items-center justify-center gap-2">
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-red-950 hover:bg-red-900 border border-red-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-105 w-full flex items-center justify-center gap-2">
                     <PlaySquare size={16}/> YouTube Analysis
                   </button>
                 </div>
