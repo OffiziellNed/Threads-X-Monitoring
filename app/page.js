@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Filter, 
-  PlaySquare, Zap, Search, Flame
+  PlaySquare, Zap, Search, Flame, Eye, ThumbsUp, ThumbsDown
 } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
@@ -139,30 +139,29 @@ export default function SocialMediaMonitoring() {
     let sortedYtVideos = ytData && ytData.length > 0 ? [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]) : [];
 
     return (
-      <main className="min-h-screen p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
+      <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
         <div className="w-full max-w-6xl space-y-6 mt-4">
-          
           <div className="flex justify-between items-center w-full">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
             </button>
             <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1f242c] transition-colors">
-              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data
+              <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh
             </button>
           </div>
 
-          <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col items-center pb-4">
+          <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col pb-4">
             <div className="w-full bg-[#0d1117] flex items-center">
               <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-red-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
-              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-blue-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita (Targeted)</button>
+              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-blue-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita</button>
             </div>
 
-            <div className="w-full p-6 flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="w-full p-4 md:p-6 flex flex-col lg:flex-row justify-between items-start md:items-center gap-6">
               <div className="flex items-center gap-3">
                 <PlaySquare size={28} className={ytFetchMode === "kol" ? "text-blue-500" : "text-red-500"} />
                 <div>
-                  <h2 className="text-xl font-bold text-white leading-tight">YouTube Analysis: Puan Maharani</h2>
-                  <p className="text-sm text-gray-400">Menampilkan data 7 hari terakhir (Filter &gt; 1.000 Views).</p>
+                  <h2 className="text-lg md:text-xl font-bold text-white leading-tight">YouTube Analysis: Puan Maharani</h2>
+                  <p className="text-xs md:text-sm text-gray-400">7 hari terakhir (Filter &gt; 1.000 Views).</p>
                 </div>
               </div>
               
@@ -177,46 +176,89 @@ export default function SocialMediaMonitoring() {
             {isLoadingYt ? (
               <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
-              <div className="w-full overflow-x-auto mt-2">
-                <table className="w-full border-collapse text-xs md:text-sm text-left">
-                  <thead>
-                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                      {/* GARIS HEADER JUGA DIHAPUS TOTAL */}
-                      <th className="py-5 px-4 text-center w-10">No</th>
-                      <th className="py-5 px-4 text-left w-24">Tanggal</th>
-                      <th className="py-5 px-4 text-left w-20">Waktu</th>
-                      <th className="py-5 px-4 text-left">Judul Konten</th>
-                      <th className="py-5 px-4 text-right w-20">View</th>
-                      <th className="py-5 px-4 text-right w-20">Like</th>
-                      <th className="py-5 px-4 text-right w-20">Dislike</th>
-                      <th className="py-5 px-4 text-center w-16">Link</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedYtVideos.map((vid, idx) => (
-                      <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                        {/* GARIS BAWAH (BORDER-B) DIHAPUS TOTAL DARI ROW INI */}
-                        <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
-                        <td className="py-4 px-4 text-gray-400">{vid.date}</td>
-                        <td className="py-4 px-4 text-gray-400">{vid.time}</td>
-                        <td className="py-4 px-4">
-                           {/* Lebar teks YT juga dibatasi biar rapi */}
-                           <div className="flex flex-col gap-1 max-w-[85%] pr-4">
-                            <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
-                            <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed">{vid.title}</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
-                        <td className="py-4 px-4 text-right text-blue-400">{vid.likes.toLocaleString()}</td>
-                        <td className="py-4 px-4 text-right text-red-400">{vid.dislikes.toLocaleString()}</td>
-                        <td className="py-4 px-4 text-center">
-                          <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-gray-500 hover:text-white"><ExternalLink size={16} /></a>
-                        </td>
+              <>
+                {/* TAMPILAN DESKTOP (Tabel Normal, Tidak Berubah) */}
+                <div className="hidden md:block w-full overflow-x-auto mt-2">
+                  <table className="w-full border-collapse text-xs md:text-sm text-left">
+                    <thead>
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
+                        <th className="py-5 px-4 text-center w-10">No</th>
+                        <th className="py-5 px-4 text-left w-24">Tanggal</th>
+                        <th className="py-5 px-4 text-left w-20">Waktu</th>
+                        <th className="py-5 px-4 text-left">Judul Konten</th>
+                        <th className="py-5 px-4 text-right w-20">View</th>
+                        <th className="py-5 px-4 text-right w-20">Like</th>
+                        <th className="py-5 px-4 text-right w-20">Dislike</th>
+                        <th className="py-5 px-4 text-center w-16">Link</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {sortedYtVideos.map((vid, idx) => (
+                        <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
+                          <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
+                          <td className="py-4 px-4 text-gray-400">{vid.date}</td>
+                          <td className="py-4 px-4 text-gray-400">{vid.time}</td>
+                          <td className="py-4 px-4">
+                            <div className="flex flex-col gap-1 max-w-[85%] pr-4">
+                              <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                              <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed">{vid.title}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right text-blue-400">{vid.likes.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right text-red-400">{vid.dislikes.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-center">
+                            <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-gray-500 hover:text-white"><ExternalLink size={16} /></a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* TAMPILAN MOBILE (Card View, Agar Tidak Scroll Samping) */}
+                <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
+                  {sortedYtVideos.map((vid, idx) => (
+                    <div key={vid.id} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                        <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span>
+                      </div>
+                      
+                      <h3 className="text-gray-200 font-medium text-sm leading-snug">
+                        {vid.title}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
+                        <span>{vid.date}</span>
+                        <span>•</span>
+                        <span>{vid.time}</span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 py-3 mt-1 border-t border-white/5">
+                         <div className="flex flex-col items-center justify-center">
+                           <span className="text-gray-500 text-[10px] flex items-center gap-1"><Eye size={10}/> View</span>
+                           <span className="text-gray-200 font-bold text-xs">{vid.views.toLocaleString()}</span>
+                         </div>
+                         <div className="flex flex-col items-center justify-center">
+                           <span className="text-gray-500 text-[10px] flex items-center gap-1"><ThumbsUp size={10}/> Like</span>
+                           <span className="text-blue-400 font-bold text-xs">{vid.likes.toLocaleString()}</span>
+                         </div>
+                         <div className="flex flex-col items-center justify-center">
+                           <span className="text-gray-500 text-[10px] flex items-center gap-1"><ThumbsDown size={10}/> Dislike</span>
+                           <span className="text-red-400 font-bold text-xs">{vid.dislikes.toLocaleString()}</span>
+                         </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-white/5 flex justify-end">
+                        <a href={vid.link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 w-full bg-gray-700 hover:bg-gray-600 shadow-md">
+                          <ExternalLink size={14} /> Tonton Video
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="w-full flex justify-center items-center h-64 text-gray-500 text-sm">Tidak ada video terkait.</div>
             )}
@@ -227,7 +269,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (TIDAK BERUBAH)
+  // HALAMAN UTAMA (MENU DEPAN - TIDAK BERUBAH)
   // =========================================================================
   if (currentPage === "main") {
     return (
@@ -240,7 +282,6 @@ export default function SocialMediaMonitoring() {
           </div>
           
           <div className="flex flex-col gap-5 md:gap-6 w-full px-2 md:px-8">
-            
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
               <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
@@ -313,7 +354,7 @@ export default function SocialMediaMonitoring() {
             <ArrowLeft size={18} /> Menu Utama
           </button>
           
-          <h1 className="text-xl md:text-2xl font-black text-white text-center flex-1">
+          <h1 className="text-xl md:text-2xl font-black text-white text-center flex-1 hidden md:block">
             Daftar Monitor Isu
           </h1>
 
@@ -322,11 +363,9 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {/* ============================================================== */}
-        {/* FILTER CATEGORY - DI KASIH JARAK BESAR (MARGIN Y) BIAR LEGA */}
-        {/* ============================================================== */}
-        <div className="w-full my-12">
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 px-2">
+        {/* FILTER CATEGORY */}
+        <div className="w-full my-8 md:my-12">
+          <div className="flex flex-wrap items-center justify-center gap-3 md:gap-8 px-2">
             {categories.map((cat) => (
               <button 
                 key={cat} 
@@ -350,87 +389,133 @@ export default function SocialMediaMonitoring() {
         ) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
             
-            <div className="w-full px-6 py-5 flex justify-end items-center">
-              <div className="flex items-center gap-4">
+            <div className="w-full px-4 md:px-6 py-4 flex flex-wrap justify-between items-center gap-3">
+              <h1 className="text-lg font-bold text-white md:hidden">Daftar Isu Terkini</h1>
+              <div className="flex items-center gap-3 md:ml-auto">
                 <button 
                   onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? 'bg-orange-500 text-white' : 'bg-[#1c2128] text-gray-400 hover:text-orange-400'}`}
                 >
                   <Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
                 </button>
-                <span className="text-xs font-medium text-gray-500">Total: {tableData.length} data</span>
+                <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} data</span>
               </div>
             </div>
 
             {tableData.length > 0 ? (
-              <div className="w-full overflow-x-auto mt-2">
-                <table className="w-full border-collapse text-xs md:text-sm text-left">
-                  <thead>
-                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                      {/* SEMUA GARIS DI THEAD DIHAPUS TOTAL */}
-                      <th className="py-5 px-4 w-12 text-center">No</th>
-                      <th className="py-5 px-4 w-32 whitespace-nowrap">Tanggal</th>
-                      <th className="py-5 px-4 w-20 whitespace-nowrap text-center">Waktu</th>
-                      <th className="py-5 px-4 w-32 whitespace-nowrap">Sumber</th>
-                      <th className="py-5 px-4 w-28">Kategori</th>
-                      <th className="py-5 px-4 w-[50%]">Judul Konten</th>
-                      <th className="py-5 px-4 w-24 text-center">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tableData.map((isu, idx) => {
-                      const { date, time } = formatDateTime(isu.pubDate);
-                      const newsLink = getCleanLink(isu);
+              <>
+                {/* TAMPILAN DESKTOP (Tabel Bersih, Tidak Berubah) */}
+                <div className="hidden md:block w-full overflow-x-auto mt-2">
+                  <table className="w-full border-collapse text-xs md:text-sm text-left">
+                    <thead>
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
+                        <th className="py-5 px-4 w-12 text-center">No</th>
+                        <th className="py-5 px-4 w-32 whitespace-nowrap">Tanggal</th>
+                        <th className="py-5 px-4 w-20 whitespace-nowrap text-center">Waktu</th>
+                        <th className="py-5 px-4 w-32 whitespace-nowrap">Sumber</th>
+                        <th className="py-5 px-4 w-28">Kategori</th>
+                        <th className="py-5 px-4 w-[50%]">Judul Konten</th>
+                        <th className="py-5 px-4 w-24 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableData.map((isu, idx) => {
+                        const { date, time } = formatDateTime(isu.pubDate);
+                        const newsLink = getCleanLink(isu);
 
-                      return (
-                        <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                          {/* SEMUA GARIS BORDER-B DI TBODY DIHAPUS TOTAL */}
-                          <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
-                          <td className="py-4 px-4 text-gray-400 whitespace-nowrap">{date}</td>
-                          <td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center">{time}</td>
-                          <td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
-                          <td className="py-4 px-4">
-                            <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
-                              {isu.kategori}
-                            </span>
-                          </td>
-                          
-                          {/* KOLOM JUDUL KONTEN - RESTRIKSI TEKS DAN RUANG TOP */}
-                          <td className="py-4 px-4">
-                            <div className="flex items-start justify-between w-full">
-                              
-                              {/* Pembatasan Teks (max-w-[85%]) agar otomatis terpotong dan turun sebelum nyentuh TOP */}
-                              <span className="flex-1 max-w-[85%] pr-6 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
-                                {isu.topik}
+                        return (
+                          <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
+                            <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
+                            <td className="py-4 px-4 text-gray-400 whitespace-nowrap">{date}</td>
+                            <td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center">{time}</td>
+                            <td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
+                            <td className="py-4 px-4">
+                              <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
+                                {isu.kategori}
                               </span>
-                              
-                              {/* Kolom statis khusus untuk badge TOP biar lurus ke bawah */}
-                              <div className="shrink-0 w-[60px] flex justify-end items-start mt-0.5">
-                                {isu.isTrending && (
-                                  <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1" title="Top News (Trending)">
-                                    <Flame size={12} className="text-orange-500" />
-                                    <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
-                                  </div>
-                                )}
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-start justify-between w-full">
+                                <span className="flex-1 max-w-[85%] pr-6 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
+                                  {isu.topik}
+                                </span>
+                                <div className="shrink-0 w-[60px] flex justify-end items-start mt-0.5">
+                                  {isu.isTrending && (
+                                    <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1" title="Top News (Trending)">
+                                      <Flame size={12} className="text-orange-500" />
+                                      <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              {newsLink !== "#" ? (
+                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md">
+                                  <ExternalLink size={14} /> Baca
+                                </a>
+                              ) : (
+                                <span className="text-gray-600 text-xs font-medium italic">No Link</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 text-center">
-                            {newsLink !== "#" ? (
-                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md">
-                                <ExternalLink size={14} /> Baca
-                              </a>
-                            ) : (
-                              <span className="text-gray-600 text-xs font-medium italic">No Link</span>
+                {/* TAMPILAN MOBILE (Card View, Agar Tidak Scroll Samping) */}
+                <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
+                  {tableData.map((isu, idx) => {
+                    const { date, time } = formatDateTime(isu.pubDate);
+                    const newsLink = getCleanLink(isu);
+
+                    return (
+                      <div key={idx} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+                        
+                        <div className="flex justify-between items-start gap-2">
+                          <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
+                            {isu.kategori}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {isu.isTrending && (
+                              <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                <Flame size={10} className="text-orange-500" />
+                                <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                              </div>
                             )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span>
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-gray-200 font-medium text-sm leading-snug">
+                          {isu.topik}
+                        </h3>
+
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                          <span>{date}</span>
+                          <span>•</span>
+                          <span>{time}</span>
+                          <span>•</span>
+                          <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
+                        </div>
+
+                        <div className="pt-3 mt-1 border-t border-white/5 flex justify-end">
+                          {newsLink !== "#" ? (
+                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 w-full bg-gray-700 hover:bg-gray-600 shadow-md">
+                              <ExternalLink size={14} /> Baca Artikel
+                            </a>
+                          ) : (
+                            <span className="text-gray-600 text-xs font-medium italic w-full text-center">No Link Available</span>
+                          )}
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 px-4">
                 <Search size={40} className="text-gray-600 mb-4" />
