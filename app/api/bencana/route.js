@@ -2,11 +2,8 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// =========================================================================
-// FUNGSI PEMBERSIH LINK MUTLAK (Anti Google Redirect)
-// =========================================================================
 const cleanUrl = (rawUrl) => {
-  if (!rawUrl) return "";
+  if (!rawUrl) return "#";
   try {
     const decodedUrl = rawUrl.replace(/&amp;/g, '&');
     if (decodedUrl.includes("google.com/url")) {
@@ -20,21 +17,15 @@ const cleanUrl = (rawUrl) => {
   }
 };
 
-// =========================================================================
-// FUNGSI FORMAT TANGGAL (Standar "DD Bulan YYYY pukul HH:MM WIB")
-// =========================================================================
 const formatPubDate = (pubDateStr) => {
   if (!pubDateStr) return "-";
   try {
     const date = new Date(pubDateStr);
     if (isNaN(date.getTime())) return pubDateStr; 
-    
     const optionsDate = { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };
     const optionsTime = { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' };
-    
     const formattedDate = new Intl.DateTimeFormat('id-ID', optionsDate).format(date);
     const formattedTime = new Intl.DateTimeFormat('id-ID', optionsTime).format(date).replace(/\./g, ':');
-    
     return `${formattedDate} pukul ${formattedTime} WIB`;
   } catch (error) {
     return pubDateStr;
@@ -78,11 +69,9 @@ export async function GET(request) {
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         
-        // PEMBERSIH NAMA SUMBER: Memotong teks panjang setelah strip, koma, atau pipa
-        let rawSource = sourceMatch ? sourceMatch[1] : "Media";
+        let rawSource = sourceMatch ? sourceMatch[1] : "Media Nasional";
         let cleanSource = rawSource.split(" - ")[0].split(",")[0].split("|")[0].trim();
 
-        // EKSTRAK LINK ASLI DAN FORMAT TANGGAL
         const linkAsli = linkMatch ? cleanUrl(linkMatch[1]) : "#";
         const pubDateRapi = formatPubDate(dateMatch[1]);
 
@@ -95,7 +84,7 @@ export async function GET(request) {
           timestamp: articleDate.getTime(),
           articleTitle: rawTitle,
           articleDesc: pureDesc,
-          link: linkAsli, // <-- Link asli yang langsung tembus ke sumber berita
+          link: linkAsli, // Parameter penentu link tombol "Baca"
           sourcesList: [{ name: `${cleanSource} (Artikel Utama)`, url: linkAsli }]
         });
       }
@@ -123,4 +112,3 @@ export async function GET(request) {
     return NextResponse.json({ success: false, data: [] });
   }
 }
-```[cite: 1]
