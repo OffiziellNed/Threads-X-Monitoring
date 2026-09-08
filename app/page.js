@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Filter, 
   PlaySquare, TrendingUp, Zap, AlertTriangle, Search, Flame
@@ -10,7 +11,6 @@ export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
   
-  // Data State
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +24,6 @@ export default function SocialMediaMonitoring() {
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
-  // Fetching Data Top News & Terkini
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
@@ -86,25 +85,46 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage, ytFetchMode]);
 
-  // Pemisah Tanggal & Waktu Akurat
+  // LOGIKA PISAH TANGGAL & WAKTU (Pukul)
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const str = String(dateStr);
-    const timeMatch = str.match(/\b\d{2}:\d{2}(?::\d{2})?\b/); // Cari pola jam spt 14:30
     
-    if (timeMatch) {
-      const time = timeMatch[0];
-      const date = str.replace(time, '').replace(/WIB|WITA|WIT/i, '').replace(/,/g, '').trim();
+    // Deteksi "pukul 12.05" atau "12:05" beserta WIB/WITA/WIT
+    const timeRegex = /(?:pukul\s*)?(\d{2}[.:]\d{2}(?:[.:]\d{2})?)\s*(?:WIB|WITA|WIT)?/i;
+    const match = str.match(timeRegex);
+    
+    if (match) {
+      // Standarisasi titik jadi titik dua (12.05 -> 12:05)
+      let time = match[1].replace(/\./g, ':'); 
+      let date = str.replace(match[0], '').replace(/,/g, '').trim();
       return { date: date || '-', time };
     }
     return { date: str, time: '-' };
+  };
+
+  // LOGIKA AUTO-LINK BERITA
+  const getLink = (isu) => {
+    if (isu.url) return isu.url;
+    if (isu.link) return isu.link;
+    if (isu.url_berita) return isu.url_berita;
+    if (isu.link_berita) return isu.link_berita;
+    
+    // Cari properti apapun yang bernilai string link http
+    for (const key in isu) {
+      if (typeof isu[key] === 'string' && isu[key].startsWith('http')) {
+        return isu[key];
+      }
+    }
+    
+    // Fallback mutlak kalau dari API nggak ada link sama sekali
+    return `https://www.google.com/search?q=${encodeURIComponent(isu.topik)}`;
   };
 
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
   const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
   const isRedTheme = isRedCurr || isRedPrev;
 
-  // TABEL DATA + FILTER TOP NEWS
   const topNewsTitles = topNewsData.map(d => d.topik);
   let tableData = terkiniData.map(d => ({
     ...d,
@@ -203,10 +223,9 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA - DESKTOP (2-3) & MOBILE (2-2-1), UKURAN 110px KUNCI MATI
+  // HALAMAN UTAMA (UKURAN 110px KUNCI MATI | DESKTOP 2-3 | MOBILE 2-2-1)
   // =========================================================================
   if (currentPage === "main") {
-    // w-[110px] untuk memastikan ukuran konstan di HP dan Desktop
     const boxCard = "relative group overflow-hidden rounded-xl shadow-xl border border-[#30363d] bg-[#161b22] cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(0,0,0,0.8)] flex-none w-[110px] h-[110px]";
 
     return (
@@ -221,9 +240,8 @@ export default function SocialMediaMonitoring() {
           
           <div className="flex flex-col gap-3 items-center w-full">
             
-            {/* Baris 1: Pasti 2 Kartu sejajar di atas */}
+            {/* Baris 1: 2 Kartu (Selalu Sejajar) */}
             <div className="flex justify-center gap-3 md:gap-4 w-full">
-              
               <div className={boxCard}>
                 <img src="/nasional.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Nasional" />
                 <div 
@@ -249,12 +267,10 @@ export default function SocialMediaMonitoring() {
                   </div>
                 </div>
               </div>
-
             </div>
 
-            {/* Baris 2: Desktop 3 Kartu, Mobile max-w-[240px] maksa pecah jadi 2-1 (Total layout jadi 2-2-1) */}
+            {/* Baris 2: Desktop 3 Kartu, HP 2-1 (Total 2-2-1) */}
             <div className="flex flex-wrap justify-center gap-3 md:gap-4 w-full max-w-[240px] md:max-w-none mx-auto">
-
               <div className={boxCard}>
                 <img src="/pdip.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="PDIP" />
                 <div 
@@ -308,15 +324,17 @@ export default function SocialMediaMonitoring() {
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-6 mt-4">
         
-        {/* Header Navigation */}
-        <div className="flex flex-wrap gap-4 justify-between items-center bg-[#161b22] p-4 rounded-2xl border border-[#30363d] shadow-lg">
-          <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-medium transition-colors">
+        {/* Header Navigation - NO BOARD/BOX, just clean text */}
+        <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2">
+          <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
             <ArrowLeft size={18} /> Menu Utama
           </button>
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg md:text-xl font-black text-white hidden sm:block">Daftar Monitor Isu</h1>
-          </div>
-          <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#0d1117] border border-[#30363d] px-4 py-2 rounded-xl text-sm font-semibold hover:border-gray-500 transition-colors">
+          
+          <h1 className="text-xl md:text-2xl font-black text-white text-center flex-1">
+            Daftar Monitor Isu
+          </h1>
+
+          <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm font-semibold hover:border-gray-500 transition-colors">
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
@@ -361,9 +379,9 @@ export default function SocialMediaMonitoring() {
                   <thead>
                     <tr className="bg-[#12161c] border-b border-[#30363d] text-gray-400 uppercase tracking-wider font-semibold text-[11px] md:text-xs">
                       <th className="py-4 px-4 w-12 text-center border-r border-[#30363d]/50">No</th>
-                      <th className="py-4 px-4 w-28 border-r border-[#30363d]/50 whitespace-nowrap">Tanggal</th>
-                      <th className="py-4 px-4 w-24 border-r border-[#30363d]/50 whitespace-nowrap">Waktu</th>
-                      <th className="py-4 px-4 w-32 border-r border-[#30363d]/50">Sumber</th>
+                      <th className="py-4 px-4 w-32 border-r border-[#30363d]/50 whitespace-nowrap">Tanggal</th>
+                      <th className="py-4 px-4 w-24 border-r border-[#30363d]/50 whitespace-nowrap text-center">Waktu</th>
+                      <th className="py-4 px-4 w-40 border-r border-[#30363d]/50 whitespace-nowrap">Sumber</th>
                       <th className="py-4 px-4 w-32 border-r border-[#30363d]/50">Kategori</th>
                       <th className="py-4 px-4 border-r border-[#30363d]/50">Judul Konten</th>
                       <th className="py-4 px-4 w-28 text-center">Aksi</th>
@@ -372,12 +390,13 @@ export default function SocialMediaMonitoring() {
                   <tbody>
                     {tableData.map((isu, idx) => {
                       const { date, time } = formatDateTime(isu.pubDate);
-                      const newsLink = isu.url || isu.link || "#";
+                      const newsLink = getLink(isu); // Dapatkan link cerdas
+
                       return (
                         <tr key={idx} className="border-b border-[#30363d]/50 hover:bg-[#1c2128] transition-colors group">
                           <td className="py-3 px-4 text-center text-gray-500 font-medium border-r border-[#30363d]/50">{idx + 1}</td>
                           <td className="py-3 px-4 text-gray-300 font-medium border-r border-[#30363d]/50 whitespace-nowrap">{date}</td>
-                          <td className="py-3 px-4 text-gray-400 border-r border-[#30363d]/50 whitespace-nowrap">{time}</td>
+                          <td className="py-3 px-4 text-gray-400 font-medium border-r border-[#30363d]/50 whitespace-nowrap text-center">{time}</td>
                           <td className="py-3 px-4 text-gray-300 font-medium border-r border-[#30363d]/50 whitespace-nowrap">{isu.source || '-'}</td>
                           <td className="py-3 px-4 border-r border-[#30363d]/50">
                             <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400 border border-red-900/50' : 'bg-blue-950/30 text-blue-400 border border-blue-900/50'}`}>
@@ -386,7 +405,8 @@ export default function SocialMediaMonitoring() {
                           </td>
                           <td className="py-3 px-4 border-r border-[#30363d]/50">
                             <div className="flex items-start gap-2">
-                              <span className="text-gray-100 font-semibold leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span>
+                              {/* Font jadi normal/medium, tidak tebal/board lagi */}
+                              <span className="text-gray-100 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span>
                               {isu.isTrending && (
                                 <div className="shrink-0 mt-0.5 bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 border border-orange-500/30" title="Top News (Trending)">
                                   <Flame size={12} className="text-orange-500" />
@@ -396,13 +416,9 @@ export default function SocialMediaMonitoring() {
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center">
-                            {newsLink !== "#" ? (
-                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
-                                <ExternalLink size={14} /> Baca
-                              </a>
-                            ) : (
-                              <span className="text-gray-500 text-xs italic">No Link</span>
-                            )}
+                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
+                              <ExternalLink size={14} /> Baca
+                            </a>
                           </td>
                         </tr>
                       );
