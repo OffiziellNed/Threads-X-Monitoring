@@ -4,25 +4,11 @@ export const dynamic = 'force-dynamic';
 
 const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat'];
 
-function getRealVolume(title, allTitles) {
-  const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-  const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w));
-  if (coreWords.length === 0) return Math.floor(Math.random() * 5) + 30;
-
-  let count = 0;
-  allTitles.forEach(t => {
-    const tLower = t.toLowerCase();
-    const isRelated = coreWords.some(cw => {
-       const regex = new RegExp(`\\b${cw}\\b`);
-       return regex.test(tLower);
-    });
-    if (isRelated) count++;
-  });
-  return (count * 4) + coreWords.length + 25;
-}
-
+// =========================================================================
+// FUNGSI PEMBERSIH URL & FORMAT TANGGAL
+// =========================================================================
 const cleanUrl = (rawUrl) => {
-  if (!rawUrl) return "";
+  if (!rawUrl) return "#";
   try {
     const decodedUrl = rawUrl.replace(/&amp;/g, '&');
     if (decodedUrl.includes("google.com/url")) {
@@ -41,18 +27,28 @@ const formatPubDate = (pubDateStr) => {
   try {
     const date = new Date(pubDateStr);
     if (isNaN(date.getTime())) return pubDateStr; 
-    
     const optionsDate = { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };
     const optionsTime = { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' };
-    
     const formattedDate = new Intl.DateTimeFormat('id-ID', optionsDate).format(date);
     const formattedTime = new Intl.DateTimeFormat('id-ID', optionsTime).format(date).replace(/\./g, ':');
-    
     return `${formattedDate} pukul ${formattedTime} WIB`;
   } catch (error) {
     return pubDateStr;
   }
 };
+
+function getRealVolume(title, allTitles) {
+  const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+  const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w));
+  if (coreWords.length === 0) return Math.floor(Math.random() * 5) + 30;
+
+  let count = 0;
+  allTitles.forEach(t => {
+    const tLower = t.toLowerCase();
+    if (coreWords.some(cw => new RegExp(`\\b${cw}\\b`).test(tLower))) count++;
+  });
+  return (count * 4) + coreWords.length + 25;
+}
 
 export async function GET(request) {
   try {
@@ -60,6 +56,7 @@ export async function GET(request) {
     const hours = parseInt(searchParams.get('hours') || '12', 10);
     const mode = searchParams.get('mode') || 'volume'; 
     
+    // Berita Nasional Real-time dari Google News Indonesia
     const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
 
     const response = await fetch(rssUrl, { cache: 'no-store' });
@@ -94,7 +91,6 @@ export async function GET(request) {
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         
-        // PEMBERSIH NAMA SUMBER: Memotong teks panjang setelah strip atau koma (Misal: detikFinance - Berita... jadi detikFinance)
         let rawSource = sourceMatch ? sourceMatch[1] : "Media Nasional";
         let cleanSource = rawSource.split(" - ")[0].split(",")[0].split("|")[0].trim();
 
@@ -102,21 +98,43 @@ export async function GET(request) {
         const pubDateRapi = formatPubDate(dateMatch[1]);
 
         const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
+        
+        // Default kategori jika tidak ada yang cocok
         let kategori = "Sosial"; 
 
-        if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|kebugaran|skor|klasemen|olimpiade|medali|pssi|premier league|manchester united|hull city|pertandingan|turnamen|klub|pemain|pelatih)\b/)) { kategori = "Olahraga"; }
-        else if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|kegawatdaruratan|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) { kategori = "Bencana"; }
-        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { kategori = "Entertainment"; }
-        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|direktur|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) { kategori = "Finansial"; }
-        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi)\b/)) { kategori = "Teknologi"; }
-        else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan)\b/)) { kategori = "Hukum"; }
-        else if (textToAnalyze.match(/\b(politik|partai|pdip|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|deklarasikan|pemilu|pilkada|dpr|koalisi|oposisi|pwnu|muktamar|kampanye|kpu|bawaslu|demokrasi|parlemen|caleg|cagub|cabup|cawalkot|perang|diplomasi internasional)\b/)) { kategori = "Politik"; }
-        else if (textToAnalyze.match(/\b(pemerintah|presiden|menteri|birokrasi|pelayanan publik|anggaran|program kerja|tata kota|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri)\b/)) { kategori = "Pemerintahan"; }
+        // =========================================================================
+        // LOGIKA KATEGORI DIPERKUAT (Prioritas dari atas ke bawah)
+        // =========================================================================
+        if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) { 
+            kategori = "Bencana"; 
+        }
+        else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan|kejagung)\b/)) { 
+            kategori = "Hukum"; 
+        }
+        // PEMERINTAHAN DIPERKUAT: Masukkan Prabowo, Gibran, Jokowi, Istana, Kabinet, IKN, dll
+        else if (textToAnalyze.match(/\b(pemerintah|presiden|wapres|menteri|kabinet|istana|prabowo|gibran|jokowi|birokrasi|pelayanan publik|anggaran|program kerja|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri|ikn|bumn|pemprov|pemkot|pemkab|dinas)\b/)) { 
+            kategori = "Pemerintahan"; 
+        }
+        else if (textToAnalyze.match(/\b(politik|partai|pdip|gerindra|golkar|pks|pkb|nasdem|demokrat|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|pemilu|pilkada|dpr|dprd|mpr|koalisi|oposisi|kampanye|kpu|bawaslu|demokrasi|parlemen|caleg|cagub|cabup|cawalkot)\b/)) { 
+            kategori = "Politik"; 
+        }
+        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|direktur|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) { 
+            kategori = "Finansial"; 
+        }
+        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi|kominfo)\b/)) { 
+            kategori = "Teknologi"; 
+        }
+        else if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|kebugaran|skor|klasemen|olimpiade|medali|pssi|premier league|pertandingan|turnamen|klub|pemain|pelatih)\b/)) { 
+            kategori = "Olahraga"; 
+        }
+        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { 
+            kategori = "Entertainment"; 
+        }
 
         rawItems.push({
           topik: cleanTitle,
           kategori: kategori,
-          source: cleanSource, // <-- Nama sumber sudah dipotong rapi!
+          source: cleanSource,
           pubDate: pubDateRapi,
           timestamp: articleDate.getTime(),
           articleTitle: rawTitle,
