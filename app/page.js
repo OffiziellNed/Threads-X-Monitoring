@@ -100,7 +100,7 @@ export default function SocialMediaMonitoring() {
     return { date: str, time: '-' };
   };
 
-  // SISTEM EKSTRAK LINK (FRONTEND FAILSAFE)
+  // SISTEM EKSTRAK LINK
   const getCleanLink = (isu) => {
     const dataString = JSON.stringify(isu);
     const urlMatch = dataString.match(/https?:\/\/[^\s"'\\]+/);
@@ -146,18 +146,19 @@ export default function SocialMediaMonitoring() {
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
               <ArrowLeft size={20} /> Menu Utama
             </button>
-            <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm hover:border-white transition-colors">
+            <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] px-4 py-2 rounded-xl text-sm hover:bg-[#1f242c] transition-colors">
               <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data
             </button>
           </div>
 
-          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden flex flex-col items-center">
-            <div className="w-full bg-[#0d1117] flex items-center border-b border-[#30363d]">
-              <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "umum" ? "border-red-500 text-red-500 bg-red-950/10" : "border-transparent text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
-              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${ytFetchMode === "kol" ? "border-blue-500 text-blue-500 bg-blue-950/10" : "border-transparent text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita (Targeted)</button>
+          {/* Kotak Utama YouTube tanpa border luar */}
+          <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col items-center pb-4">
+            <div className="w-full bg-[#0d1117] flex items-center border-b border-[#30363d]/30">
+              <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-red-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
+              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-blue-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita (Targeted)</button>
             </div>
 
-            <div className="w-full p-6 border-b border-[#30363d] flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="w-full p-6 border-b border-[#30363d]/30 flex flex-col lg:flex-row justify-between items-center gap-6">
               <div className="flex items-center gap-3">
                 <PlaySquare size={28} className={ytFetchMode === "kol" ? "text-blue-500" : "text-red-500"} />
                 <div>
@@ -168,9 +169,9 @@ export default function SocialMediaMonitoring() {
               
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-xs font-bold text-gray-400 mr-1">Urutkan:</span>
-                <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>View</button>
-                <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "likes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>Like</button>
-                <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${ytSortMode === "dislikes" ? "bg-[#1f242c] text-white border-gray-500" : "bg-transparent text-gray-400 border-[#30363d] hover:bg-[#1c2128]"}`}>Dislike</button>
+                <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white" : "bg-transparent text-gray-400 hover:bg-[#1c2128]"}`}>View</button>
+                <button onClick={() => setYtSortMode("likes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${ytSortMode === "likes" ? "bg-[#1f242c] text-white" : "bg-transparent text-gray-400 hover:bg-[#1c2128]"}`}>Like</button>
+                <button onClick={() => setYtSortMode("dislikes")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${ytSortMode === "dislikes" ? "bg-[#1f242c] text-white" : "bg-transparent text-gray-400 hover:bg-[#1c2128]"}`}>Dislike</button>
               </div>
             </div>
 
@@ -178,22 +179,23 @@ export default function SocialMediaMonitoring() {
               <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <div className="w-full overflow-x-auto">
+                {/* TABEL YOUTUBE TANPA GARIS */}
                 <table className="w-full border-collapse text-xs md:text-sm">
                   <thead>
-                    <tr className="bg-[#0d1117]/30 border-b border-[#30363d] text-gray-400 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                      <th className="py-4 px-4 text-center w-10">No</th>
-                      <th className="py-4 px-4 text-left w-24">Tanggal</th>
-                      <th className="py-4 px-4 text-left w-20">Waktu</th>
-                      <th className="py-4 px-4 text-left">Judul Konten</th>
-                      <th className="py-4 px-4 text-right w-20">View</th>
-                      <th className="py-4 px-4 text-right w-20">Like</th>
-                      <th className="py-4 px-4 text-right w-20">Dislike</th>
-                      <th className="py-4 px-4 text-center w-16">Link</th>
+                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
+                      <th className="py-5 px-4 text-center w-10">No</th>
+                      <th className="py-5 px-4 text-left w-24">Tanggal</th>
+                      <th className="py-5 px-4 text-left w-20">Waktu</th>
+                      <th className="py-5 px-4 text-left">Judul Konten</th>
+                      <th className="py-5 px-4 text-right w-20">View</th>
+                      <th className="py-5 px-4 text-right w-20">Like</th>
+                      <th className="py-5 px-4 text-right w-20">Dislike</th>
+                      <th className="py-5 px-4 text-center w-16">Link</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedYtVideos.map((vid, idx) => (
-                      <tr key={vid.id} className="border-b border-[#30363d]/50 hover:bg-[#1c2128]/60 transition-all group last:border-0">
+                      <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-[#0d1117]/20 hover:bg-[#1f242c]/50">
                         <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
                         <td className="py-4 px-4 text-gray-400">{vid.date}</td>
                         <td className="py-4 px-4 text-gray-400">{vid.time}</td>
@@ -227,7 +229,6 @@ export default function SocialMediaMonitoring() {
   if (currentPage === "main") {
     return (
       <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-4">
-        
         <div className="w-full max-w-3xl flex flex-col items-center justify-center gap-6 md:gap-8 h-full max-h-[95vh]">
           
           <div className="text-center shrink-0 mb-2">
@@ -238,7 +239,7 @@ export default function SocialMediaMonitoring() {
           <div className="flex flex-col gap-5 md:gap-6 w-full px-2 md:px-8">
             
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Berita Nasional</h2>
                 <button onClick={() => setCurrentPage("nasional")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -248,7 +249,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Bencana Terkini</h2>
                 <button onClick={() => setCurrentPage("bencana")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -258,7 +259,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">PDI Perjuangan</h2>
                 <button onClick={() => setCurrentPage("pdip")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -268,7 +269,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Megawati Soekarnoputri</h2>
                 <button onClick={() => setCurrentPage("megawati")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -278,14 +279,14 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-gray-800" />
+              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Puan Maharani</h2>
                 <div className="flex flex-wrap gap-2 md:gap-3">
                   <button onClick={() => setCurrentPage("puan")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                     <Search size={16}/> Cek Sekarang
                   </button>
-                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent border border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-white py-2 px-4 md:px-5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-sm w-max transition-colors">
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white py-2 px-4 md:px-5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 transition-colors">
                     <PlaySquare size={16}/> YouTube
                   </button>
                 </div>
@@ -298,12 +299,12 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (TABEL MODERN) ---
+  // --- HALAMAN DAFTAR MONITORING (TABEL CLEAN TANPA GARIS) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-4 mt-4">
         
-        <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-2">
+        <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-4">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
             <ArrowLeft size={18} /> Menu Utama
           </button>
@@ -312,12 +313,12 @@ export default function SocialMediaMonitoring() {
             Daftar Monitor Isu
           </h1>
 
-          <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] px-4 py-2 rounded-xl text-sm font-semibold hover:border-gray-500 transition-colors">
+          <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#161b22] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1f242c] transition-colors">
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
 
-        <div className="w-full mb-6 mt-2">
+        <div className="w-full mb-8">
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 px-2">
             {categories.map((cat) => (
               <button 
@@ -340,9 +341,9 @@ export default function SocialMediaMonitoring() {
             <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? 'border-red-500' : 'border-blue-500'}`}></div>
           </div>
         ) : (
-          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden pb-10">
+          <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
             
-            <div className="w-full px-6 py-4 border-b border-[#30363d] bg-[#0d1117]/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="w-full px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#30363d]/30">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 Database Isu Terkini
               </h2>
@@ -359,7 +360,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {isTopNewsFilter && (
-              <div className="w-full px-6 py-3 bg-orange-950/20 border-b border-[#30363d] text-xs text-gray-300">
+              <div className="w-full px-6 py-3 bg-orange-950/20 text-xs text-gray-300">
                 <span className="font-bold text-orange-400">Info Filter Top News:</span> Data di bawah adalah isu yang paling banyak dibicarakan (Trending) berdasarkan volume publikasi yang tinggi di berbagai sumber dalam waktu berdekatan.
               </div>
             )}
@@ -368,15 +369,14 @@ export default function SocialMediaMonitoring() {
               <div className="w-full overflow-x-auto">
                 <table className="w-full border-collapse text-xs md:text-sm text-left">
                   <thead>
-                    <tr className="bg-[#0d1117]/30 border-b border-[#30363d] text-gray-400 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                      {/* Tidak ada lagi border-r, padding diperlebar jadi px-4 */}
-                      <th className="py-4 px-4 w-12 text-center">No</th>
-                      <th className="py-4 px-4 w-32 whitespace-nowrap">Tanggal</th>
-                      <th className="py-4 px-4 w-20 whitespace-nowrap text-center">Waktu</th>
-                      <th className="py-4 px-4 w-32 whitespace-nowrap">Sumber</th>
-                      <th className="py-4 px-4 w-28">Kategori</th>
-                      <th className="py-4 px-4 w-[50%]">Judul Konten</th>
-                      <th className="py-4 px-4 w-24 text-center">Aksi</th>
+                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
+                      <th className="py-5 px-4 w-12 text-center">No</th>
+                      <th className="py-5 px-4 w-32 whitespace-nowrap">Tanggal</th>
+                      <th className="py-5 px-4 w-20 whitespace-nowrap text-center">Waktu</th>
+                      <th className="py-5 px-4 w-32 whitespace-nowrap">Sumber</th>
+                      <th className="py-5 px-4 w-28">Kategori</th>
+                      <th className="py-5 px-4 w-[50%]">Judul Konten</th>
+                      <th className="py-5 px-4 w-24 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -385,23 +385,22 @@ export default function SocialMediaMonitoring() {
                       const newsLink = getCleanLink(isu);
 
                       return (
-                        <tr key={idx} className="border-b border-[#30363d]/50 hover:bg-[#1c2128]/60 transition-all group last:border-0">
-                          {/* Semua elemen <td> diubah menjadi px-4 dan tanpa border vertikal */}
+                        /* BORDER DIHAPUS TOTAL. Pakai Zebra Striping (odd/even) buat pisahin baris */
+                        <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#0d1117]/20 hover:bg-[#1f242c]/50">
                           <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
                           <td className="py-4 px-4 text-gray-400 whitespace-nowrap">{date}</td>
                           <td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center">{time}</td>
                           <td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
                           <td className="py-4 px-4">
-                            <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400 border border-red-900/50' : 'bg-blue-950/30 text-blue-400 border border-blue-900/50'}`}>
+                            <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
                               {isu.kategori}
                             </span>
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex items-start gap-2">
-                              {/* Warna font hover jadi sedikit nyala */}
                               <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span>
                               {isu.isTrending && (
-                                <div className="shrink-0 mt-0.5 bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 border border-orange-500/30" title="Top News (Trending)">
+                                <div className="shrink-0 mt-0.5 bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1" title="Top News (Trending)">
                                   <Flame size={12} className="text-orange-500" />
                                   <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
                                 </div>
@@ -410,7 +409,7 @@ export default function SocialMediaMonitoring() {
                           </td>
                           <td className="py-4 px-4 text-center">
                             {newsLink !== "#" ? (
-                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md hover:shadow-lg">
+                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md">
                                 <ExternalLink size={14} /> Baca
                               </a>
                             ) : (
