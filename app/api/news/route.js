@@ -99,36 +99,39 @@ export async function GET(request) {
 
         const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
         
-        // Default kategori jika tidak ada yang cocok
         let kategori = "Sosial"; 
 
         // =========================================================================
-        // LOGIKA KATEGORI DIPERKUAT (Prioritas dari atas ke bawah)
+        // HIERARKI KATEGORI DIPERBAIKI (Spesifik di atas, General di bawah)
         // =========================================================================
+        
         if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) { 
             kategori = "Bencana"; 
+        }
+        // OLAHRAGA DIPINDAH KE ATAS: Cegah "Presiden Klub" masuk Pemerintahan
+        else if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|skor|klasemen|olimpiade|medali|pssi|premier league|pertandingan|turnamen|klub|pemain|pelatih|fifa|uefa|madrid|barca|milan|inter|arsenal|chelsea|manchester)\b/)) { 
+            kategori = "Olahraga"; 
+        }
+        // ENTERTAINMENT: Cegah "Presiden Direktur MD Entertainment" masuk Pemerintahan
+        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { 
+            kategori = "Entertainment"; 
+        }
+        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi|kominfo)\b/)) { 
+            kategori = "Teknologi"; 
+        }
+        // FINANSIAL: Cegah "Presiden Direktur Bank" masuk Pemerintahan
+        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) { 
+            kategori = "Finansial"; 
         }
         else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan|kejagung)\b/)) { 
             kategori = "Hukum"; 
         }
-        // PEMERINTAHAN DIPERKUAT: Masukkan Prabowo, Gibran, Jokowi, Istana, Kabinet, IKN, dll
+        // PEMERINTAHAN DITARUH DI BAWAH: Baru dieksekusi kalau murni bukan soal bola, saham, atau artis
         else if (textToAnalyze.match(/\b(pemerintah|presiden|wapres|menteri|kabinet|istana|prabowo|gibran|jokowi|birokrasi|pelayanan publik|anggaran|program kerja|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri|ikn|bumn|pemprov|pemkot|pemkab|dinas)\b/)) { 
             kategori = "Pemerintahan"; 
         }
         else if (textToAnalyze.match(/\b(politik|partai|pdip|gerindra|golkar|pks|pkb|nasdem|demokrat|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|pemilu|pilkada|dpr|dprd|mpr|koalisi|oposisi|kampanye|kpu|bawaslu|demokrasi|parlemen|caleg|cagub|cabup|cawalkot)\b/)) { 
             kategori = "Politik"; 
-        }
-        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|direktur|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) { 
-            kategori = "Finansial"; 
-        }
-        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi|kominfo)\b/)) { 
-            kategori = "Teknologi"; 
-        }
-        else if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|kebugaran|skor|klasemen|olimpiade|medali|pssi|premier league|pertandingan|turnamen|klub|pemain|pelatih)\b/)) { 
-            kategori = "Olahraga"; 
-        }
-        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { 
-            kategori = "Entertainment"; 
         }
 
         rawItems.push({
