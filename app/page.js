@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Filter, 
   PlaySquare, Zap, Search, Flame
@@ -10,6 +11,7 @@ export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
   
+  // Data State
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,6 +98,26 @@ export default function SocialMediaMonitoring() {
       return { date: date || '-', time };
     }
     return { date: str, time: '-' };
+  };
+
+  // SISTEM EKSTRAK LINK (FRONTEND FAILSAFE)
+  const getCleanLink = (isu) => {
+    const dataString = JSON.stringify(isu);
+    const urlMatch = dataString.match(/https?:\/\/[^\s"'\\]+/);
+    
+    if (urlMatch) {
+      let link = urlMatch[0];
+      if (link.includes('google.com/url')) {
+        try {
+          const urlObj = new URL(link.replace(/&amp;/g, '&'));
+          const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
+          if (clean) return clean;
+        } catch (e) {}
+      }
+      return link; 
+    }
+    const query = encodeURIComponent(`"${isu.topik}" ${isu.source ? isu.source : ''}`);
+    return `https://www.google.com/search?q=${query}`;
   };
 
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
@@ -200,70 +222,79 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA
+  // HALAMAN UTAMA - PROPER, LEBAR, NO BOARD, 100% NO SCROLL
   // =========================================================================
   if (currentPage === "main") {
     return (
       <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 md:gap-5 h-full max-h-[90vh]">
+        
+        {/* Container diperlebar (max-w-3xl) agar layout memanjang dengan elegan di desktop */}
+        <div className="w-full max-w-3xl flex flex-col items-center justify-center gap-6 md:gap-8 h-full max-h-[95vh]">
           
-          <div className="text-center space-y-1 mb-2 shrink-0">
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">Public Trend Radar</h1>
-            <p className="text-gray-400 text-xs md:text-sm font-medium">Monitoring isu publik terupdate secara real-time.</p>
+          {/* Header */}
+          <div className="text-center shrink-0 mb-2">
+            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-sm mb-2">Public Trend Radar</h1>
+            <p className="text-gray-400 text-sm md:text-base font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          <div className="flex flex-col gap-3 w-full px-2">
+          {/* List Kartu Berita - 100% TANPA BOARD, hanya elemen yang mengambang rapi */}
+          <div className="flex flex-col gap-5 md:gap-6 w-full px-2 md:px-8">
             
-            <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
-              <img src="/nasional.png" alt="Nasional" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
-              <div className="flex flex-col ml-4 flex-1 justify-center">
-                <h2 className="text-white font-bold text-sm md:text-base mb-2">Berita Nasional</h2>
-                <button onClick={() => setCurrentPage("nasional")} className="bg-gray-700 hover:bg-gray-600 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm w-max transition-colors">
-                  <Search size={14}/> Cek Sekarang
+            {/* Nasional */}
+            <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
+              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
+                <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Berita Nasional</h2>
+                <button onClick={() => setCurrentPage("nasional")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                  <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
-              <img src="/bencana.png" alt="Bencana" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
-              <div className="flex flex-col ml-4 flex-1 justify-center">
-                <h2 className="text-white font-bold text-sm md:text-base mb-2">Bencana Terkini</h2>
-                <button onClick={() => setCurrentPage("bencana")} className="bg-gray-700 hover:bg-gray-600 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm w-max transition-colors">
-                  <Search size={14}/> Cek Sekarang
+            {/* Bencana */}
+            <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
+              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
+                <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Bencana Terkini</h2>
+                <button onClick={() => setCurrentPage("bencana")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                  <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
-              <img src="/pdip.png" alt="PDIP" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
-              <div className="flex flex-col ml-4 flex-1 justify-center">
-                <h2 className="text-white font-bold text-sm md:text-base mb-2">PDI Perjuangan</h2>
-                <button onClick={() => setCurrentPage("pdip")} className="bg-gray-700 hover:bg-gray-600 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm w-max transition-colors">
-                  <Search size={14}/> Cek Sekarang
+            {/* PDIP */}
+            <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
+              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
+                <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">PDI Perjuangan</h2>
+                <button onClick={() => setCurrentPage("pdip")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                  <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
-              <img src="/megawati.png" alt="Megawati" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
-              <div className="flex flex-col ml-4 flex-1 justify-center">
-                <h2 className="text-white font-bold text-sm md:text-base mb-2">Megawati Soekarnoputri</h2>
-                <button onClick={() => setCurrentPage("megawati")} className="bg-gray-700 hover:bg-gray-600 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm w-max transition-colors">
-                  <Search size={14}/> Cek Sekarang
+            {/* Megawati */}
+            <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
+              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800" />
+              <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
+                <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Megawati Soekarnoputri</h2>
+                <button onClick={() => setCurrentPage("megawati")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                  <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
-              <img src="/puan.png" alt="Puan Maharani" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover object-top shrink-0 border border-[#30363d]/50" />
-              <div className="flex flex-col ml-4 flex-1 justify-center">
-                <h2 className="text-white font-bold text-sm md:text-base mb-2">Puan Maharani</h2>
-                <div className="flex gap-2">
-                  <button onClick={() => setCurrentPage("puan")} className="bg-gray-700 hover:bg-gray-600 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm w-max transition-colors">
-                    <Search size={14}/> Cek Sekarang
+            {/* Puan Maharani */}
+            <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
+              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-gray-800" />
+              <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
+                <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Puan Maharani</h2>
+                <div className="flex flex-wrap gap-2 md:gap-3">
+                  <button onClick={() => setCurrentPage("puan")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                    <Search size={16}/> Cek Sekarang
                   </button>
-                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent border border-gray-500 text-gray-300 hover:bg-[#1f242c] hover:text-white py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm w-max transition-colors">
-                    <PlaySquare size={14}/> YouTube
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent border border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-white py-2 px-4 md:px-5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-sm w-max transition-colors">
+                    <PlaySquare size={16}/> YouTube
                   </button>
                 </div>
               </div>
@@ -275,7 +306,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN TABEL MONITORING (KOLOM SUMBER KECIL, JUDUL KONTEN LEBAR) ---
+  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW & FILTER) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-4 mt-4">
@@ -349,10 +380,8 @@ export default function SocialMediaMonitoring() {
                       <th className="py-4 px-3 w-12 text-center border-r border-[#30363d]/50">No</th>
                       <th className="py-4 px-3 w-32 border-r border-[#30363d]/50 whitespace-nowrap">Tanggal</th>
                       <th className="py-4 px-3 w-20 border-r border-[#30363d]/50 whitespace-nowrap text-center">Waktu</th>
-                      {/* Sumber diperkecil lebarnya (w-32) */}
                       <th className="py-4 px-3 w-32 border-r border-[#30363d]/50 whitespace-nowrap">Sumber</th>
                       <th className="py-4 px-3 w-32 border-r border-[#30363d]/50">Kategori</th>
-                      {/* Judul Konten diperluas secara maksimal */}
                       <th className="py-4 px-4 w-[50%] border-r border-[#30363d]/50">Judul Konten</th>
                       <th className="py-4 px-3 w-24 text-center">Aksi</th>
                     </tr>
@@ -360,7 +389,7 @@ export default function SocialMediaMonitoring() {
                   <tbody>
                     {tableData.map((isu, idx) => {
                       const { date, time } = formatDateTime(isu.pubDate);
-                      const newsLink = isu.link !== "#" ? isu.link : null;
+                      const newsLink = getCleanLink(isu);
 
                       return (
                         <tr key={idx} className="border-b border-[#30363d]/50 hover:bg-[#1c2128] transition-colors group">
@@ -385,7 +414,7 @@ export default function SocialMediaMonitoring() {
                             </div>
                           </td>
                           <td className="py-3 px-3 text-center">
-                            {newsLink ? (
+                            {newsLink !== "#" ? (
                               <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto bg-gray-700 hover:bg-gray-600 shadow-md hover:shadow-lg">
                                 <ExternalLink size={14} /> Baca
                               </a>
