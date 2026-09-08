@@ -93,8 +93,11 @@ export async function GET(request) {
 
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
-        const sourceName = sourceMatch ? sourceMatch[1] : "Media Nasional";
         
+        // PEMBERSIH NAMA SUMBER: Memotong teks panjang setelah strip atau koma (Misal: detikFinance - Berita... jadi detikFinance)
+        let rawSource = sourceMatch ? sourceMatch[1] : "Media Nasional";
+        let cleanSource = rawSource.split(" - ")[0].split(",")[0].split("|")[0].trim();
+
         const linkAsli = linkMatch ? cleanUrl(linkMatch[1]) : "#";
         const pubDateRapi = formatPubDate(dateMatch[1]);
 
@@ -113,13 +116,13 @@ export async function GET(request) {
         rawItems.push({
           topik: cleanTitle,
           kategori: kategori,
-          source: sourceName,
+          source: cleanSource, // <-- Nama sumber sudah dipotong rapi!
           pubDate: pubDateRapi,
           timestamp: articleDate.getTime(),
           articleTitle: rawTitle,
           articleDesc: pureDesc,
           link: linkAsli,
-          sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: linkAsli }],
+          sourcesList: [{ name: `${cleanSource} (Artikel Utama)`, url: linkAsli }],
           diffHours: diffHours 
         });
       }
