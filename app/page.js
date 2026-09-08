@@ -11,6 +11,7 @@ export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
   
+  // Data State
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,17 +86,16 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage, ytFetchMode]);
 
-  // LOGIKA PISAH TANGGAL & WAKTU (Pukul)
+  // LOGIKA PISAH TANGGAL & WAKTU
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const str = String(dateStr);
     
-    // Deteksi "pukul 12.05" atau "12:05" beserta WIB/WITA/WIT
+    // Ambil pola waktu (contoh: 12:05 atau 12.05)
     const timeRegex = /(?:pukul\s*)?(\d{2}[.:]\d{2}(?:[.:]\d{2})?)\s*(?:WIB|WITA|WIT)?/i;
     const match = str.match(timeRegex);
     
     if (match) {
-      // Standarisasi titik jadi titik dua (12.05 -> 12:05)
       let time = match[1].replace(/\./g, ':'); 
       let date = str.replace(match[0], '').replace(/,/g, '').trim();
       return { date: date || '-', time };
@@ -103,22 +103,19 @@ export default function SocialMediaMonitoring() {
     return { date: str, time: '-' };
   };
 
-  // LOGIKA AUTO-LINK BERITA
+  // LOGIKA LINK (MURNI TANPA GOOGLE SEARCH)
   const getLink = (isu) => {
     if (isu.url) return isu.url;
     if (isu.link) return isu.link;
     if (isu.url_berita) return isu.url_berita;
     if (isu.link_berita) return isu.link_berita;
     
-    // Cari properti apapun yang bernilai string link http
     for (const key in isu) {
       if (typeof isu[key] === 'string' && isu[key].startsWith('http')) {
         return isu[key];
       }
     }
-    
-    // Fallback mutlak kalau dari API nggak ada link sama sekali
-    return `https://www.google.com/search?q=${encodeURIComponent(isu.topik)}`;
+    return "#";
   };
 
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
@@ -223,34 +220,37 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (UKURAN 110px KUNCI MATI | DESKTOP 2-3 | MOBILE 2-2-1)
+  // HALAMAN UTAMA - DESKTOP & MOBILE KECIL (FORMASI 2 - 3)
   // =========================================================================
   if (currentPage === "main") {
-    const boxCard = "relative group overflow-hidden rounded-xl shadow-xl border border-[#30363d] bg-[#161b22] cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(0,0,0,0.8)] flex-none w-[110px] h-[110px]";
+    // Menggunakan standar Tailwind murni: w-32 (128px) untuk HP, w-36 (144px) untuk desktop. Dijamin kecil.
+    const boxCard = "relative group overflow-hidden rounded-xl md:rounded-2xl shadow-xl border border-[#30363d] bg-[#161b22] cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(0,0,0,0.8)] flex-none w-32 h-32 md:w-36 md:h-36";
 
     return (
       <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-2 md:p-4">
         
-        <div className="flex flex-col items-center gap-4 md:gap-6 w-full max-w-4xl">
+        <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
           
           <div className="text-center space-y-1">
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-sm">Public Trend Radar</h1>
-            <p className="text-gray-400 text-[10px] md:text-xs font-medium">Monitoring isu publik terupdate secara real-time.</p>
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">Public Trend Radar</h1>
+            <p className="text-gray-400 text-xs font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          <div className="flex flex-col gap-3 items-center w-full">
+          {/* PEMBAGIAN BARIS MANUAL SUPAYA PASTI JADI 2 - 3 */}
+          <div className="flex flex-col gap-4 items-center w-full">
             
-            {/* Baris 1: 2 Kartu (Selalu Sejajar) */}
-            <div className="flex justify-center gap-3 md:gap-4 w-full">
+            {/* Baris 1: Pasti 2 Kartu */}
+            <div className="flex justify-center gap-4 w-full">
+              
               <div className={boxCard}>
                 <img src="/nasional.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Nasional" />
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 z-20"
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-3 z-20"
                   style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-white font-bold text-[10px] md:text-[11px] mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Berita Nasional</h2>
-                  <div className="flex flex-col w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("nasional")} className="bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek Sekarang</button>
+                  <h2 className="text-white font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Berita Nasional</h2>
+                  <div className="w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("nasional")} className="bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded-md text-[9px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek</button>
                   </div>
                 </div>
               </div>
@@ -258,28 +258,30 @@ export default function SocialMediaMonitoring() {
               <div className={boxCard}>
                 <img src="/bencana.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Bencana" />
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 z-20"
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-3 z-20"
                   style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-orange-400 font-bold text-[10px] md:text-[11px] mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Bencana Terkini</h2>
-                  <div className="flex flex-col w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("bencana")} className="bg-orange-600 hover:bg-orange-500 text-white py-1.5 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek Sekarang</button>
+                  <h2 className="text-orange-400 font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Bencana Terkini</h2>
+                  <div className="w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("bencana")} className="bg-orange-600 hover:bg-orange-500 text-white py-1.5 rounded-md text-[9px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek</button>
                   </div>
                 </div>
               </div>
+
             </div>
 
-            {/* Baris 2: Desktop 3 Kartu, HP 2-1 (Total 2-2-1) */}
-            <div className="flex flex-wrap justify-center gap-3 md:gap-4 w-full max-w-[240px] md:max-w-none mx-auto">
+            {/* Baris 2: Pasti 3 Kartu */}
+            <div className="flex justify-center gap-4 w-full">
+
               <div className={boxCard}>
                 <img src="/pdip.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="PDIP" />
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 z-20"
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-3 z-20"
                   style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-red-400 font-bold text-[10px] md:text-[11px] mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">PDI Perjuangan</h2>
-                  <div className="flex flex-col w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("pdip")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek Sekarang</button>
+                  <h2 className="text-red-400 font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">PDI Perjuangan</h2>
+                  <div className="w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("pdip")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 rounded-md text-[9px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek</button>
                   </div>
                 </div>
               </div>
@@ -287,12 +289,12 @@ export default function SocialMediaMonitoring() {
               <div className={boxCard}>
                 <img src="/megawati.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Megawati" />
                 <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 z-20"
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-3 z-20"
                   style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-red-400 font-bold text-[10px] md:text-[11px] mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Megawati</h2>
-                  <div className="flex flex-col w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("megawati")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek Sekarang</button>
+                  <h2 className="text-red-400 font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Megawati</h2>
+                  <div className="w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("megawati")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 rounded-md text-[9px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek</button>
                   </div>
                 </div>
               </div>
@@ -303,10 +305,10 @@ export default function SocialMediaMonitoring() {
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 z-20"
                   style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
                 >
-                  <h2 className="text-red-400 font-bold text-[10px] md:text-[11px] mb-1.5 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Puan Maharani</h2>
-                  <div className="flex flex-col gap-1.5 w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("puan")} className="bg-red-600 hover:bg-red-500 text-white py-1 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={8}/> Cek Sekarang</button>
-                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent border border-red-500/70 text-red-400 hover:bg-red-900/40 py-1 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><PlaySquare size={8}/> YouTube</button>
+                  <h2 className="text-red-400 font-bold text-[10px] md:text-xs mb-1.5 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Puan Maharani</h2>
+                  <div className="flex flex-col gap-1 w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                    <button onClick={() => setCurrentPage("puan")} className="bg-red-600 hover:bg-red-500 text-white py-1 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={8}/> Cek</button>
+                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] border border-red-500/70 text-red-400 hover:bg-red-900/40 py-1 rounded-md text-[8px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><PlaySquare size={8}/> YouTube</button>
                   </div>
                 </div>
               </div>
@@ -319,14 +321,14 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW & TOP NEWS FILTER) ---
+  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW & FILTER TANPA BOARD) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
-      <div className="w-full max-w-[1400px] space-y-6 mt-4">
+      <div className="w-full max-w-[1400px] space-y-4 mt-4">
         
-        {/* Header Navigation - NO BOARD/BOX, just clean text */}
-        <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2">
-          <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
+        {/* Header Navigation Minimalis */}
+        <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-2">
+          <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-medium transition-colors">
             <ArrowLeft size={18} /> Menu Utama
           </button>
           
@@ -339,23 +341,23 @@ export default function SocialMediaMonitoring() {
           </button>
         </div>
 
-        {/* Toolbar Filters */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#161b22] p-4 rounded-2xl border border-[#30363d]">
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter size={16} className="text-gray-400 mr-1"/>
+        {/* Filter Minimalis Tanpa Board & Tanpa Icon */}
+        <div className="w-full mb-6 mt-2">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 px-2">
             {categories.map((cat) => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${selectedCategory === cat ? (isRedTheme ? 'bg-red-600 text-white border-red-500' : 'bg-blue-600 text-white border-blue-500') : 'bg-[#0d1117] text-gray-400 border-[#30363d] hover:bg-[#1f242c]'}`}>
+              <button 
+                key={cat} 
+                onClick={() => setSelectedCategory(cat)} 
+                className={`text-xs md:text-sm font-bold transition-all ${
+                  selectedCategory === cat 
+                    ? (isRedTheme ? 'text-red-400 border-b-2 border-red-400 pb-1' : 'text-blue-400 border-b-2 border-blue-400 pb-1') 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
                 {cat}
               </button>
             ))}
           </div>
-
-          <button 
-            onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold border transition-all ${isTopNewsFilter ? 'bg-orange-500 text-white border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'bg-[#0d1117] text-gray-400 border-[#30363d] hover:border-orange-500 hover:text-orange-400'}`}
-          >
-            <Flame size={16} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
-          </button>
         </div>
 
         {isLoading ? (
@@ -364,13 +366,30 @@ export default function SocialMediaMonitoring() {
           </div>
         ) : (
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl shadow-xl overflow-hidden pb-10">
-            <div className="w-full px-6 py-4 border-b border-[#30363d] bg-[#0d1117]/50 flex justify-between items-center">
+            
+            {/* Header Tabel (Judul, Tombol Filter Top News Sebaris, Total Data) */}
+            <div className="w-full px-6 py-4 border-b border-[#30363d] bg-[#0d1117]/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                {isTopNewsFilter ? <Flame size={20} className="text-orange-400"/> : <Zap size={20} className={isRedTheme ? "text-red-400" : "text-blue-400"} />} 
-                {isTopNewsFilter ? "Menampilkan Top News (Trending)" : "Database Isu Terkini"}
+                Database Isu Terkini
               </h2>
-              <span className="text-xs font-medium text-gray-500">Total: {tableData.length} data</span>
+              
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? 'bg-orange-500 text-white' : 'bg-[#1c2128] text-gray-400 hover:text-orange-400'}`}
+                >
+                  <Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
+                </button>
+                <span className="text-xs font-medium text-gray-500">Total: {tableData.length} data</span>
+              </div>
             </div>
+
+            {/* Info Top News jika aktif */}
+            {isTopNewsFilter && (
+              <div className="w-full px-6 py-3 bg-orange-950/20 border-b border-[#30363d] text-xs text-gray-300">
+                <span className="font-bold text-orange-400">Info Filter Top News:</span> Data di bawah adalah isu yang paling banyak dibicarakan (Trending) berdasarkan volume publikasi yang tinggi di berbagai sumber dalam waktu berdekatan.
+              </div>
+            )}
 
             {/* TABEL EXCEL STYLE */}
             {tableData.length > 0 ? (
@@ -390,7 +409,7 @@ export default function SocialMediaMonitoring() {
                   <tbody>
                     {tableData.map((isu, idx) => {
                       const { date, time } = formatDateTime(isu.pubDate);
-                      const newsLink = getLink(isu); // Dapatkan link cerdas
+                      const newsLink = getLink(isu);
 
                       return (
                         <tr key={idx} className="border-b border-[#30363d]/50 hover:bg-[#1c2128] transition-colors group">
@@ -405,7 +424,6 @@ export default function SocialMediaMonitoring() {
                           </td>
                           <td className="py-3 px-4 border-r border-[#30363d]/50">
                             <div className="flex items-start gap-2">
-                              {/* Font jadi normal/medium, tidak tebal/board lagi */}
                               <span className="text-gray-100 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span>
                               {isu.isTrending && (
                                 <div className="shrink-0 mt-0.5 bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 border border-orange-500/30" title="Top News (Trending)">
@@ -416,9 +434,13 @@ export default function SocialMediaMonitoring() {
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
-                              <ExternalLink size={14} /> Baca
-                            </a>
+                            {newsLink !== "#" ? (
+                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
+                                <ExternalLink size={14} /> Baca
+                              </a>
+                            ) : (
+                              <span className="text-gray-600 text-xs italic">No Link</span>
+                            )}
                           </td>
                         </tr>
                       );
