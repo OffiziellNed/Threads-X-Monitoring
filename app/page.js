@@ -221,7 +221,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA 
+  // HALAMAN UTAMA
   // =========================================================================
   if (currentPage === "main") {
     return (
@@ -296,7 +296,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (TABEL BORDERLESS 100%) ---
+  // --- HALAMAN DAFTAR MONITORING ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-4 mt-4">
@@ -393,9 +393,14 @@ export default function SocialMediaMonitoring() {
                             </span>
                           </td>
                           <td className="py-4 px-4">
-                            <div className="flex items-start gap-2">
-                              <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span>
+                            {/* FLEXBOX JUSTIFY-BETWEEN DITERAPKAN DI SINI */}
+                            <div className="flex items-start justify-between gap-4 w-full">
+                              {/* Teks flex-1 agar memenuhi ruang dan memanjang kebawah jika panjang */}
+                              <span className="flex-1 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors pr-2">
+                                {isu.topik}
+                              </span>
                               {isu.isTrending && (
+                                {/* Ikon TOP diamankan posisinya dengan shrink-0 agar sejajar di kanan */}
                                 <div className="shrink-0 mt-0.5 bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1" title="Top News (Trending)">
                                   <Flame size={12} className="text-orange-500" />
                                   <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
