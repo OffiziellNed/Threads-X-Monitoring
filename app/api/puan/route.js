@@ -5,6 +5,45 @@ export const dynamic = 'force-dynamic';
 const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat'];
 const IGNORE_WORDS = ['puan', 'maharani', 'ketua', 'dpr'];
 
+// =========================================================================
+// FUNGSI PEMBERSIH URL (Anti Google Redirect)
+// =========================================================================
+const cleanUrl = (rawUrl) => {
+  if (!rawUrl) return "#";
+  try {
+    const decodedUrl = rawUrl.replace(/&amp;/g, '&');
+    if (decodedUrl.includes("google.com/url")) {
+      const urlObj = new URL(decodedUrl);
+      const cleanLink = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
+      if (cleanLink) return cleanLink; 
+    }
+    return decodedUrl;
+  } catch (error) {
+    return rawUrl;
+  }
+};
+
+// =========================================================================
+// FUNGSI FORMAT TANGGAL (Standar "DD Bulan YYYY pukul HH:MM WIB")
+// =========================================================================
+const formatPubDate = (pubDateStr) => {
+  if (!pubDateStr) return "-";
+  try {
+    const date = new Date(pubDateStr);
+    if (isNaN(date.getTime())) return pubDateStr; 
+    
+    const optionsDate = { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };
+    const optionsTime = { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' };
+    
+    const formattedDate = new Intl.DateTimeFormat('id-ID', optionsDate).format(date);
+    const formattedTime = new Intl.DateTimeFormat('id-ID', optionsTime).format(date).replace(/\./g, ':');
+    
+    return `${formattedDate} pukul ${formattedTime} WIB`;
+  } catch (error) {
+    return pubDateStr;
+  }
+};
+
 function getRealVolume(title, allTitles) {
   const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
   const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w) && !IGNORE_WORDS.includes(w));
@@ -65,9 +104,14 @@ export async function GET(request) {
 
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
-        const sourceName = sourceMatch ? sourceMatch[1] : "Media Nasional";
-        const link = linkMatch ? linkMatch[1] : "#";
-        const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
+        
+        // PEMBERSIH NAMA SUMBER: Memotong teks panjang setelah strip, koma, atau pipa[cite: 4]
+        let rawSource = sourceMatch ? sourceMatch[1] : "Media Nasional";
+        let cleanSource = rawSource.split(" - ")[0].split(",")[0].split("|")[0].trim();
+
+        // EKSTRAK LINK ASLI DAN FORMAT TANGGAL[cite: 4]
+        const linkAsli = linkMatch ? cleanUrl(linkMatch[1]) : "#";
+        const pubDateRapi = formatPubDate(dateMatch[1]);
 
         const textToAnalyze = (cleanTitle + " " + pureDesc).toLowerCase();
         let kategori = "Sosial"; 
@@ -84,12 +128,13 @@ export async function GET(request) {
         rawItems.push({
           topik: cleanTitle,
           kategori: kategori,
-          source: sourceName,
-          pubDate: pubDate,
+          source: cleanSource,
+          pubDate: pubDateRapi,
           timestamp: articleDate.getTime(),
           articleTitle: rawTitle,
           articleDesc: pureDesc,
-          sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
+          link: linkAsli, // <-- Link asli yang langsung tembus ke sumber berita[cite: 4]
+          sourcesList: [{ name: `${cleanSource} (Artikel Utama)`, url: linkAsli }]
         });
       }
     }
@@ -119,7 +164,7 @@ export async function GET(request) {
     }
     
     if (dynamicIssues.length === 0) {
-      dynamicIssues.push({ id: "puan-empty", topik: `Tidak ada berita Puan Maharani dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Coba cek mode 12 jam.", sourcesList: [] });
+      dynamicIssues.push({ id: "puan-empty", topik: `Tidak ada berita Puan Maharani dalam ${hours} jam terakhir.`, kategori: "Politik", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Coba cek mode 12 jam.", link: "#", sourcesList: [] });
     }
 
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
@@ -127,3 +172,4 @@ export async function GET(request) {
     return NextResponse.json({ success: false, data: [] });
   }
 }
+```[cite: 4]
