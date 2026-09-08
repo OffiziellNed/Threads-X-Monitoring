@@ -2,9 +2,47 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// =========================================================================
+// FUNGSI PEMBERSIH LINK MUTLAK (Anti Google Redirect)
+// =========================================================================
+const cleanUrl = (rawUrl) => {
+  if (!rawUrl) return "";
+  try {
+    const decodedUrl = rawUrl.replace(/&amp;/g, '&');
+    if (decodedUrl.includes("google.com/url")) {
+      const urlObj = new URL(decodedUrl);
+      const cleanLink = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
+      if (cleanLink) return cleanLink; 
+    }
+    return decodedUrl;
+  } catch (error) {
+    return rawUrl;
+  }
+};
+
+// =========================================================================
+// FUNGSI FORMAT TANGGAL (Standar "DD Bulan YYYY pukul HH:MM WIB")
+// =========================================================================
+const formatPubDate = (pubDateStr) => {
+  if (!pubDateStr) return "-";
+  try {
+    const date = new Date(pubDateStr);
+    if (isNaN(date.getTime())) return pubDateStr; 
+    
+    const optionsDate = { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' };
+    const optionsTime = { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' };
+    
+    const formattedDate = new Intl.DateTimeFormat('id-ID', optionsDate).format(date);
+    const formattedTime = new Intl.DateTimeFormat('id-ID', optionsTime).format(date).replace(/\./g, ':');
+    
+    return `${formattedDate} pukul ${formattedTime} WIB`;
+  } catch (error) {
+    return pubDateStr;
+  }
+};
+
 export async function GET(request) {
   try {
-    // Mesin pencari khusus kata kunci bencana alam dan kedaruratan dalam 24 jam
     const query = encodeURIComponent(`(bencana OR gempa OR banjir OR tsunami OR longsor OR kebakaran OR karhutla OR erupsi OR "gunung meletus" OR basarnas) when:24h`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=id&gl=ID&ceid=ID:id`;
 
@@ -25,7 +63,6 @@ export async function GET(request) {
         const articleDate = new Date(dateMatch[1]);
         const diffHours = (now - articleDate) / (1000 * 60 * 60);
         
-        // FILTER KETAT: Hanya berita 24 jam terakhir
         if (diffHours > 24) continue;
 
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
@@ -40,28 +77,32 @@ export async function GET(request) {
 
         const sourceMatch = item.match(/<source.*?>([\s\S]*?)<\/source>/);
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
-        const sourceName = sourceMatch ? sourceMatch[1] : "Media";
-        const link = linkMatch ? linkMatch[1] : "#";
-        const pubDate = articleDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
+        
+        // PEMBERSIH NAMA SUMBER: Memotong teks panjang setelah strip, koma, atau pipa
+        let rawSource = sourceMatch ? sourceMatch[1] : "Media";
+        let cleanSource = rawSource.split(" - ")[0].split(",")[0].split("|")[0].trim();
+
+        // EKSTRAK LINK ASLI DAN FORMAT TANGGAL
+        const linkAsli = linkMatch ? cleanUrl(linkMatch[1]) : "#";
+        const pubDateRapi = formatPubDate(dateMatch[1]);
 
         rawItems.push({
           id: `bencana-${i}`,
           topik: cleanTitle,
           kategori: "Bencana",
-          source: sourceName,
-          pubDate: pubDate,
-          timestamp: articleDate.getTime(), // Disimpan untuk logika pengurutan waktu
+          source: cleanSource,
+          pubDate: pubDateRapi,
+          timestamp: articleDate.getTime(),
           articleTitle: rawTitle,
           articleDesc: pureDesc,
-          sourcesList: [{ name: `${sourceName} (Artikel Utama)`, url: link }]
+          link: linkAsli, // <-- Link asli yang langsung tembus ke sumber berita
+          sourcesList: [{ name: `${cleanSource} (Artikel Utama)`, url: linkAsli }]
         });
       }
     }
 
-    // LOGIKA KHUSUS: Mengurutkan dari yang TERBARU (Berdasarkan Jam Rilis Asli), bukan berdasarkan Volume
     rawItems.sort((a, b) => b.timestamp - a.timestamp);
 
-    // Mencegah berita dengan judul yang sangat mirip tampil berulang
     let dynamicIssues = [];
     let seenTopics = new Set();
 
@@ -74,12 +115,12 @@ export async function GET(request) {
     });
 
     if (dynamicIssues.length === 0) {
-      dynamicIssues.push({ id: "bencana-empty", topik: `Tidak ada berita bencana signifikan dalam 24 jam terakhir.`, kategori: "Bencana", source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Aman terkendali.", sourcesList: [] });
+      dynamicIssues.push({ id: "bencana-empty", topik: `Tidak ada berita bencana signifikan dalam 24 jam terakhir.`, kategori: "Bencana", source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Aman terkendali.", link: "#", sourcesList: [] });
     }
 
-    // Tampilkan hingga 20 berita terbaru
     return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
   }
 }
+```[cite: 1]
