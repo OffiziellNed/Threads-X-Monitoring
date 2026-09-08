@@ -10,7 +10,6 @@ export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
   
-  // Data State
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,44 +96,6 @@ export default function SocialMediaMonitoring() {
       return { date: date || '-', time };
     }
     return { date: str, time: '-' };
-  };
-
-  // =========================================================================
-  // LOGIKA LINK BRUTAL (Mengekstrak URL asli dari bungkusan Google Redirect)
-  // =========================================================================
-  const getCleanLink = (isu) => {
-    // 1. Tangkap parameter link dari API
-    let rawLink = isu.link || isu.url || isu.guid || isu.url_berita || isu.link_berita || "";
-    
-    // Jika tidak ada di parameter standar, scan seluruh object
-    if (!rawLink) {
-      for (const key in isu) {
-        if (typeof isu[key] === 'string' && (isu[key].startsWith('http://') || isu[key].startsWith('https://'))) {
-          rawLink = isu[key];
-          break;
-        }
-      }
-    }
-
-    if (rawLink && typeof rawLink === 'string' && rawLink.startsWith('http')) {
-      // 2. BONGKAR BUNGKUSAN GOOGLE (google.com/url?q=... atau url=...)
-      if (rawLink.includes('google.com/url')) {
-        try {
-          const urlObj = new URL(rawLink);
-          const targetUrl = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-          if (targetUrl) return targetUrl; 
-        } catch (e) {
-          // Backup regex jika parsing URL bawaan gagal
-          const match = rawLink.match(/[?&](url|q)=([^&]+)/);
-          if (match) return decodeURIComponent(match[2]);
-        }
-      }
-      
-      // Jika link sudah murni (misal kompas.com langsung, atau news.google.com/articles yang aman), return langsung
-      return rawLink;
-    }
-    
-    return "#"; 
   };
 
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
@@ -239,12 +200,11 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA - RATA TENGAH, TEKS PUTIH, TOMBOL ABU TUA, DIJAMIN NO SCROLL
+  // HALAMAN UTAMA
   // =========================================================================
   if (currentPage === "main") {
     return (
       <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-4">
-        
         <div className="w-full max-w-sm flex flex-col items-center justify-center gap-4 md:gap-5 h-full max-h-[90vh]">
           
           <div className="text-center space-y-1 mb-2 shrink-0">
@@ -254,7 +214,6 @@ export default function SocialMediaMonitoring() {
           
           <div className="flex flex-col gap-3 w-full px-2">
             
-            {/* Nasional */}
             <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
               <img src="/nasional.png" alt="Nasional" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
               <div className="flex flex-col ml-4 flex-1 justify-center">
@@ -265,7 +224,6 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* Bencana */}
             <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
               <img src="/bencana.png" alt="Bencana" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
               <div className="flex flex-col ml-4 flex-1 justify-center">
@@ -276,7 +234,6 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* PDIP */}
             <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
               <img src="/pdip.png" alt="PDIP" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
               <div className="flex flex-col ml-4 flex-1 justify-center">
@@ -287,7 +244,6 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* Megawati */}
             <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
               <img src="/megawati.png" alt="Megawati" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
               <div className="flex flex-col ml-4 flex-1 justify-center">
@@ -298,7 +254,6 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* Puan Maharani */}
             <div className="flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-4 w-full hover:shadow-lg transition-transform hover:-translate-y-1 cursor-pointer">
               <img src="/puan.png" alt="Puan Maharani" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover object-top shrink-0 border border-[#30363d]/50" />
               <div className="flex flex-col ml-4 flex-1 justify-center">
@@ -320,7 +275,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW & FILTER TANPA BOARD) ---
+  // --- HALAMAN TABEL MONITORING (KOLOM SUMBER KECIL, JUDUL KONTEN LEBAR) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-4 mt-4">
@@ -391,27 +346,29 @@ export default function SocialMediaMonitoring() {
                 <table className="w-full border-collapse text-xs md:text-sm text-left">
                   <thead>
                     <tr className="bg-[#12161c] border-b border-[#30363d] text-gray-400 uppercase tracking-wider font-semibold text-[11px] md:text-xs">
-                      <th className="py-4 px-4 w-12 text-center border-r border-[#30363d]/50">No</th>
-                      <th className="py-4 px-4 w-32 border-r border-[#30363d]/50 whitespace-nowrap">Tanggal</th>
-                      <th className="py-4 px-4 w-24 border-r border-[#30363d]/50 whitespace-nowrap text-center">Waktu</th>
-                      <th className="py-4 px-4 w-40 border-r border-[#30363d]/50 whitespace-nowrap">Sumber</th>
-                      <th className="py-4 px-4 w-32 border-r border-[#30363d]/50">Kategori</th>
-                      <th className="py-4 px-4 border-r border-[#30363d]/50">Judul Konten</th>
-                      <th className="py-4 px-4 w-28 text-center">Aksi</th>
+                      <th className="py-4 px-3 w-12 text-center border-r border-[#30363d]/50">No</th>
+                      <th className="py-4 px-3 w-32 border-r border-[#30363d]/50 whitespace-nowrap">Tanggal</th>
+                      <th className="py-4 px-3 w-20 border-r border-[#30363d]/50 whitespace-nowrap text-center">Waktu</th>
+                      {/* Sumber diperkecil lebarnya (w-32) */}
+                      <th className="py-4 px-3 w-32 border-r border-[#30363d]/50 whitespace-nowrap">Sumber</th>
+                      <th className="py-4 px-3 w-32 border-r border-[#30363d]/50">Kategori</th>
+                      {/* Judul Konten diperluas secara maksimal */}
+                      <th className="py-4 px-4 w-[50%] border-r border-[#30363d]/50">Judul Konten</th>
+                      <th className="py-4 px-3 w-24 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tableData.map((isu, idx) => {
                       const { date, time } = formatDateTime(isu.pubDate);
-                      const newsLink = getCleanLink(isu);
+                      const newsLink = isu.link !== "#" ? isu.link : null;
 
                       return (
                         <tr key={idx} className="border-b border-[#30363d]/50 hover:bg-[#1c2128] transition-colors group">
-                          <td className="py-3 px-4 text-center text-gray-500 font-medium border-r border-[#30363d]/50">{idx + 1}</td>
-                          <td className="py-3 px-4 text-gray-300 font-medium border-r border-[#30363d]/50 whitespace-nowrap">{date}</td>
-                          <td className="py-3 px-4 text-gray-400 font-medium border-r border-[#30363d]/50 whitespace-nowrap text-center">{time}</td>
-                          <td className="py-3 px-4 text-gray-300 font-medium border-r border-[#30363d]/50 whitespace-nowrap">{isu.source || '-'}</td>
-                          <td className="py-3 px-4 border-r border-[#30363d]/50">
+                          <td className="py-3 px-3 text-center text-gray-500 font-medium border-r border-[#30363d]/50">{idx + 1}</td>
+                          <td className="py-3 px-3 text-gray-300 font-medium border-r border-[#30363d]/50 whitespace-nowrap">{date}</td>
+                          <td className="py-3 px-3 text-gray-400 font-medium border-r border-[#30363d]/50 whitespace-nowrap text-center">{time}</td>
+                          <td className="py-3 px-3 text-gray-300 font-medium border-r border-[#30363d]/50 truncate max-w-[128px]">{isu.source || '-'}</td>
+                          <td className="py-3 px-3 border-r border-[#30363d]/50">
                             <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400 border border-red-900/50' : 'bg-blue-950/30 text-blue-400 border border-blue-900/50'}`}>
                               {isu.kategori}
                             </span>
@@ -427,9 +384,9 @@ export default function SocialMediaMonitoring() {
                               )}
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            {newsLink !== "#" ? (
-                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md hover:shadow-lg">
+                          <td className="py-3 px-3 text-center">
+                            {newsLink ? (
+                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto bg-gray-700 hover:bg-gray-600 shadow-md hover:shadow-lg">
                                 <ExternalLink size={14} /> Baca
                               </a>
                             ) : (
