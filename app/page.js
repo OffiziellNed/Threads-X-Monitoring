@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Filter, 
   PlaySquare, Zap, Search, Flame
@@ -100,11 +99,11 @@ export default function SocialMediaMonitoring() {
     return { date: str, time: '-' };
   };
 
-  // LOGIKA PEMBERSIH URL & AUTOGENERATE LINK (DIJAMIN TOMBOL BACA SELALU MUNCUL)
+  // LOGIKA MURNI LINK: MENGHAPUS GOOGLE SEARCH, HANYA LINK ASLI YANG MUNCUL
   const getCleanLink = (isu) => {
     let rawLink = isu.url || isu.link || isu.url_berita || isu.link_berita || "";
     
-    // Scan manual jika link ada di key lain
+    // Cari otomatis kalau key-nya beda nama
     if (!rawLink) {
       for (const key in isu) {
         if (typeof isu[key] === 'string' && isu[key].startsWith('http')) {
@@ -115,6 +114,7 @@ export default function SocialMediaMonitoring() {
     }
 
     if (rawLink && typeof rawLink === 'string' && rawLink.startsWith('http')) {
+      // Membersihkan jika API mengirim link lewat redirect notice Google
       if (rawLink.includes('google.com/url?')) {
         try {
           const urlObj = new URL(rawLink);
@@ -125,9 +125,7 @@ export default function SocialMediaMonitoring() {
       return rawLink;
     }
     
-    // JIKA API KOSONG MELOMPONG: Generate link Google Search pake "Judul + Sumber Berita"
-    const query = encodeURIComponent(`"${isu.topik}" ${isu.source ? isu.source : ''}`);
-    return `https://www.google.com/search?q=${query}`;
+    return null; // Akan membuat tabel merender teks "No Link"
   };
 
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
@@ -232,31 +230,32 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA - DIPERBESAR SEDIKIT & TANPA BORDER BOARD
+  // HALAMAN UTAMA: UKURAN GAMBAR & TEKS DIGEDEIN, RATA TENGAH, DIJAMIN NO SCROLL
   // =========================================================================
   if (currentPage === "main") {
-    // Ukuran diperbesar sedikit, border dihilangkan, gap diatur
-    const listCard = "flex flex-row items-center bg-[#161b22] rounded-2xl p-3 md:p-5 hover:shadow-xl transition-all hover:-translate-y-1 w-full gap-4 md:gap-5";
+    // Card memanjang (Gambar kiri, teks kanan)
+    const listCard = "flex flex-row items-center justify-start bg-[#161b22] rounded-2xl p-3 md:p-4 lg:p-5 w-full max-w-2xl lg:max-w-3xl mx-auto gap-4 md:gap-6 shadow-md hover:shadow-xl transition-all hover:scale-[1.02] border border-transparent hover:border-[#30363d]";
 
     return (
       <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-4">
         
-        {/* max-w-2xl agar lebih lebar dikit tapi tetep muat di layar */}
-        <div className="w-full max-w-2xl flex flex-col gap-3 md:gap-5">
+        {/* Kontainer Utama - Justify Center untuk meratakan secara vertikal */}
+        <div className="w-full flex flex-col gap-3 md:gap-4 lg:gap-5 h-full max-h-[95vh] justify-center items-center">
           
-          <div className="text-center space-y-1.5 mb-2">
+          <div className="text-center space-y-1 md:space-y-2 mb-2 lg:mb-4 shrink-0">
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-sm">Public Trend Radar</h1>
             <p className="text-gray-400 text-xs md:text-base font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
+          {/* List Kartu Berita */}
           <div className="flex flex-col gap-3 md:gap-4 w-full px-2">
             
             {/* Nasional */}
             <div className={listCard}>
-              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover shrink-0" />
-              <div className="flex flex-col flex-1">
-                <h2 className="text-white font-bold text-base md:text-lg mb-2">Berita Nasional</h2>
-                <button onClick={() => setCurrentPage("nasional")} className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-5 rounded-lg text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md w-max">
+              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
+              <div className="flex flex-col flex-1 text-left justify-center">
+                <h2 className="text-white font-black text-lg md:text-2xl lg:text-3xl mb-2 lg:mb-3">Berita Nasional</h2>
+                <button onClick={() => setCurrentPage("nasional")} className="bg-blue-600 hover:bg-blue-500 text-white py-2 md:py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-lg w-max">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
@@ -264,10 +263,10 @@ export default function SocialMediaMonitoring() {
 
             {/* Bencana */}
             <div className={listCard}>
-              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover shrink-0" />
-              <div className="flex flex-col flex-1">
-                <h2 className="text-orange-400 font-bold text-base md:text-lg mb-2">Bencana Terkini</h2>
-                <button onClick={() => setCurrentPage("bencana")} className="bg-yellow-400 hover:bg-yellow-500 text-black py-2 px-5 rounded-lg text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md w-max">
+              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
+              <div className="flex flex-col flex-1 text-left justify-center">
+                <h2 className="text-orange-400 font-black text-lg md:text-2xl lg:text-3xl mb-2 lg:mb-3">Bencana Terkini</h2>
+                <button onClick={() => setCurrentPage("bencana")} className="bg-yellow-500 hover:bg-yellow-400 text-black py-2 md:py-2.5 px-6 rounded-xl text-xs md:text-sm font-black flex items-center justify-center gap-2 shadow-lg w-max">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
@@ -275,10 +274,10 @@ export default function SocialMediaMonitoring() {
 
             {/* PDIP */}
             <div className={listCard}>
-              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover shrink-0" />
-              <div className="flex flex-col flex-1">
-                <h2 className="text-red-400 font-bold text-base md:text-lg mb-2">PDI Perjuangan</h2>
-                <button onClick={() => setCurrentPage("pdip")} className="bg-red-600 hover:bg-red-500 text-white py-2 px-5 rounded-lg text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md w-max">
+              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
+              <div className="flex flex-col flex-1 text-left justify-center">
+                <h2 className="text-red-400 font-black text-lg md:text-2xl lg:text-3xl mb-2 lg:mb-3">PDI Perjuangan</h2>
+                <button onClick={() => setCurrentPage("pdip")} className="bg-red-600 hover:bg-red-500 text-white py-2 md:py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-lg w-max">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
@@ -286,10 +285,10 @@ export default function SocialMediaMonitoring() {
 
             {/* Megawati */}
             <div className={listCard}>
-              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover shrink-0" />
-              <div className="flex flex-col flex-1">
-                <h2 className="text-red-400 font-bold text-base md:text-lg mb-2">Megawati Soekarnoputri</h2>
-                <button onClick={() => setCurrentPage("megawati")} className="bg-red-600 hover:bg-red-500 text-white py-2 px-5 rounded-lg text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md w-max">
+              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-xl object-cover shrink-0 border border-[#30363d]/50" />
+              <div className="flex flex-col flex-1 text-left justify-center">
+                <h2 className="text-red-400 font-black text-lg md:text-2xl lg:text-3xl mb-2 lg:mb-3">Megawati Soekarnoputri</h2>
+                <button onClick={() => setCurrentPage("megawati")} className="bg-red-600 hover:bg-red-500 text-white py-2 md:py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-lg w-max">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
@@ -297,14 +296,14 @@ export default function SocialMediaMonitoring() {
 
             {/* Puan Maharani */}
             <div className={listCard}>
-              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover object-top shrink-0" />
-              <div className="flex flex-col flex-1">
-                <h2 className="text-red-400 font-bold text-base md:text-lg mb-2">Puan Maharani</h2>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => setCurrentPage("puan")} className="bg-red-600 hover:bg-red-500 text-white py-2 px-5 rounded-lg text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md w-max">
+              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-xl object-cover object-top shrink-0 border border-[#30363d]/50" />
+              <div className="flex flex-col flex-1 text-left justify-center">
+                <h2 className="text-red-400 font-black text-lg md:text-2xl lg:text-3xl mb-2 lg:mb-3">Puan Maharani</h2>
+                <div className="flex flex-wrap gap-2 md:gap-3">
+                  <button onClick={() => setCurrentPage("puan")} className="bg-red-600 hover:bg-red-500 text-white py-2 md:py-2.5 px-5 md:px-6 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-lg w-max">
                     <Search size={16}/> Cek Sekarang
                   </button>
-                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] text-red-400 hover:bg-[#1f242c] py-2 px-5 rounded-lg text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md w-max">
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] border border-[#30363d] hover:border-red-500 text-red-400 hover:bg-[#1f242c] py-2 md:py-2.5 px-5 md:px-6 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-lg w-max transition-all">
                     <PlaySquare size={16}/> YouTube
                   </button>
                 </div>
@@ -317,7 +316,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW & FILTER TANPA BOARD) ---
+  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-4 mt-4">
@@ -425,9 +424,13 @@ export default function SocialMediaMonitoring() {
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
-                              <ExternalLink size={14} /> Baca
-                            </a>
+                            {newsLink ? (
+                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
+                                <ExternalLink size={14} /> Baca
+                              </a>
+                            ) : (
+                              <span className="text-gray-600 text-xs font-medium italic">No Link</span>
+                            )}
                           </td>
                         </tr>
                       );
