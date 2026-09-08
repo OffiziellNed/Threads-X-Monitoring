@@ -151,7 +151,7 @@ export default function SocialMediaMonitoring() {
           </div>
 
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col items-center pb-4">
-            <div className="w-full bg-[#0d1117] flex items-center">
+            <div className="w-full bg-[#0d1117] flex items-center border-b border-white/5">
               <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-red-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
               <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-blue-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita (Targeted)</button>
             </div>
@@ -179,7 +179,7 @@ export default function SocialMediaMonitoring() {
               <div className="w-full overflow-x-auto">
                 <table className="w-full border-collapse text-xs md:text-sm">
                   <thead>
-                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
+                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-white/5">
                       <th className="py-5 px-4 text-center w-10">No</th>
                       <th className="py-5 px-4 text-left w-24">Tanggal</th>
                       <th className="py-5 px-4 text-left w-20">Waktu</th>
@@ -393,14 +393,11 @@ export default function SocialMediaMonitoring() {
                             </span>
                           </td>
                           <td className="py-4 px-4">
-                            {/* FLEXBOX JUSTIFY-BETWEEN DITERAPKAN DI SINI */}
                             <div className="flex items-start justify-between gap-4 w-full">
-                              {/* Teks flex-1 agar memenuhi ruang dan memanjang kebawah jika panjang */}
                               <span className="flex-1 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors pr-2">
                                 {isu.topik}
                               </span>
                               {isu.isTrending && (
-                                {/* Ikon TOP diamankan posisinya dengan shrink-0 agar sejajar di kanan */}
                                 <div className="shrink-0 mt-0.5 bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1" title="Top News (Trending)">
                                   <Flame size={12} className="text-orange-500" />
                                   <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
