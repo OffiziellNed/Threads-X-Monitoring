@@ -100,7 +100,6 @@ export default function SocialMediaMonitoring() {
     return { date: str, time: '-' };
   };
 
-  // SISTEM EKSTRAK LINK (FRONTEND FAILSAFE)
   const getCleanLink = (isu) => {
     const dataString = JSON.stringify(isu);
     const urlMatch = dataString.match(/https?:\/\/[^\s"'\\]+/);
@@ -146,18 +145,18 @@ export default function SocialMediaMonitoring() {
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white">
               <ArrowLeft size={20} /> Menu Utama
             </button>
-            <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] border border-white/5 px-4 py-2 rounded-xl text-sm hover:bg-[#1f242c] transition-colors">
+            <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] px-4 py-2 rounded-xl text-sm hover:bg-[#1f242c] transition-colors">
               <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh Data
             </button>
           </div>
 
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col items-center pb-4">
-            <div className="w-full bg-[#0d1117] flex items-center border-b border-white/5">
+            <div className="w-full bg-[#0d1117] flex items-center">
               <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-red-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
               <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-blue-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita (Targeted)</button>
             </div>
 
-            <div className="w-full p-6 border-b border-white/5 flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="w-full p-6 flex flex-col lg:flex-row justify-between items-center gap-6">
               <div className="flex items-center gap-3">
                 <PlaySquare size={28} className={ytFetchMode === "kol" ? "text-blue-500" : "text-red-500"} />
                 <div>
@@ -180,7 +179,7 @@ export default function SocialMediaMonitoring() {
               <div className="w-full overflow-x-auto">
                 <table className="w-full border-collapse text-xs md:text-sm">
                   <thead>
-                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-white/5">
+                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
                       <th className="py-5 px-4 text-center w-10">No</th>
                       <th className="py-5 px-4 text-left w-24">Tanggal</th>
                       <th className="py-5 px-4 text-left w-20">Waktu</th>
@@ -193,7 +192,7 @@ export default function SocialMediaMonitoring() {
                   </thead>
                   <tbody>
                     {sortedYtVideos.map((vid, idx) => (
-                      <tr key={vid.id} className="border-b border-white/5 group transition-colors hover:bg-white/[0.02] last:border-0">
+                      <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
                         <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
                         <td className="py-4 px-4 text-gray-400">{vid.date}</td>
                         <td className="py-4 px-4 text-gray-400">{vid.time}</td>
@@ -222,7 +221,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA
+  // HALAMAN UTAMA 
   // =========================================================================
   if (currentPage === "main") {
     return (
@@ -297,7 +296,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (TABEL CLEAN ELEGANT FRAMELESS) ---
+  // --- HALAMAN DAFTAR MONITORING (TABEL BORDERLESS 100%) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-4 mt-4">
@@ -341,7 +340,7 @@ export default function SocialMediaMonitoring() {
         ) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
             
-            <div className="w-full px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5">
+            <div className="w-full px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 Database Isu Terkini
               </h2>
@@ -358,7 +357,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {isTopNewsFilter && (
-              <div className="w-full px-6 py-3 bg-orange-950/20 text-xs text-gray-300 border-b border-white/5">
+              <div className="w-full px-6 py-3 bg-orange-950/20 text-xs text-gray-300">
                 <span className="font-bold text-orange-400">Info Filter Top News:</span> Data di bawah adalah isu yang paling banyak dibicarakan (Trending) berdasarkan volume publikasi yang tinggi di berbagai sumber dalam waktu berdekatan.
               </div>
             )}
@@ -367,7 +366,7 @@ export default function SocialMediaMonitoring() {
               <div className="w-full overflow-x-auto">
                 <table className="w-full border-collapse text-xs md:text-sm text-left">
                   <thead>
-                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-white/5">
+                    <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
                       <th className="py-5 px-4 w-12 text-center">No</th>
                       <th className="py-5 px-4 w-32 whitespace-nowrap">Tanggal</th>
                       <th className="py-5 px-4 w-20 whitespace-nowrap text-center">Waktu</th>
@@ -383,7 +382,7 @@ export default function SocialMediaMonitoring() {
                       const newsLink = getCleanLink(isu);
 
                       return (
-                        <tr key={idx} className="border-b border-white/5 group transition-colors hover:bg-white/[0.02] last:border-0">
+                        <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
                           <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
                           <td className="py-4 px-4 text-gray-400 whitespace-nowrap">{date}</td>
                           <td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center">{time}</td>
