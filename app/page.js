@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Filter, 
-  PlaySquare, TrendingUp, Zap, Search, Flame
+  PlaySquare, Zap, Search, Flame
 } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
@@ -24,7 +25,6 @@ export default function SocialMediaMonitoring() {
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
-  // Fetching Data Top News & Terkini
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
@@ -86,39 +86,54 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage, ytFetchMode]);
 
-  // LOGIKA PISAH TANGGAL & WAKTU (100% Akurat)
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const str = String(dateStr);
-    
-    // Deteksi "pukul 12.05" atau "12:05" dengan cerdas
-    const timeRegex = /pukul\s+(\d{2}[.:]\d{2})|\b(\d{2}[.:]\d{2})\b/i;
+    const timeRegex = /(?:pukul\s*)?(\d{2}[.:]\d{2}(?:[.:]\d{2})?)\s*(?:WIB|WITA|WIT)?/i;
     const match = str.match(timeRegex);
     
     if (match) {
-      let time = (match[1] || match[2]).replace(/\./g, ':'); 
+      let time = match[1].replace(/\./g, ':'); 
       let date = str.replace(match[0], '').replace(/WIB|WITA|WIT/i, '').replace(/,/g, '').trim();
       return { date: date || '-', time };
     }
     return { date: str, time: '-' };
   };
 
-  // LOGIKA LINK OTOMATIS KE SUMBER
-  const getLink = (isu) => {
-    const rawLink = isu.url || isu.link || isu.url_berita || isu.link_berita || isu.article_url || isu.source_url;
-    if (typeof rawLink === 'string' && rawLink.startsWith('http')) {
+  // LOGIKA PEMBERSIH URL (BYPASS GOOGLE REDIRECT)
+  const getCleanLink = (isu) => {
+    let rawLink = isu.url || isu.link || isu.url_berita || isu.link_berita || "";
+    
+    if (!rawLink) {
+      for (const key in isu) {
+        if (typeof isu[key] === 'string' && isu[key].startsWith('http')) {
+          rawLink = isu[key];
+          break;
+        }
+      }
+    }
+
+    if (rawLink && typeof rawLink === 'string') {
+      // Bersihkan jika itu link redirect google
+      if (rawLink.includes('google.com/url?')) {
+        try {
+          const urlObj = new URL(rawLink);
+          const q = urlObj.searchParams.get('q') || urlObj.searchParams.get('url');
+          if (q) return q;
+        } catch (e) {
+          // Abaikan error parsing
+        }
+      }
       return rawLink;
     }
-    // Jika API gagal ngasih link, otomatis buatin jalan pintas ke sumber beritanya
-    return `https://www.google.com/search?q=${encodeURIComponent(isu.topik + ' ' + (isu.source || ''))}&btnI=1`;
+    return "#";
   };
 
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
   const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
   const isRedTheme = isRedCurr || isRedPrev;
 
-  // TOP NEWS FILTER: CUMA 5 BERITA TERATAS DARI API TOP NEWS YANG DAPET API (🔥)
-  const topNewsTitles = topNewsData.slice(0, 5).map(d => d.topik);
+  const topNewsTitles = topNewsData.map(d => d.topik);
   let tableData = terkiniData.map(d => ({
     ...d,
     isTrending: topNewsTitles.includes(d.topik)
@@ -216,98 +231,82 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA - DESKTOP 140px (FORMAT 2-3) & MOBILE 110px (FORMAT 2-2-1)
+  // HALAMAN UTAMA - LIST VIEW (GAMBAR DI KIRI, TEKS & TOMBOL DI KANAN)
+  // GAK BAKAL MELEDAK DAN DIJAMIN MUAT DI 1 LAYAR TANPA SCROLL
   // =========================================================================
   if (currentPage === "main") {
-    // UKURAN EMAS: 140px Desktop, 110px Mobile. Dijamin pas!
-    const boxCard = "relative group overflow-hidden rounded-xl md:rounded-2xl shadow-xl border border-[#30363d] bg-[#161b22] cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(0,0,0,0.8)] flex-none w-[110px] h-[110px] md:w-[140px] md:h-[140px]";
+    const listCard = "flex flex-row items-center bg-[#161b22] border border-[#30363d] rounded-2xl p-3 md:p-4 hover:shadow-lg transition-all hover:-translate-y-1 hover:border-gray-500 w-full";
 
     return (
-      <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-2 md:p-4">
+      <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-4">
         
-        <div className="flex flex-col items-center gap-4 md:gap-6 w-full max-w-4xl">
+        <div className="w-full max-w-lg flex flex-col gap-3 md:gap-4">
           
-          <div className="text-center space-y-1">
-            <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">Public Trend Radar</h1>
-            <p className="text-gray-400 text-[10px] md:text-sm font-medium">Monitoring isu publik terupdate secara real-time.</p>
+          <div className="text-center space-y-1 mb-2">
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">Public Trend Radar</h1>
+            <p className="text-gray-400 text-xs md:text-sm font-medium">Monitoring isu publik terupdate secara real-time.</p>
           </div>
           
-          <div className="flex flex-col gap-3 md:gap-5 items-center w-full">
+          <div className="flex flex-col gap-3 w-full">
             
-            {/* Baris 1: Selalu 2 Kartu */}
-            <div className="flex justify-center gap-3 md:gap-5 w-full">
-              
-              <div className={boxCard}>
-                <img src="/nasional.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Nasional" />
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 md:p-3 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
-                >
-                  <h2 className="text-white font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Berita Nasional</h2>
-                  <div className="w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("nasional")} className="bg-blue-600 hover:bg-blue-500 text-white py-1.5 md:py-2 rounded-md text-[8px] md:text-[10px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={12}/> Cek</button>
-                  </div>
-                </div>
+            {/* Nasional */}
+            <div className={listCard}>
+              <img src="/nasional.png" alt="Nasional" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]" />
+              <div className="flex flex-col ml-4 flex-1">
+                <h2 className="text-white font-bold text-sm md:text-base mb-2">Berita Nasional</h2>
+                <button onClick={() => setCurrentPage("nasional")} className="bg-blue-600 hover:bg-blue-500 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md w-max">
+                  <Search size={14}/> Cek Sekarang
+                </button>
               </div>
-
-              <div className={boxCard}>
-                <img src="/bencana.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Bencana" />
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 md:p-3 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
-                >
-                  <h2 className="text-orange-400 font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Bencana Terkini</h2>
-                  <div className="w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("bencana")} className="bg-orange-600 hover:bg-orange-500 text-white py-1.5 md:py-2 rounded-md text-[8px] md:text-[10px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={12}/> Cek</button>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-            {/* Baris 2: Desktop 3 Kartu, HP memecah jadi 2-2-1 */}
-            <div className="flex flex-wrap justify-center gap-3 md:gap-5 w-full max-w-[240px] md:max-w-none mx-auto">
+            {/* Bencana */}
+            <div className={listCard}>
+              <img src="/bencana.png" alt="Bencana" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]" />
+              <div className="flex flex-col ml-4 flex-1">
+                <h2 className="text-orange-400 font-bold text-sm md:text-base mb-2">Bencana Terkini</h2>
+                <button onClick={() => setCurrentPage("bencana")} className="bg-orange-600 hover:bg-orange-500 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md w-max">
+                  <Search size={14}/> Cek Sekarang
+                </button>
+              </div>
+            </div>
 
-              <div className={boxCard}>
-                <img src="/pdip.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="PDIP" />
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 md:p-3 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
-                >
-                  <h2 className="text-red-400 font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">PDI Perjuangan</h2>
-                  <div className="w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("pdip")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 md:py-2 rounded-md text-[8px] md:text-[10px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={12}/> Cek</button>
-                  </div>
+            {/* PDIP */}
+            <div className={listCard}>
+              <img src="/pdip.png" alt="PDIP" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]" />
+              <div className="flex flex-col ml-4 flex-1">
+                <h2 className="text-red-400 font-bold text-sm md:text-base mb-2">PDI Perjuangan</h2>
+                <button onClick={() => setCurrentPage("pdip")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md w-max">
+                  <Search size={14}/> Cek Sekarang
+                </button>
+              </div>
+            </div>
+
+            {/* Megawati */}
+            <div className={listCard}>
+              <img src="/megawati.png" alt="Megawati" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover shrink-0 border border-[#30363d]" />
+              <div className="flex flex-col ml-4 flex-1">
+                <h2 className="text-red-400 font-bold text-sm md:text-base mb-2">Megawati</h2>
+                <button onClick={() => setCurrentPage("megawati")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md w-max">
+                  <Search size={14}/> Cek Sekarang
+                </button>
+              </div>
+            </div>
+
+            {/* Puan Maharani */}
+            <div className={listCard}>
+              <img src="/puan.png" alt="Puan Maharani" className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover object-top shrink-0 border border-[#30363d]" />
+              <div className="flex flex-col ml-4 flex-1">
+                <h2 className="text-red-400 font-bold text-sm md:text-base mb-2">Puan Maharani</h2>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => setCurrentPage("puan")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md w-max">
+                    <Search size={14}/> Cek Sekarang
+                  </button>
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-[#0d1117] border border-red-500/70 text-red-400 hover:bg-red-900/40 py-1.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-md w-max">
+                    <PlaySquare size={14}/> YouTube
+                  </button>
                 </div>
               </div>
-
-              <div className={boxCard}>
-                <img src="/megawati.png" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Megawati" />
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-2 md:p-3 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
-                >
-                  <h2 className="text-red-400 font-bold text-[10px] md:text-xs mb-2 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Megawati</h2>
-                  <div className="w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("megawati")} className="bg-red-600 hover:bg-red-500 text-white py-1.5 md:py-2 rounded-md text-[8px] md:text-[10px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={12}/> Cek</button>
-                  </div>
-                </div>
-              </div>
-
-              <div className={boxCard}>
-                <img src="/puan.png" className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" alt="Puan Maharani" />
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-1.5 md:p-3 z-20"
-                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
-                >
-                  <h2 className="text-red-400 font-bold text-[10px] md:text-xs mb-1.5 text-center transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 drop-shadow-lg">Puan Maharani</h2>
-                  <div className="flex flex-col gap-1 w-full px-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <button onClick={() => setCurrentPage("puan")} className="bg-red-600 hover:bg-red-500 text-white py-1 md:py-1.5 rounded-md text-[7px] md:text-[9px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><Search size={10}/> Cek</button>
-                    <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent border border-red-500/70 text-red-400 hover:bg-red-900/40 py-1 md:py-1.5 rounded-md text-[7px] md:text-[9px] font-bold w-full flex items-center justify-center gap-1 shadow-md"><PlaySquare size={10}/> YouTube</button>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
           </div>
@@ -316,7 +315,7 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW) ---
+  // --- HALAMAN DAFTAR MONITORING (EXCEL-STYLE VIEW & FILTER TANPA BOARD) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
       <div className="w-full max-w-[1400px] space-y-4 mt-4">
@@ -378,7 +377,7 @@ export default function SocialMediaMonitoring() {
 
             {isTopNewsFilter && (
               <div className="w-full px-6 py-3 bg-orange-950/20 border-b border-[#30363d] text-xs text-gray-300">
-                <span className="font-bold text-orange-400">Info Filter Top News:</span> Menampilkan 5 isu teratas yang paling banyak dibicarakan berdasarkan pantauan 12 jam terakhir.
+                <span className="font-bold text-orange-400">Info Filter Top News:</span> Data di bawah adalah isu yang paling banyak dibicarakan (Trending) berdasarkan volume publikasi yang tinggi di berbagai sumber dalam waktu berdekatan.
               </div>
             )}
 
@@ -399,7 +398,7 @@ export default function SocialMediaMonitoring() {
                   <tbody>
                     {tableData.map((isu, idx) => {
                       const { date, time } = formatDateTime(isu.pubDate);
-                      const newsLink = getLink(isu);
+                      const newsLink = getCleanLink(isu);
 
                       return (
                         <tr key={idx} className="border-b border-[#30363d]/50 hover:bg-[#1c2128] transition-colors group">
@@ -424,9 +423,13 @@ export default function SocialMediaMonitoring() {
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
-                              <ExternalLink size={14} /> Baca
-                            </a>
+                            {newsLink !== "#" ? (
+                              <a href={newsLink} target="_blank" rel="noopener noreferrer" className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] ${isRedTheme ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} shadow-md hover:shadow-lg`}>
+                                <ExternalLink size={14} /> Baca
+                              </a>
+                            ) : (
+                              <span className="text-gray-600 text-xs italic">No Link</span>
+                            )}
                           </td>
                         </tr>
                       );
