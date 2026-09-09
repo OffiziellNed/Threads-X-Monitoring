@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Filter, 
-  PlaySquare, Zap, Search, Flame, Eye, ThumbsUp, ThumbsDown
+  PlaySquare, Zap, Search, Flame, Megaphone, Copy, Check, X, Eye, ThumbsUp, ThumbsDown
 } from "lucide-react";
 
 export default function SocialMediaMonitoring() {
@@ -24,6 +24,10 @@ export default function SocialMediaMonitoring() {
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
+
+  // Prompt Modal State
+  const [promptModalData, setPromptModalData] = useState(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   const fetchLiveTrends = async () => {
     setIsLoading(true);
@@ -119,6 +123,21 @@ export default function SocialMediaMonitoring() {
     return `https://www.google.com/search?q=${query}`;
   };
 
+  // Fungsi Copy Prompt
+  const generatePromptText = (isu) => {
+    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam\n\nJudul Berita:\n${isu.articleTitle || isu.topik}\n\nDeskripsi Berita:\n${isu.articleDesc || "Tidak ada deskripsi rinci."}`;
+  };
+
+  const handleCopyPrompt = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
+
   const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
   const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
   const isRedTheme = isRedCurr || isRedPrev;
@@ -177,7 +196,7 @@ export default function SocialMediaMonitoring() {
               <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (Tabel Normal, Tidak Berubah) */}
+                {/* TAMPILAN DESKTOP YOUTUBE */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -216,7 +235,7 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE (Card View, Agar Tidak Scroll Samping) */}
+                {/* TAMPILAN MOBILE YOUTUBE */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
                     <div key={vid.id} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
@@ -224,17 +243,10 @@ export default function SocialMediaMonitoring() {
                         <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
                         <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span>
                       </div>
-                      
-                      <h3 className="text-gray-200 font-medium text-sm leading-snug">
-                        {vid.title}
-                      </h3>
-
+                      <h3 className="text-gray-200 font-medium text-sm leading-snug">{vid.title}</h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
-                        <span>{vid.date}</span>
-                        <span>•</span>
-                        <span>{vid.time}</span>
+                        <span>{vid.date}</span><span>•</span><span>{vid.time}</span>
                       </div>
-
                       <div className="grid grid-cols-3 gap-2 py-3 mt-1 border-t border-white/5">
                          <div className="flex flex-col items-center justify-center">
                            <span className="text-gray-500 text-[10px] flex items-center gap-1"><Eye size={10}/> View</span>
@@ -249,7 +261,6 @@ export default function SocialMediaMonitoring() {
                            <span className="text-red-400 font-bold text-xs">{vid.dislikes.toLocaleString()}</span>
                          </div>
                       </div>
-
                       <div className="pt-2 border-t border-white/5 flex justify-end">
                         <a href={vid.link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 w-full bg-gray-700 hover:bg-gray-600 shadow-md">
                           <ExternalLink size={14} /> Tonton Video
@@ -269,7 +280,7 @@ export default function SocialMediaMonitoring() {
   }
 
   // =========================================================================
-  // HALAMAN UTAMA (MENU DEPAN - TIDAK BERUBAH)
+  // HALAMAN UTAMA (MENU DEPAN)
   // =========================================================================
   if (currentPage === "main") {
     return (
@@ -346,6 +357,37 @@ export default function SocialMediaMonitoring() {
   // --- HALAMAN DAFTAR MONITORING ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
+      
+      {/* MODAL PROMPT ANALISIS (OVERLAY) */}
+      {promptModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-[#30363d] bg-[#0d1117]/50">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <Megaphone size={18} className="text-blue-400" /> Analisis Isu
+              </h3>
+              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 md:p-6 bg-[#0d1117] text-sm text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto selection:bg-blue-500/30">
+              {generatePromptText(promptModalData)}
+            </div>
+            
+            <div className="p-4 border-t border-[#30363d] flex justify-end bg-[#161b22]">
+              <button 
+                onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 text-white shadow-lg shadow-green-900/20' : 'bg-gray-700 hover:bg-gray-600 text-white shadow-md'}`}
+              >
+                {isCopied ? <Check size={16} /> : <Copy size={16} />}
+                {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-[1400px] mt-4">
         
         {/* HEADER MENU UTAMA */}
@@ -404,7 +446,7 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (Tabel Bersih, Tidak Berubah) */}
+                {/* TAMPILAN DESKTOP (Tabel Bersih, Tidak Berubah Strukturnya) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -436,9 +478,21 @@ export default function SocialMediaMonitoring() {
                             </td>
                             <td className="py-4 px-4">
                               <div className="flex items-start justify-between w-full">
-                                <span className="flex-1 max-w-[85%] pr-6 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
-                                  {isu.topik}
-                                </span>
+                                
+                                {/* Pembungkus Judul & Icon Megaphone (Inline) */}
+                                <div className="flex-1 max-w-[85%] pr-6 flex items-start gap-2">
+                                  <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
+                                    {isu.topik}
+                                  </span>
+                                  <button 
+                                    onClick={() => setPromptModalData(isu)} 
+                                    title="Generate Prompt Analisis" 
+                                    className="shrink-0 mt-1 text-gray-500 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/10 p-1.5 rounded-md"
+                                  >
+                                    <Megaphone size={14} />
+                                  </button>
+                                </div>
+
                                 <div className="shrink-0 w-[60px] flex justify-end items-start mt-0.5">
                                   {isu.isTrending && (
                                     <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1" title="Top News (Trending)">
@@ -489,9 +543,17 @@ export default function SocialMediaMonitoring() {
                           </div>
                         </div>
                         
-                        <h3 className="text-gray-200 font-medium text-sm leading-snug">
-                          {isu.topik}
-                        </h3>
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="text-gray-200 font-medium text-sm leading-snug">
+                            {isu.topik}
+                          </h3>
+                          <button 
+                            onClick={() => setPromptModalData(isu)} 
+                            className="shrink-0 mt-0.5 text-gray-400 hover:text-blue-400 bg-white/5 p-2 rounded-lg transition-colors"
+                          >
+                            <Megaphone size={14} />
+                          </button>
+                        </div>
 
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
                           <span>{date}</span>
