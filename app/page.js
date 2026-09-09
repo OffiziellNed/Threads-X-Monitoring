@@ -105,7 +105,6 @@ export default function SocialMediaMonitoring() {
   const getCleanLink = (isu) => {
     const dataString = JSON.stringify(isu);
     const urlMatch = dataString.match(/https?:\/\/[^\s"'\\]+/);
-    
     if (urlMatch) {
       let link = urlMatch[0];
       if (link.includes('google.com/url')) {
@@ -125,14 +124,13 @@ export default function SocialMediaMonitoring() {
     
     setPromptModalData({ 
       ...isu, 
-      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 7 detik)..." 
+      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 6 detik)..." 
     });
     
     if (newsLink && newsLink !== "#") {
       try {
         const fetchPromise = fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
-        // Limit timeout Frontend jadi 7.5 detik (menyesuaikan loading full page)
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 7500));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 7000));
         
         const res = await Promise.race([fetchPromise, timeoutPromise]);
         const data = await res.json();
@@ -140,19 +138,19 @@ export default function SocialMediaMonitoring() {
         if (data.success && data.text) {
           setPromptModalData({ ...isu, fullText: data.text });
         } else {
-          setPromptModalData({ ...isu, fullText: isu.articleDesc });
+          setPromptModalData({ ...isu, fullText: `${data.text}\n\nDeskripsi Singkat:\n${isu.articleDesc}` });
         }
       } catch (err) {
-        setPromptModalData({ ...isu, fullText: isu.articleDesc });
+        setPromptModalData({ ...isu, fullText: `Koneksi Timeout saat menyedot.\n\nDeskripsi Singkat:\n${isu.articleDesc}` });
       }
     } else {
       setPromptModalData({ ...isu, fullText: isu.articleDesc });
     }
   };
 
-  // REVISI TEMPLATE PROMPT AI (Sesuai Permintaan)
+  // REVISI TEMPLATE PROMPT AI (SINGKAT & ADA X/THREADS)
   const generatePromptText = (data) => {
-    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nDeskripsi Berita:\n${data.fullText || data.articleDesc || "Tidak ada deskripsi rinci."}`;
+    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nIsi Berita:\n${data.fullText || data.articleDesc || "Tidak ada deskripsi rinci."}`;
   };
 
   const handleCopyPrompt = async (text) => {
@@ -187,28 +185,29 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
+        {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
-            <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
-              <div className="flex justify-between items-center p-5 bg-[#1c2128]">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+            <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ background: '#161b22', border: '1px solid #30363d' }}>
+              <div className="flex justify-between items-center p-5" style={{ background: '#1c2128', borderBottom: '1px solid #30363d' }}>
                 <h3 className="text-white font-bold flex items-center gap-2">
                   <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
                 </h3>
-                <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 bg-white/5 hover:bg-white/10 rounded-lg">
+                <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
                   <X size={20} />
                 </button>
               </div>
-              <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: '#0d1117' }}>
-                <div className="border border-gray-700 rounded-xl p-5 shadow-inner" style={{ backgroundColor: '#1c2128' }}>
+              <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ background: '#0d1117' }}>
+                <div className="rounded-xl p-5 shadow-inner" style={{ background: '#1c2128', border: '1px solid #30363d' }}>
                   <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-500/30">
                     {generatePromptText(promptModalData)}
                   </pre>
                 </div>
               </div>
-              <div className="p-4 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
+              <div className="p-4 flex justify-end" style={{ background: '#1c2128', borderTop: '1px solid #30363d' }}>
                 <button 
                   onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
                 >
                   {isCopied ? <Check size={16} /> : <Copy size={16} />}
                   {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
@@ -218,8 +217,8 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        {/* CONTAINER DI TENGAH DAN COMPACT (max-w-[1000px] + mx-auto) */}
-        <div className="w-full max-w-[1000px] mx-auto mt-4">
+        {/* CONTAINER YT RAPAT TENGAH */}
+        <div className="w-full max-w-[900px] mx-auto mt-4">
           <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
@@ -233,7 +232,7 @@ export default function SocialMediaMonitoring() {
           </div>
 
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col pb-4">
-            <div className="w-full bg-[#0d1117] flex items-center">
+            <div className="w-full flex items-center" style={{ background: '#0d1117' }}>
               <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-red-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
               <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-blue-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita</button>
             </div>
@@ -260,37 +259,36 @@ export default function SocialMediaMonitoring() {
             ) : sortedYtVideos.length > 0 ? (
               <>
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
-                  <table className="w-full text-xs md:text-sm text-left">
-                    <thead>
-                      {/* GARIS DI HAPUS 100% */}
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                        <th className="py-2 px-2 text-center w-8">No</th>
-                        <th className="py-2 px-2 text-left w-24">Tanggal</th>
-                        <th className="py-2 px-2 text-center w-16">Waktu</th>
-                        <th className="py-2 px-2 text-left">Judul Konten</th>
-                        <th className="py-2 px-2 text-right w-16">View</th>
-                        <th className="py-2 px-2 text-right w-16">Like</th>
-                        <th className="py-2 px-2 text-right w-16">Dislike</th>
-                        <th className="py-2 px-2 text-center w-10">AI</th>
-                        <th className="py-2 px-2 text-center w-20">Aksi</th>
+                  <table className="w-full text-xs md:text-sm text-left border-none">
+                    <thead className="border-none">
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none">
+                        <th className="py-2 px-2 text-center w-8 border-none">No</th>
+                        <th className="py-2 px-2 text-left w-24 border-none">Tanggal</th>
+                        <th className="py-2 px-2 text-center w-16 border-none">Waktu</th>
+                        <th className="py-2 px-2 text-left border-none">Judul Konten</th>
+                        <th className="py-2 px-2 text-right w-16 border-none">View</th>
+                        <th className="py-2 px-2 text-right w-16 border-none">Like</th>
+                        <th className="py-2 px-2 text-right w-16 border-none">Dislike</th>
+                        <th className="py-2 px-2 text-center w-10 border-none">AI</th>
+                        <th className="py-2 px-2 text-center w-20 border-none">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="border-none">
                       {sortedYtVideos.map((vid, idx) => (
-                        <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                          <td className="py-1.5 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
-                          <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap">{vid.date}</td>
-                          <td className="py-1.5 px-2 text-gray-400 text-center whitespace-nowrap">{vid.time}</td>
-                          <td className="py-1.5 px-2">
+                        <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05] border-none">
+                          <td className="py-1.5 px-2 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
+                          <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap border-none">{vid.date}</td>
+                          <td className="py-1.5 px-2 text-gray-400 text-center whitespace-nowrap border-none">{vid.time}</td>
+                          <td className="py-1.5 px-2 border-none">
                             <div className="flex flex-col gap-0.5 pr-2">
                               <span className={`text-[9px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
                               <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed line-clamp-2">{vid.title}</span>
                             </div>
                           </td>
-                          <td className="py-1.5 px-2 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
-                          <td className="py-1.5 px-2 text-right text-blue-400">{vid.likes.toLocaleString()}</td>
-                          <td className="py-1.5 px-2 text-right text-red-400">{vid.dislikes.toLocaleString()}</td>
-                          <td className="py-1.5 px-2 text-center">
+                          <td className="py-1.5 px-2 text-right text-gray-200 font-bold border-none">{vid.views.toLocaleString()}</td>
+                          <td className="py-1.5 px-2 text-right text-blue-400 border-none">{vid.likes.toLocaleString()}</td>
+                          <td className="py-1.5 px-2 text-right text-red-400 border-none">{vid.dislikes.toLocaleString()}</td>
+                          <td className="py-1.5 px-2 text-center border-none">
                             <button 
                               onClick={() => handleOpenPrompt(vid)} 
                               title="Generate Prompt Analisis" 
@@ -299,7 +297,7 @@ export default function SocialMediaMonitoring() {
                               <Megaphone size={14} />
                             </button>
                           </td>
-                          <td className="py-1.5 px-2 text-center">
+                          <td className="py-1.5 px-2 text-center border-none">
                             <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all items-center justify-center gap-1.5 mx-auto bg-gray-700 hover:bg-gray-600 shadow-md">
                               <ExternalLink size={14} /> Tonton
                             </a>
@@ -310,9 +308,10 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
+                {/* TAMPILAN MOBILE YT */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
-                    <div key={vid.id} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+                    <div key={vid.id} className="bg-[#0d1117]/50 rounded-xl p-4 flex flex-col gap-3 border border-white/5">
                       <div className="flex justify-between items-start gap-2">
                         <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
                         <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span>
@@ -323,7 +322,7 @@ export default function SocialMediaMonitoring() {
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
                         <span>{vid.date}</span><span>•</span><span>{vid.time}</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 py-3 mt-1 border-t border-white/5">
+                      <div className="grid grid-cols-3 gap-2 py-3 mt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                          <div className="flex flex-col items-center justify-center">
                            <span className="text-gray-500 text-[10px] flex items-center gap-1"><Eye size={10}/> View</span>
                            <span className="text-gray-200 font-bold text-xs">{vid.views.toLocaleString()}</span>
@@ -337,7 +336,7 @@ export default function SocialMediaMonitoring() {
                            <span className="text-red-400 font-bold text-xs">{vid.dislikes.toLocaleString()}</span>
                          </div>
                       </div>
-                      <div className="pt-3 border-t border-white/5 flex justify-end gap-2">
+                      <div className="pt-3 flex justify-end gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                         <button 
                           onClick={() => handleOpenPrompt(vid)} 
                           className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-gray-700 flex items-center justify-center gap-1.5"
@@ -440,28 +439,29 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
+      {/* MODAL PROMPT ANALISIS AI DENGAN STYLE BACKGROUND ABSOLUT */}
       {promptModalData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
-          <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+          <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ background: '#161b22', border: '1px solid #30363d' }}>
             
-            <div className="flex justify-between items-center p-5 bg-[#1c2128]">
+            <div className="flex justify-between items-center p-5" style={{ background: '#1c2128', borderBottom: '1px solid #30363d' }}>
               <h3 className="text-white font-bold flex items-center gap-2">
                 <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
               </h3>
-              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 bg-white/5 hover:bg-white/10 rounded-lg">
+              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
                 <X size={20} />
               </button>
             </div>
             
-            <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: '#0d1117' }}>
-              <div className="border border-gray-700 rounded-xl p-5 shadow-inner" style={{ backgroundColor: '#1c2128' }}>
+            <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ background: '#0d1117' }}>
+              <div className="rounded-xl p-5 shadow-inner" style={{ background: '#1c2128', border: '1px solid #30363d' }}>
                 <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-500/30">
                   {generatePromptText(promptModalData)}
                 </pre>
               </div>
             </div>
             
-            <div className="p-4 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
+            <div className="p-4 flex justify-end" style={{ background: '#1c2128', borderTop: '1px solid #30363d' }}>
               <button 
                 onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
@@ -475,8 +475,8 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* CONTAINER DIBIKIN COMPACT DAN DITENGAHKAN (max-w-[1000px] + mx-auto) */}
-      <div className="w-full max-w-[1000px] mx-auto mt-4">
+      {/* CONTAINER DITENGAH & COMPACT (max-w-[900px] mx-auto) */}
+      <div className="w-full max-w-[900px] mx-auto mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -532,47 +532,46 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (TABEL RAPAT, 100% TANPA GARIS, KOLOM TOP & AI MANDIRI) */}
+                {/* TAMPILAN DESKTOP (TABEL RAPAT, CENTER, 100% BEBAS GARIS) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
-                  <table className="w-full text-xs md:text-sm text-left">
-                    <thead>
-                      {/* BORDER DIHAPUS TOTAL, PADDING DIBUAT SUPER RAPAT (px-2) */}
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                        <th className="py-2 px-1 text-center w-8">No</th>
-                        <th className="py-2 px-2 text-left w-24">Tanggal</th>
-                        <th className="py-2 px-2 text-center w-16">Waktu</th>
-                        <th className="py-2 px-2 text-left w-28">Sumber</th>
-                        <th className="py-2 px-2 text-left w-24">Kategori</th>
-                        <th className="py-2 px-2 text-left">Judul Konten</th>
-                        <th className="py-2 px-2 text-center w-14">Trend</th>
-                        <th className="py-2 px-2 text-center w-10">AI</th>
-                        <th className="py-2 px-2 text-center w-20">Aksi</th>
+                  <table className="w-full text-xs md:text-sm text-left border-none">
+                    <thead className="border-none">
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none">
+                        <th className="py-2 px-1 text-center w-8 border-none">No</th>
+                        <th className="py-2 px-2 text-left w-20 border-none">Tanggal</th>
+                        <th className="py-2 px-2 text-center w-16 border-none">Waktu</th>
+                        <th className="py-2 px-2 text-left w-24 border-none">Sumber</th>
+                        <th className="py-2 px-2 text-left w-20 border-none">Kategori</th>
+                        <th className="py-2 px-2 text-left border-none">Judul Konten</th>
+                        <th className="py-2 px-2 text-center w-14 border-none">Trend</th>
+                        <th className="py-2 px-2 text-center w-10 border-none">AI</th>
+                        <th className="py-2 px-2 text-center w-20 border-none">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="border-none">
                       {tableData.map((isu, idx) => {
                         const { date, time } = formatDateTime(isu.pubDate);
                         const newsLink = getCleanLink(isu);
 
                         return (
-                          <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                            <td className="py-1.5 px-1 text-center text-gray-500 font-medium">{idx + 1}</td>
-                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap">{date}</td>
-                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap text-center">{time}</td>
-                            <td className="py-1.5 px-2 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
-                            <td className="py-1.5 px-2">
+                          <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05] border-none">
+                            <td className="py-1.5 px-1 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
+                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap border-none">{date}</td>
+                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap text-center border-none">{time}</td>
+                            <td className="py-1.5 px-2 text-gray-300 font-medium truncate max-w-[100px] border-none">{isu.source || '-'}</td>
+                            <td className="py-1.5 px-2 border-none">
                               <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
                                 {isu.kategori}
                               </span>
                             </td>
                             
-                            <td className="py-1.5 px-2">
+                            <td className="py-1.5 px-2 border-none">
                               <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-2">
                                 {isu.topik}
                               </span>
                             </td>
 
-                            <td className="py-1.5 px-2 text-center">
+                            <td className="py-1.5 px-2 text-center border-none">
                               {isu.isTrending && (
                                 <div className="mx-auto bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 w-max" title="Top News (Trending)">
                                   <Flame size={12} className="text-orange-500" />
@@ -581,7 +580,7 @@ export default function SocialMediaMonitoring() {
                               )}
                             </td>
 
-                            <td className="py-1.5 px-2 text-center">
+                            <td className="py-1.5 px-2 text-center border-none">
                               <button 
                                 onClick={() => handleOpenPrompt(isu)} 
                                 title="Generate Prompt Analisis" 
@@ -591,7 +590,7 @@ export default function SocialMediaMonitoring() {
                               </button>
                             </td>
 
-                            <td className="py-1.5 px-2 text-center">
+                            <td className="py-1.5 px-2 text-center border-none">
                               {newsLink !== "#" ? (
                                 <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
                                   <ExternalLink size={14} /> Baca
@@ -614,7 +613,7 @@ export default function SocialMediaMonitoring() {
                     const newsLink = getCleanLink(isu);
 
                     return (
-                      <div key={idx} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+                      <div key={idx} className="bg-[#0d1117]/50 rounded-xl p-4 flex flex-col gap-3" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
                         
                         <div className="flex justify-between items-start gap-2">
                           <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
@@ -646,7 +645,7 @@ export default function SocialMediaMonitoring() {
                         </div>
 
                         {/* MOBILE ACTIONS */}
-                        <div className="pt-3 mt-1 border-t border-white/5 flex justify-end gap-2">
+                        <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                           <button 
                             onClick={() => handleOpenPrompt(isu)} 
                             className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-gray-700 flex items-center justify-center gap-1.5"
@@ -675,7 +674,7 @@ export default function SocialMediaMonitoring() {
               </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     </main>
   );
