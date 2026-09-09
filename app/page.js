@@ -142,10 +142,10 @@ export default function SocialMediaMonitoring() {
         if (data.success && data.text) {
           setPromptModalData({ ...isu, fullText: data.text });
         } else {
-          setPromptModalData({ ...isu, fullText: `Gagal menyedot (Website dikunci). Deskripsi Singkat:\n${isu.articleDesc}` });
+          setPromptModalData({ ...isu, fullText: `Penyedotan Penuh Gagal. Menggunakan Deskripsi Singkat:\n\n${isu.articleDesc}` });
         }
       } catch (err) {
-        setPromptModalData({ ...isu, fullText: `Koneksi gagal. Deskripsi Singkat:\n${isu.articleDesc}` });
+        setPromptModalData({ ...isu, fullText: `Koneksi Timeout. Menggunakan Deskripsi Singkat:\n\n${isu.articleDesc}` });
       }
     } else {
       setPromptModalData({ ...isu, fullText: isu.articleDesc });
@@ -245,9 +245,11 @@ export default function SocialMediaMonitoring() {
                           <td className="py-4 px-4 text-gray-400">{vid.date}</td>
                           <td className="py-4 px-4 text-gray-400">{vid.time}</td>
                           <td className="py-4 px-4">
-                            <div className="flex flex-col gap-1 max-w-[85%] pr-4">
-                              <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
-                              <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed">{vid.title}</span>
+                            <div className="flex items-start w-full gap-2">
+                              <div className="flex-col gap-1 flex-1 pr-2">
+                                <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                                <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed block">{vid.title}</span>
+                              </div>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
@@ -380,12 +382,12 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING (TABEL) ---
+  // --- HALAMAN DAFTAR MONITORING BERITA ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
       {/* ======================================================================= */}
-      {/* MODAL PROMPT ANALISIS AI (Diperbaiki jarak spasi teks agar rapi & jelas) */}
+      {/* MODAL PROMPT ANALISIS AI DENGAN <PRE> (TEKS DIJAMIN RAPI & TERBACA) */}
       {/* ======================================================================= */}
       {promptModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
@@ -401,9 +403,11 @@ export default function SocialMediaMonitoring() {
             </div>
             
             <div className="p-5 md:p-6 bg-[#0d1117] flex-1">
-              {/* Box Teks Diatur Jarak Spasi (leading-7) agar tulisan tidak bertumpuk */}
-              <div className="bg-[#1c2128] border border-[#30363d] rounded-xl p-5 text-[13px] md:text-sm text-gray-200 leading-7 whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono shadow-inner selection:bg-blue-500/30">
-                {generatePromptText(promptModalData)}
+              <div className="bg-[#1c2128] border border-[#30363d] rounded-xl p-5 max-h-[60vh] overflow-y-auto shadow-inner">
+                {/* Tag <pre> mencegah line-height bertumpuk dan menahan format asli text */}
+                <pre className="text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-500/30">
+                  {generatePromptText(promptModalData)}
+                </pre>
               </div>
             </div>
             
@@ -479,7 +483,7 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (Tabel Bersih, Struktur Tidak Berubah) */}
+                {/* TAMPILAN DESKTOP (Tabel Bersih, Tanpa Ubah Desain/Garis) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -509,42 +513,42 @@ export default function SocialMediaMonitoring() {
                                 {isu.kategori}
                               </span>
                             </td>
+                            
+                            {/* KOLOM JUDUL KONTEN - STRUKTUR PENJAJARAN IKON LURUS MUTLAK */}
                             <td className="py-4 px-4">
-                              <div className="flex items-start justify-between w-full">
+                              <div className="flex items-start w-full gap-2">
                                 
-                                <span className="flex-1 max-w-[85%] pr-6 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
-                                  {isu.topik}
-                                </span>
+                                {/* 1. KONTEN JUDUL (flex-1 agar ambil sisa ruang) */}
+                                <div className="flex-1 pr-2">
+                                  <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block">
+                                    {isu.topik}
+                                  </span>
+                                </div>
                                 
-                                {/* CONTAINER KANAN TETAP: Megaphone berdampingan dengan TOP */}
-                                {/* Perbaikan dengan membagi ruang tetap (Fixed Width) agar ikon Megaphone selalu sejajar lurus ke bawah */}
-                                <div className="shrink-0 flex items-center mt-0.5 w-[90px]">
-                                  
-                                  {/* ICON MEGAPHONE (Lebar Tetap 30px, selalu di sisi kiri dari space ini) */}
-                                  <div className="w-[30px] flex justify-start">
-                                    <button 
-                                      onClick={() => handleOpenPrompt(isu)} 
-                                      title="Generate Prompt Analisis" 
-                                      className="text-gray-400 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/20 p-1.5 rounded-md flex items-center justify-center h-[26px]"
-                                    >
-                                      <Megaphone size={14} />
-                                    </button>
-                                  </div>
+                                {/* 2. KOLOM MEGAPHONE (Lebar statis 30px, posisi selalu di samping kiri TOP) */}
+                                <div className="shrink-0 w-[30px] flex justify-center items-start pt-0.5">
+                                  <button 
+                                    onClick={() => handleOpenPrompt(isu)} 
+                                    title="Generate Prompt Analisis" 
+                                    className="text-gray-400 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/20 p-1.5 rounded-md flex items-center justify-center h-[26px] w-[26px]"
+                                  >
+                                    <Megaphone size={13} />
+                                  </button>
+                                </div>
 
-                                  {/* BADGE TOP (Lebar Tetap 60px, selalu di sisi kanan) */}
-                                  <div className="w-[60px] flex justify-end">
-                                    {isu.isTrending && (
-                                      <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 h-[26px]" title="Top News (Trending)">
-                                        <Flame size={12} className="text-orange-500" />
-                                        <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
-                                      </div>
-                                    )}
-                                  </div>
-
+                                {/* 3. KOLOM TOP (Lebar statis 60px, posisi mentok kanan) */}
+                                <div className="shrink-0 w-[60px] flex justify-end items-start pt-0.5">
+                                  {isu.isTrending && (
+                                    <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 h-[26px]" title="Top News (Trending)">
+                                      <Flame size={12} className="text-orange-500" />
+                                      <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                                    </div>
+                                  )}
                                 </div>
 
                               </div>
                             </td>
+
                             <td className="py-4 px-4 text-center">
                               {newsLink !== "#" ? (
                                 <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md">
