@@ -16,7 +16,6 @@ export async function GET(request) {
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
     };
 
-    // Fungsi Fetch dengan batas waktu agar tidak Timeout di Vercel
     const fetchWithTimeout = async (url, ms) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), ms);
@@ -26,26 +25,29 @@ export async function GET(request) {
         return res;
       } catch (err) {
         clearTimeout(timeout);
-        throw err;
+        return null;
       }
     };
 
     try {
         // 1. Tembus Redirect Google News
-        let res = await fetchWithTimeout(targetUrl, 4000);
+        let res = await fetchWithTimeout(targetUrl, 3000);
+        if (!res) return NextResponse.json({ success: false, text: "Timeout" });
         let html = await res.text();
 
         let realUrl = targetUrl;
         const metaRefresh = html.match(/<meta[^>]*http-equiv="refresh"[^>]*content="[^"]*url=([^"]+)"/i);
         const aHrefMatch = html.match(/<a[^>]*href="([^"]+)"[^>]*>here<\/a>/i);
         const jsMatch = html.match(/window\.location\.replace\(['"]([^'"]+)['"]\)/i);
+        const jsDataMatch = html.match(/data-n-v="([^"]+)"/i);
 
-        if (metaRefresh && metaRefresh[1]) realUrl = metaRefresh[1];
+        if (jsDataMatch && jsDataMatch[1] && jsDataMatch[1].startsWith('http')) realUrl = jsDataMatch[1];
+        else if (metaRefresh && metaRefresh[1]) realUrl = metaRefresh[1];
         else if (aHrefMatch && aHrefMatch[1]) realUrl = aHrefMatch[1];
         else if (jsMatch && jsMatch[1]) realUrl = jsMatch[1];
 
-        // 2. Modifikasi URL buat Bypass Pagination (Sedot full 2-3 halaman)
-        if (realUrl !== targetUrl || realUrl.includes('detik.com') || realUrl.includes('kompas.com') || realUrl.includes('tribunnews.com')) {
+        // 2. Akses Website Asli (Detik, Kompas, dll) & Bypass Paging
+        if (realUrl !== targetUrl) {
             realUrl = realUrl.replace(/&amp;/g, '&');
             try {
                 const urlObj = new URL(realUrl);
@@ -56,6 +58,7 @@ export async function GET(request) {
             } catch(e) {}
 
             res = await fetchWithTimeout(realUrl, 4000);
+            if (!res) return NextResponse.json({ success: false, text: "Timeout web asli" });
             html = await res.text();
         }
 
@@ -80,13 +83,13 @@ export async function GET(request) {
 
         let articleText = paragraphs.join('\n\n');
 
-        // Jika paragraf kosong (Paywall), coba sedot Meta Description
+        // 4. Fallback Cerdas: Jika Video/Foto Gallery (Tidak ada paragraf), Ambil Meta Deskripsi Asli
         if (!articleText || paragraphs.length < 2) {
-            const descMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i) || html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]+)"/i);
-            if (descMatch && descMatch[1]) {
+            const descMatch = html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]+)"/i) || html.match(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i);
+            if (descMatch && descMatch[1] && !descMatch[1].includes("Google News")) {
                 articleText = descMatch[1];
             } else {
-                return NextResponse.json({ success: false, text: "Gagal memproses teks (di-blokir sistem penerbit)." });
+                return NextResponse.json({ success: false, text: "Konten dikunci atau berupa Video tanpa teks." });
             }
         }
 
