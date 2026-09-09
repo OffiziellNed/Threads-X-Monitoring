@@ -50,7 +50,6 @@ export default function SocialMediaMonitoring() {
         epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
       }
 
-      // Hindari slashes dalam path string jika memungkinkan
       const apiPathNews = ["api", "news"].join("/");
       const apiPathPdip = ["api", "pdip"].join("/");
       const apiPathMega = ["api", "megawati"].join("/");
@@ -106,11 +105,9 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage, ytFetchMode]);
 
-  // ANTI-BUG: Fungsi format tanggal tanpa Regex Miring
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const str = String(dateStr);
-    
     const tRegex = new RegExp("(?:pukul\\s*)?(\\d{2}[.:]\\d{2}(?:[.:]\\d{2})?)\\s*(?:WIB|WITA|WIT)?", "i");
     const match = str.match(tRegex);
     
@@ -127,22 +124,24 @@ export default function SocialMediaMonitoring() {
     return { date: str, time: '-' };
   };
 
-  // ANTI-BUG: Ekstrak link menggunakan String manipulation dan RegExp object murni
   const getCleanLink = (isu) => {
-    const dataString = JSON.stringify(isu);
-    const urlRegex = new RegExp("https?://[^\\s\"']+");
-    const urlMatch = dataString.match(urlRegex);
-    if (urlMatch) {
-      let link = urlMatch[0];
-      if (link.includes('google.com')) {
-        try {
-          const urlObj = new URL(link.split('&amp;').join('&'));
-          const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-          if (clean) return clean;
-        } catch (e) {}
+    try {
+      const dataString = JSON.stringify(isu);
+      const urlRegex = new RegExp("https?://[^\\s\"']+");
+      const urlMatch = dataString.match(urlRegex);
+      if (urlMatch) {
+        let link = urlMatch[0];
+        if (link.includes('google.com')) {
+          try {
+            const cleanUrlStr = link.split('&amp;').join('&');
+            const urlObj = new URL(cleanUrlStr);
+            const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
+            if (clean) return clean;
+          } catch (e) {}
+        }
+        return link; 
       }
-      return link; 
-    }
+    } catch(e) {}
     return "#";
   };
 
@@ -216,7 +215,7 @@ export default function SocialMediaMonitoring() {
         
         {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-80">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
             <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: '#161b22', border: '1px solid #30363d' }}>
               <div className="flex justify-between items-center p-5" style={{ backgroundColor: '#1c2128', borderBottom: '1px solid #30363d' }}>
                 <h3 className="text-white font-bold flex items-center gap-2">
@@ -246,14 +245,11 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        <div className="w-full max-w-[1050px] mx-auto mt-4">
-          <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
+        <div className="w-full max-w-6xl space-y-6 mt-4">
+          <div className="flex justify-between items-center w-full">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
             </button>
-            <h1 className="text-xl md:text-2xl font-black text-white text-center flex-1 hidden md:block">
-              YouTube Analysis
-            </h1>
             <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1f242c] transition-colors">
               <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh
             </button>
@@ -286,49 +282,50 @@ export default function SocialMediaMonitoring() {
               <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
-                <div className="hidden md:block w-full overflow-x-auto mt-2 px-4">
-                  <table className="w-full text-xs md:text-sm text-left border-none">
+                {/* TAMPILAN DESKTOP KEMBALI LEBAR (1400px base) DENGAN STRUKTUR LAMA */}
+                <div className="hidden md:block w-full overflow-x-auto mt-2">
+                  <table className="w-full border-collapse text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
                       <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none">
-                        <th className="py-2 px-3 text-center w-10 border-none">No</th>
-                        <th className="py-2 px-3 text-left w-24 border-none">Tanggal</th>
-                        <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
-                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
-                        <th className="py-2 px-3 text-right w-20 border-none">View</th>
-                        <th className="py-2 px-3 text-right w-20 border-none">Like</th>
-                        <th className="py-2 px-3 text-right w-20 border-none">Dislike</th>
-                        <th className="py-2 px-3 text-center w-12 border-none">AI</th>
-                        <th className="py-2 px-3 text-center w-24 border-none">Aksi</th>
+                        <th className="py-5 px-4 text-center w-10 border-none">No</th>
+                        <th className="py-5 px-4 text-left w-24 border-none">Tanggal</th>
+                        <th className="py-5 px-4 text-left w-20 border-none">Waktu</th>
+                        <th className="py-5 px-4 text-left border-none">Judul Konten</th>
+                        <th className="py-5 px-4 text-right w-20 border-none">View</th>
+                        <th className="py-5 px-4 text-right w-20 border-none">Like</th>
+                        <th className="py-5 px-4 text-right w-20 border-none">Dislike</th>
+                        <th className="py-5 px-4 text-center w-24 border-none">Link</th>
                       </tr>
                     </thead>
                     <tbody className="border-none">
                       {sortedYtVideos.map((vid, idx) => (
                         <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none">
-                          <td className="py-2 px-3 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
-                          <td className="py-2 px-3 text-gray-400 whitespace-nowrap border-none">{vid.date}</td>
-                          <td className="py-2 px-3 text-gray-400 text-center whitespace-nowrap border-none">{vid.time}</td>
-                          <td className="py-2 px-3 border-none">
-                            <div className="flex flex-col gap-0.5 pr-4">
-                              <span className={`text-[9px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
-                              <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed">{vid.title}</span>
+                          <td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
+                          <td className="py-4 px-4 text-gray-400 border-none">{vid.date}</td>
+                          <td className="py-4 px-4 text-gray-400 border-none">{vid.time}</td>
+                          <td className="py-4 px-4 border-none">
+                            {/* Struktur Original Terkunci: Flexbox dengan ruang Megaphone 50px */}
+                            <div className="flex items-start justify-between w-full">
+                              <div className="flex flex-col gap-1 flex-1 pr-4 max-w-[80%]">
+                                <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                                <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed block">{vid.title}</span>
+                              </div>
+                              <div className="shrink-0 flex items-start justify-end w-[50px] mt-0.5">
+                                <button 
+                                  onClick={() => handleOpenPrompt(vid)} 
+                                  title="Generate Prompt Analisis" 
+                                  className="text-gray-400 hover:text-blue-400 transition-colors bg-[#2a313c] hover:bg-[#1e3a5f] p-1.5 rounded-md flex items-center justify-center"
+                                >
+                                  <Megaphone size={14} />
+                                </button>
+                              </div>
                             </div>
                           </td>
-                          <td className="py-2 px-3 text-right text-gray-200 font-bold border-none">{vid.views.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-right text-blue-400 border-none">{vid.likes.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-right text-red-400 border-none">{vid.dislikes.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-center border-none">
-                            <button 
-                              onClick={() => handleOpenPrompt(vid)} 
-                              title="Generate Prompt Analisis" 
-                              className="mx-auto text-gray-400 hover:text-blue-400 transition-colors bg-[#2a313c] hover:bg-[#1e3a5f] p-1.5 rounded-md flex items-center justify-center"
-                            >
-                              <Megaphone size={14} />
-                            </button>
-                          </td>
-                          <td className="py-2 px-3 text-center border-none">
-                            <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all items-center justify-center gap-1.5 mx-auto bg-gray-700 hover:bg-gray-600 shadow-md">
-                              <ExternalLink size={14} /> Tonton
-                            </a>
+                          <td className="py-4 px-4 text-right text-gray-200 font-bold border-none">{vid.views.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right text-blue-400 border-none">{vid.likes.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right text-red-400 border-none">{vid.dislikes.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-center border-none">
+                            <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-gray-500 hover:text-white"><ExternalLink size={16} /></a>
                           </td>
                         </tr>
                       ))}
@@ -467,9 +464,8 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
-      {/* MODAL PROMPT ANALISIS AI (BACKGROUND SOLID, ANTI-BUG) */}
       {promptModalData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-80">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
           <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: '#161b22', border: '1px solid #30363d' }}>
             
             <div className="flex justify-between items-center p-5" style={{ backgroundColor: '#1c2128', borderBottom: '1px solid #30363d' }}>
@@ -503,8 +499,8 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* CONTAINER DIBIKIN PAS DI TENGAH */}
-      <div className="w-full max-w-[1050px] mx-auto mt-4">
+      {/* KEMBALI KE LEBAR ORIGINAL (1400px) */}
+      <div className="w-full max-w-[1400px] mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -552,7 +548,7 @@ export default function SocialMediaMonitoring() {
                   onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? 'bg-[#331c0b] text-orange-500' : 'bg-[#1c2128] text-gray-400 hover:text-orange-400'}`}
                 >
-                  <Flame size={14} className={isTopNewsFilter ? "text-orange-500" : "text-gray-400"} /> Filter Top News
+                  <Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
                 </button>
                 <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} data</span>
               </div>
@@ -560,20 +556,18 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (TABEL TENGAH, RAPAT, BEBAS GARIS 100%, JUDUL 450PX) */}
-                <div className="hidden md:block w-full overflow-x-auto mt-2 px-4">
-                  <table className="w-full text-xs md:text-sm text-left border-none">
+                {/* TAMPILAN DESKTOP ORIGINAL (STRUKTUR 7 KOLOM, TANPA GARIS) */}
+                <div className="hidden md:block w-full overflow-x-auto mt-2">
+                  <table className="w-full border-collapse text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
                       <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none">
-                        <th className="py-2 px-3 text-center w-10 border-none">No</th>
-                        <th className="py-2 px-3 text-left w-24 border-none">Tanggal</th>
-                        <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
-                        <th className="py-2 px-3 text-left w-32 border-none">Sumber</th>
-                        <th className="py-2 px-3 text-left w-28 border-none">Kategori</th>
-                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
-                        <th className="py-2 px-3 text-center w-16 border-none">Trend</th>
-                        <th className="py-2 px-3 text-center w-12 border-none">AI</th>
-                        <th className="py-2 px-3 text-center w-24 border-none">Aksi</th>
+                        <th className="py-5 px-4 w-12 text-center border-none">No</th>
+                        <th className="py-5 px-4 w-32 whitespace-nowrap border-none">Tanggal</th>
+                        <th className="py-5 px-4 w-20 whitespace-nowrap text-center border-none">Waktu</th>
+                        <th className="py-5 px-4 w-32 whitespace-nowrap border-none">Sumber</th>
+                        <th className="py-5 px-4 w-28 border-none">Kategori</th>
+                        <th className="py-5 px-4 w-[50%] border-none">Judul Konten</th>
+                        <th className="py-5 px-4 w-24 text-center border-none">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="border-none">
@@ -583,44 +577,45 @@ export default function SocialMediaMonitoring() {
 
                         return (
                           <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none">
-                            <td className="py-2 px-3 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
-                            <td className="py-2 px-3 text-gray-400 whitespace-nowrap border-none">{date}</td>
-                            <td className="py-2 px-3 text-gray-400 whitespace-nowrap text-center border-none">{time}</td>
-                            <td className="py-2 px-3 text-gray-300 font-medium truncate max-w-[150px] border-none">{isu.source || '-'}</td>
-                            <td className="py-2 px-3 border-none">
+                            <td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
+                            <td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td>
+                            <td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td>
+                            <td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || '-'}</td>
+                            <td className="py-4 px-4 border-none">
                               <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-[#450a0a] text-red-400' : 'bg-[#172033] text-blue-400'}`}>
                                 {isu.kategori}
                               </span>
                             </td>
                             
-                            <td className="py-2 px-3 border-none">
-                              <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-6">
-                                {isu.topik}
-                              </span>
-                            </td>
-
-                            <td className="py-2 px-3 text-center border-none">
-                              {isu.isTrending && (
-                                <div className="mx-auto bg-[#332211] px-1.5 py-0.5 rounded flex items-center justify-center gap-1 w-max" title="Top News (Trending)">
-                                  <Flame size={12} className="text-orange-500" />
-                                  <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                            {/* STRUKTUR ORIGINAL KONTEN JUDUL */}
+                            <td className="py-4 px-4 border-none">
+                              <div className="flex items-start justify-between w-full">
+                                <span className="flex-1 max-w-[80%] pr-4 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
+                                  {isu.topik}
+                                </span>
+                                <div className="shrink-0 flex items-start justify-end gap-2 w-[100px] mt-0.5">
+                                  <button 
+                                    onClick={() => handleOpenPrompt(isu)} 
+                                    title="Generate Prompt Analisis" 
+                                    className="text-gray-400 hover:text-blue-400 transition-colors bg-[#2a313c] hover:bg-[#1e3a5f] p-1.5 rounded-md flex items-center justify-center"
+                                  >
+                                    <Megaphone size={14} />
+                                  </button>
+                                  <div className="w-[50px] flex justify-end">
+                                    {isu.isTrending && (
+                                      <div className="bg-[#332211] px-1.5 py-0.5 rounded flex items-center justify-center gap-1" title="Top News (Trending)">
+                                        <Flame size={12} className="text-orange-500" />
+                                        <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
+                              </div>
                             </td>
 
-                            <td className="py-2 px-3 text-center border-none">
-                              <button 
-                                onClick={() => handleOpenPrompt(isu)} 
-                                title="Generate Prompt Analisis" 
-                                className="mx-auto text-gray-400 hover:text-blue-400 transition-colors bg-[#2a313c] hover:bg-[#1e3a5f] p-1.5 rounded-md flex items-center justify-center"
-                              >
-                                <Megaphone size={14} />
-                              </button>
-                            </td>
-
-                            <td className="py-2 px-3 text-center border-none">
+                            <td className="py-4 px-4 text-center border-none">
                               {newsLink !== "#" ? (
-                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
+                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md">
                                   <ExternalLink size={14} /> Baca
                                 </a>
                               ) : (
