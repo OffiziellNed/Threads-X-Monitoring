@@ -405,19 +405,23 @@ export default function SocialMediaMonitoring() {
     if (newsLink && newsLink !== "#") {
       try {
         let fetchUrl = ["", "api", "tarik-berita"].join("/");
-        const res = await fetch(fetchUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }) });
+        const controller = new AbortController();
+        const tId = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(fetchUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }), signal: controller.signal });
+        clearTimeout(tId);
         const data = await res.json();
         let isi = data.description || data.text || "";
         if (data.status === "success" && isi && !isErrorPage(isi)) {
           setPromptModalData({ ...isu, fullText: preamble + isi });
         } else {
-          // Fallback ke deskripsi pendek dari RSS biar gak kosong / gak muncul Cloudflare
           let fallback = isu.articleDesc || isu.description || "Gagal bypass Cloudflare, pakai ringkasan RSS.";
           if (isErrorPage(isi)) fallback = isu.articleDesc || "Berita ini diblokir Cloudflare 522. Silakan buka manual via tombol Baca.";
           setPromptModalData({ ...isu, fullText: preamble + fallback });
         }
       } catch (err) {
-        setPromptModalData({ ...isu, fullText: preamble + (isu.articleDesc || "Koneksi Timeout.") });
+        let fallback = isu.articleDesc || "Koneksi Timeout (10s). Pakai ringkasan RSS.";
+        if (err.name === 'AbortError') fallback = isu.articleDesc || "Timeout 10 detik - Cloudflare blokir.";
+        setPromptModalData({ ...isu, fullText: preamble + fallback });
       }
     } else {
       setPromptModalData({ ...isu, fullText: preamble + (isu.articleDesc || "URL tidak valid.") });
@@ -460,7 +464,10 @@ export default function SocialMediaMonitoring() {
     if (newsLink && newsLink !== "#") {
       try {
         let reqUrl = ["", "api", "tarik-berita"].join("/");
-        const res = await fetch(reqUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }) });
+        const controller = new AbortController();
+        const tId = setTimeout(() => controller.abort(), 12000);
+        const res = await fetch(reqUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }), signal: controller.signal });
+        clearTimeout(tId);
         const data = await res.json();
         if (data && data.status === "success") {
           let isiBerita = data.description || data.text || "";
@@ -475,7 +482,11 @@ export default function SocialMediaMonitoring() {
           setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita: " + (data.message || "")));
         }
       } catch(err) {
-        setPromptTeks(preambleFull + (isu.articleDesc || "Koneksi ke API terputus."));
+        if (err.name === 'AbortError') {
+          setPromptTeks(preambleFull + (isu.articleDesc || "Timeout 12 detik - server berita lambat / diblokir Cloudflare 522. Pakai ringkasan RSS saja, atau klik Baca Artikel."));
+        } else {
+          setPromptTeks(preambleFull + (isu.articleDesc || "Koneksi ke API terputus."));
+        }
       }
     } else {
       setPromptTeks(preambleFull + (isu.articleDesc || "URL tidak tersedia."));
