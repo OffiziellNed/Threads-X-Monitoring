@@ -34,26 +34,42 @@ export default function SocialMediaMonitoring() {
       let epTerkini = '';
 
       if (currentPage === 'bencana') {
-        epTop = `/api/bencana?t=${Date.now()}`;
-        epTerkini = `/api/bencana?t=${Date.now()}`;
+        epTop = `?t=${Date.now()}`;
+        epTerkini = `?t=${Date.now()}`;
       } else if (currentPage === 'pdip') {
-        epTop = `/api/pdip?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/pdip?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `?hours=12&t=${Date.now()}`;
+        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
       } else if (currentPage === 'megawati') {
-        epTop = `/api/megawati?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/megawati?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `?hours=12&t=${Date.now()}`;
+        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
       } else if (currentPage === 'puan') {
-        epTop = `/api/puan?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/puan?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `?hours=12&t=${Date.now()}`;
+        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
       } else if (currentPage === 'nasional') {
-        epTop = `/api/news?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/news?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `?hours=12&t=${Date.now()}`;
+        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
       }
 
-      if (epTop && epTerkini) {
+      // Hindari slashes dalam path string jika memungkinkan
+      const apiPathNews = ["api", "news"].join("/");
+      const apiPathPdip = ["api", "pdip"].join("/");
+      const apiPathMega = ["api", "megawati"].join("/");
+      const apiPathPuan = ["api", "puan"].join("/");
+      const apiPathBencana = ["api", "bencana"].join("/");
+
+      let urlTop = "";
+      let urlTerkini = "";
+
+      if (currentPage === 'bencana') { urlTop = [apiPathBencana, epTop].join(""); urlTerkini = [apiPathBencana, epTerkini].join(""); }
+      if (currentPage === 'pdip') { urlTop = [apiPathPdip, epTop].join(""); urlTerkini = [apiPathPdip, epTerkini].join(""); }
+      if (currentPage === 'megawati') { urlTop = [apiPathMega, epTop].join(""); urlTerkini = [apiPathMega, epTerkini].join(""); }
+      if (currentPage === 'puan') { urlTop = [apiPathPuan, epTop].join(""); urlTerkini = [apiPathPuan, epTerkini].join(""); }
+      if (currentPage === 'nasional') { urlTop = [apiPathNews, epTop].join(""); urlTerkini = [apiPathNews, epTerkini].join(""); }
+
+      if (urlTop && urlTerkini) {
         const [resTop, resTerkini] = await Promise.all([
-          fetch(epTop, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []})),
-          fetch(epTerkini, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []}))
+          fetch(["", urlTop].join("/"), { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []})),
+          fetch(["", urlTerkini].join("/"), { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []}))
         ]);
         
         if (resTop.success) setTopNewsData(resTop.data);
@@ -72,7 +88,9 @@ export default function SocialMediaMonitoring() {
   const fetchYoutubeData = async () => {
     setIsLoadingYt(true);
     try {
-      const response = await fetch(`/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, { cache: 'no-store' });
+      const apiPathYt = ["api", "puan-yt"].join("/");
+      const ytUrl = ["", apiPathYt].join("/") + `?mode=${ytFetchMode}&t=${Date.now()}`;
+      const response = await fetch(ytUrl, { cache: 'no-store' });
       const result = await response.json();
       if (result.success) setYtData(result.data);
     } catch (error) {} 
@@ -88,52 +106,43 @@ export default function SocialMediaMonitoring() {
     }
   }, [currentPage, ytFetchMode]);
 
-  // FULL ANTI-BUG: Fungsi Regex diganti 100% ke String Splitting murni
+  // ANTI-BUG: Fungsi format tanggal tanpa Regex Miring
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const str = String(dateStr);
-    const strLower = str.toLowerCase();
     
-    if (strLower.includes('pukul')) {
-      const parts = strLower.split('pukul');
-      const originalDate = str.substring(0, strLower.indexOf('pukul')).trim().split(',').join('');
-      
-      let timePart = parts[1].trim();
-      timePart = timePart.split('wib').join('').split('wita').join('').split('wit').join('').trim();
-      let time = timePart.split('.').join(':');
-      
-      return { date: originalDate, time };
+    const tRegex = new RegExp("(?:pukul\\s*)?(\\d{2}[.:]\\d{2}(?:[.:]\\d{2})?)\\s*(?:WIB|WITA|WIT)?", "i");
+    const match = str.match(tRegex);
+    
+    if (match) {
+      let time = match[1].split('.').join(':'); 
+      let date = str;
+      if (match[0]) {
+         date = date.replace(match[0], '');
+      }
+      const zoneRegex = new RegExp("WIB|WITA|WIT", "i");
+      date = date.replace(zoneRegex, '').split(',').join('').trim();
+      return { date: date || '-', time };
     }
     return { date: str, time: '-' };
   };
 
+  // ANTI-BUG: Ekstrak link menggunakan String manipulation dan RegExp object murni
   const getCleanLink = (isu) => {
-    try {
-      const dataString = JSON.stringify(isu);
-      const httpIndex = dataString.indexOf('http');
-      
-      if (httpIndex !== -1) {
-        const quoteIndex1 = dataString.indexOf('"', httpIndex);
-        const quoteIndex2 = dataString.indexOf("'", httpIndex);
-        const spaceIndex = dataString.indexOf(" ", httpIndex);
-        
-        let endIndexes = [quoteIndex1, quoteIndex2, spaceIndex].filter(i => i !== -1);
-        let end = endIndexes.length > 0 ? Math.min(...endIndexes) : dataString.length;
-        
-        let link = dataString.substring(httpIndex, end);
-        link = link.split('\\').join(''); 
-        
-        if (link.includes('google.com/url')) {
-          try {
-            const cleanUrlStr = link.split('&amp;').join('&');
-            const urlObj = new URL(cleanUrlStr);
-            const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-            if (clean) return clean;
-          } catch (e) {}
-        }
-        return link;
+    const dataString = JSON.stringify(isu);
+    const urlRegex = new RegExp("https?://[^\\s\"']+");
+    const urlMatch = dataString.match(urlRegex);
+    if (urlMatch) {
+      let link = urlMatch[0];
+      if (link.includes('google.com')) {
+        try {
+          const urlObj = new URL(link.split('&amp;').join('&'));
+          const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
+          if (clean) return clean;
+        } catch (e) {}
       }
-    } catch(err) {}
+      return link; 
+    }
     return "#";
   };
 
@@ -147,7 +156,10 @@ export default function SocialMediaMonitoring() {
     
     if (newsLink && newsLink !== "#") {
       try {
-        const fetchPromise = fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
+        const scrapePath = ["api", "scrape"].join("/");
+        const fullScrapeUrl = ["", scrapePath].join("/") + `?url=${encodeURIComponent(newsLink)}`;
+        
+        const fetchPromise = fetch(fullScrapeUrl);
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 7000));
         
         const res = await Promise.race([fetchPromise, timeoutPromise]);
@@ -202,6 +214,7 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
+        {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-80">
             <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: '#161b22', border: '1px solid #30363d' }}>
@@ -280,7 +293,7 @@ export default function SocialMediaMonitoring() {
                         <th className="py-2 px-3 text-center w-10 border-none">No</th>
                         <th className="py-2 px-3 text-left w-24 border-none">Tanggal</th>
                         <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
-                        <th className="py-2 px-3 text-left w-[380px] border-none">Judul Konten</th>
+                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
                         <th className="py-2 px-3 text-right w-20 border-none">View</th>
                         <th className="py-2 px-3 text-right w-20 border-none">Like</th>
                         <th className="py-2 px-3 text-right w-20 border-none">Dislike</th>
@@ -295,7 +308,7 @@ export default function SocialMediaMonitoring() {
                           <td className="py-2 px-3 text-gray-400 whitespace-nowrap border-none">{vid.date}</td>
                           <td className="py-2 px-3 text-gray-400 text-center whitespace-nowrap border-none">{vid.time}</td>
                           <td className="py-2 px-3 border-none">
-                            <div className="flex flex-col gap-0.5 pr-6">
+                            <div className="flex flex-col gap-0.5 pr-4">
                               <span className={`text-[9px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
                               <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed">{vid.title}</span>
                             </div>
@@ -323,9 +336,10 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
+                {/* TAMPILAN MOBILE YT */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
-                    <div key={vid.id} className="rounded-xl p-4 flex flex-col gap-3" style={{ backgroundColor: '#0d1117', border: '1px solid #1c2128' }}>
+                    <div key={vid.id} className="rounded-xl p-4 flex flex-col gap-3 border-none" style={{ backgroundColor: '#0d1117' }}>
                       <div className="flex justify-between items-start gap-2">
                         <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
                         <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span>
@@ -453,8 +467,9 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
+      {/* MODAL PROMPT ANALISIS AI (BACKGROUND SOLID, ANTI-BUG) */}
       {promptModalData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-80">
           <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: '#161b22', border: '1px solid #30363d' }}>
             
             <div className="flex justify-between items-center p-5" style={{ backgroundColor: '#1c2128', borderBottom: '1px solid #30363d' }}>
@@ -545,7 +560,7 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP */}
+                {/* TAMPILAN DESKTOP (TABEL TENGAH, RAPAT, BEBAS GARIS 100%, JUDUL 450PX) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2 px-4">
                   <table className="w-full text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
@@ -555,7 +570,7 @@ export default function SocialMediaMonitoring() {
                         <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
                         <th className="py-2 px-3 text-left w-32 border-none">Sumber</th>
                         <th className="py-2 px-3 text-left w-28 border-none">Kategori</th>
-                        <th className="py-2 px-3 text-left w-[380px] border-none">Judul Konten</th>
+                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
                         <th className="py-2 px-3 text-center w-16 border-none">Trend</th>
                         <th className="py-2 px-3 text-center w-12 border-none">AI</th>
                         <th className="py-2 px-3 text-center w-24 border-none">Aksi</th>
@@ -626,7 +641,7 @@ export default function SocialMediaMonitoring() {
                     const newsLink = getCleanLink(isu);
 
                     return (
-                      <div key={idx} className="rounded-xl p-4 flex flex-col gap-3" style={{ backgroundColor: '#0d1117', border: '1px solid #1c2128' }}>
+                      <div key={idx} className="rounded-xl p-4 flex flex-col gap-3 border-none" style={{ backgroundColor: '#0d1117' }}>
                         
                         <div className="flex justify-between items-start gap-2">
                           <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-[#450a0a] text-red-400' : 'bg-[#172033] text-blue-400'}`}>
