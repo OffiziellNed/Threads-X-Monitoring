@@ -108,18 +108,17 @@ export default function SocialMediaMonitoring() {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const str = String(dateStr);
-    const tRegex = new RegExp("(?:pukul\\s*)?(\\d{2}[.:]\\d{2}(?:[.:]\\d{2})?)\\s*(?:WIB|WITA|WIT)?", "i");
-    const match = str.match(tRegex);
+    const strLower = str.toLowerCase();
     
-    if (match) {
-      let time = match[1].split('.').join(':'); 
-      let date = str;
-      if (match[0]) {
-         date = date.replace(match[0], '');
-      }
-      const zoneRegex = new RegExp("WIB|WITA|WIT", "i");
-      date = date.replace(zoneRegex, '').split(',').join('').trim();
-      return { date: date || '-', time };
+    if (strLower.includes('pukul')) {
+      const parts = strLower.split('pukul');
+      const originalDate = str.substring(0, strLower.indexOf('pukul')).trim().split(',').join('');
+      
+      let timePart = parts[1].trim();
+      timePart = timePart.split('wib').join('').split('wita').join('').split('wit').join('').trim();
+      let time = timePart.split('.').join(':');
+      
+      return { date: originalDate, time };
     }
     return { date: str, time: '-' };
   };
@@ -127,10 +126,21 @@ export default function SocialMediaMonitoring() {
   const getCleanLink = (isu) => {
     try {
       const dataString = JSON.stringify(isu);
-      const urlRegex = new RegExp("https?://[^\\s\"']+");
-      const urlMatch = dataString.match(urlRegex);
-      if (urlMatch) {
-        let link = urlMatch[0];
+      const httpIndex = dataString.indexOf('http');
+      if (httpIndex !== -1) {
+        const quoteIndex1 = dataString.indexOf('"', httpIndex);
+        const quoteIndex2 = dataString.indexOf("'", httpIndex);
+        const spaceIndex = dataString.indexOf(" ", httpIndex);
+        
+        let endIndexes = [];
+        if (quoteIndex1 !== -1) endIndexes.push(quoteIndex1);
+        if (quoteIndex2 !== -1) endIndexes.push(quoteIndex2);
+        if (spaceIndex !== -1) endIndexes.push(spaceIndex);
+
+        let end = endIndexes.length > 0 ? Math.min(...endIndexes) : dataString.length;
+        let link = dataString.substring(httpIndex, end);
+        link = link.split('\\').join(''); 
+        
         if (link.includes('google.com')) {
           try {
             const cleanUrlStr = link.split('&amp;').join('&');
@@ -204,18 +214,14 @@ export default function SocialMediaMonitoring() {
   if (selectedCategory !== "Semua") tableData = tableData.filter(d => d.kategori === selectedCategory);
   if (isTopNewsFilter) tableData = tableData.filter(d => d.isTrending);
 
-  // =========================================================================
-  // HALAMAN YOUTUBE DATA ANALYSIS
-  // =========================================================================
   if (currentPage === "puan-yt-analysis") {
     let sortedYtVideos = ytData && ytData.length > 0 ? [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]) : [];
 
     return (
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
-        {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-80">
             <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: '#161b22', border: '1px solid #30363d' }}>
               <div className="flex justify-between items-center p-5" style={{ backgroundColor: '#1c2128', borderBottom: '1px solid #30363d' }}>
                 <h3 className="text-white font-bold flex items-center gap-2">
@@ -227,7 +233,7 @@ export default function SocialMediaMonitoring() {
               </div>
               <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: '#0d1117' }}>
                 <div className="rounded-xl p-5 shadow-inner" style={{ backgroundColor: '#1c2128', border: '1px solid #30363d' }}>
-                  <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-900">
+                  <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-[#1e3a8a]">
                     {generatePromptText(promptModalData)}
                   </pre>
                 </div>
@@ -235,7 +241,7 @@ export default function SocialMediaMonitoring() {
               <div className="p-4 flex justify-end" style={{ backgroundColor: '#1c2128', borderTop: '1px solid #30363d' }}>
                 <button 
                   onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-[#16a34a] text-white shadow-md' : 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md'}`}
                 >
                   {isCopied ? <Check size={16} /> : <Copy size={16} />}
                   {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
@@ -245,11 +251,14 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        <div className="w-full max-w-6xl space-y-6 mt-4">
-          <div className="flex justify-between items-center w-full">
+        <div className="w-full max-w-[1400px] mx-auto mt-4">
+          <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
             </button>
+            <h1 className="text-xl md:text-2xl font-black text-white text-center flex-1 hidden md:block">
+              YouTube Analysis
+            </h1>
             <button onClick={fetchYoutubeData} className="flex items-center gap-2 bg-[#161b22] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1f242c] transition-colors">
               <RefreshCw size={16} className={isLoadingYt ? "animate-spin" : ""} /> Refresh
             </button>
@@ -279,10 +288,9 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {isLoadingYt ? (
-              <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
+              <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-[#2563eb]`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP KEMBALI LEBAR (1400px base) DENGAN STRUKTUR LAMA */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
@@ -304,7 +312,6 @@ export default function SocialMediaMonitoring() {
                           <td className="py-4 px-4 text-gray-400 border-none">{vid.date}</td>
                           <td className="py-4 px-4 text-gray-400 border-none">{vid.time}</td>
                           <td className="py-4 px-4 border-none">
-                            {/* Struktur Original Terkunci: Flexbox dengan ruang Megaphone 50px */}
                             <div className="flex items-start justify-between w-full">
                               <div className="flex flex-col gap-1 flex-1 pr-4 max-w-[80%]">
                                 <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
@@ -333,7 +340,6 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE YT */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
                     <div key={vid.id} className="rounded-xl p-4 flex flex-col gap-3 border-none" style={{ backgroundColor: '#0d1117' }}>
@@ -364,11 +370,11 @@ export default function SocialMediaMonitoring() {
                       <div className="pt-3 flex justify-end gap-2" style={{ borderTop: '1px solid #1c2128' }}>
                         <button 
                           onClick={() => handleOpenPrompt(vid)} 
-                          className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-gray-700 flex items-center justify-center gap-1.5"
+                          className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-[#2d333b] flex items-center justify-center gap-1.5"
                         >
                           <Megaphone size={14} /> Prompt
                         </button>
-                        <a href={vid.link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 flex-1 bg-gray-700 hover:bg-gray-600 shadow-md">
+                        <a href={vid.link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 flex-1 bg-[#374151] hover:bg-[#4b5563] shadow-md">
                           <ExternalLink size={14} /> Tonton Video
                         </a>
                       </div>
@@ -385,9 +391,6 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // =========================================================================
-  // HALAMAN UTAMA (MENU DEPAN)
-  // =========================================================================
   if (currentPage === "main") {
     return (
       <main className="h-screen w-screen overflow-hidden bg-[#0d1117] flex flex-col items-center justify-center p-4">
@@ -400,54 +403,54 @@ export default function SocialMediaMonitoring() {
           
           <div className="flex flex-col gap-5 md:gap-6 w-full px-2 md:px-8">
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Berita Nasional</h2>
-                <button onClick={() => setCurrentPage("nasional")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("nasional")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Bencana Terkini</h2>
-                <button onClick={() => setCurrentPage("bencana")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("bencana")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">PDI Perjuangan</h2>
-                <button onClick={() => setCurrentPage("pdip")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("pdip")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Megawati Soekarnoputri</h2>
-                <button onClick={() => setCurrentPage("megawati")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("megawati")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Puan Maharani</h2>
                 <div className="flex flex-wrap gap-2 md:gap-3">
-                  <button onClick={() => setCurrentPage("puan")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                  <button onClick={() => setCurrentPage("puan")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                     <Search size={16}/> Cek Sekarang
                   </button>
-                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white py-2 px-4 md:px-5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 transition-colors">
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent text-gray-400 hover:bg-[#1c2128] hover:text-white py-2 px-4 md:px-5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 transition-colors">
                     <PlaySquare size={16}/> YouTube
                   </button>
                 </div>
@@ -460,12 +463,11 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING BERITA ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
       {promptModalData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-80">
           <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: '#161b22', border: '1px solid #30363d' }}>
             
             <div className="flex justify-between items-center p-5" style={{ backgroundColor: '#1c2128', borderBottom: '1px solid #30363d' }}>
@@ -479,7 +481,7 @@ export default function SocialMediaMonitoring() {
             
             <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: '#0d1117' }}>
               <div className="rounded-xl p-5 shadow-inner" style={{ backgroundColor: '#1c2128', border: '1px solid #30363d' }}>
-                <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-900">
+                <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-[#1e3a8a]">
                   {generatePromptText(promptModalData)}
                 </pre>
               </div>
@@ -488,7 +490,7 @@ export default function SocialMediaMonitoring() {
             <div className="p-4 flex justify-end" style={{ backgroundColor: '#1c2128', borderTop: '1px solid #30363d' }}>
               <button 
                 onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-[#16a34a] text-white shadow-md' : 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md'}`}
               >
                 {isCopied ? <Check size={16} /> : <Copy size={16} />}
                 {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
@@ -536,7 +538,7 @@ export default function SocialMediaMonitoring() {
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? 'border-red-500' : 'border-blue-500'}`}></div>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? 'border-[#dc2626]' : 'border-[#2563eb]'}`}></div>
           </div>
         ) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
@@ -548,7 +550,7 @@ export default function SocialMediaMonitoring() {
                   onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? 'bg-[#331c0b] text-orange-500' : 'bg-[#1c2128] text-gray-400 hover:text-orange-400'}`}
                 >
-                  <Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
+                  <Flame size={14} className={isTopNewsFilter ? "text-orange-500" : "text-gray-400"} /> Filter Top News
                 </button>
                 <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} data</span>
               </div>
@@ -615,7 +617,7 @@ export default function SocialMediaMonitoring() {
 
                             <td className="py-4 px-4 text-center border-none">
                               {newsLink !== "#" ? (
-                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-gray-700 hover:bg-gray-600 shadow-md">
+                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-[#374151] hover:bg-[#4b5563] shadow-md">
                                   <ExternalLink size={14} /> Baca
                                 </a>
                               ) : (
@@ -671,12 +673,12 @@ export default function SocialMediaMonitoring() {
                         <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: '1px solid #1c2128' }}>
                           <button 
                             onClick={() => handleOpenPrompt(isu)} 
-                            className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-gray-700 flex items-center justify-center gap-1.5"
+                            className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-[#2d333b] flex items-center justify-center gap-1.5"
                           >
                             <Megaphone size={14} /> Prompt
                           </button>
                           {newsLink !== "#" ? (
-                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 flex-1 bg-gray-700 hover:bg-gray-600 shadow-md">
+                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 flex-1 bg-[#374151] hover:bg-[#4b5563] shadow-md">
                               <ExternalLink size={14} /> Baca Artikel
                             </a>
                           ) : (
