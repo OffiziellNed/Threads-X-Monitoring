@@ -216,8 +216,7 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        {/* CONTAINER YT LEBAR PAS DI TENGAH */}
-        <div className="w-full max-w-[1150px] mx-auto mt-4">
+        <div className="w-full max-w-[1100px] mx-auto mt-4">
           <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
@@ -264,7 +263,7 @@ export default function SocialMediaMonitoring() {
                         <th className="py-2 px-3 text-center w-10 border-none">No</th>
                         <th className="py-2 px-3 text-left w-24 border-none">Tanggal</th>
                         <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
-                        <th className="py-2 px-3 text-left border-none">Judul Konten</th>
+                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
                         <th className="py-2 px-3 text-right w-20 border-none">View</th>
                         <th className="py-2 px-3 text-right w-20 border-none">Like</th>
                         <th className="py-2 px-3 text-right w-20 border-none">Dislike</th>
@@ -438,7 +437,6 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
-      {/* MODAL PROMPT ANALISIS AI */}
       {promptModalData && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
           <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ background: '#161b22', border: '1px solid #30363d' }}>
@@ -474,8 +472,8 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* CONTAINER DITENGAH & PAS: max-w-[1150px] mx-auto */}
-      <div className="w-full max-w-[1150px] mx-auto mt-4">
+      {/* CONTAINER DIBIKIN PAS DI TENGAH */}
+      <div className="w-full max-w-[1100px] mx-auto mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -531,7 +529,6 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (TABEL TENGAH, LEGA, TANPA GARIS, KOLOM MANDIRI) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2 px-4">
                   <table className="w-full text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
@@ -541,10 +538,11 @@ export default function SocialMediaMonitoring() {
                         <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
                         <th className="py-2 px-3 text-left w-32 border-none">Sumber</th>
                         <th className="py-2 px-3 text-left w-28 border-none">Kategori</th>
-                        <th className="py-2 px-3 text-left border-none">Judul Konten</th>
+                        {/* KUNCI LEBAR JUDUL AGAR TIDAK MENGGENCET, DAN TIDAK TERLALU JAUH */}
+                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
                         <th className="py-2 px-3 text-center w-16 border-none">Trend</th>
                         <th className="py-2 px-3 text-center w-12 border-none">AI</th>
-                        <th className="py-2 px-3 text-center w-24 border-none">Aksi</th>
+                        <th className="py-2 px-3 text-center w-20 border-none">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="border-none">
@@ -591,7 +589,7 @@ export default function SocialMediaMonitoring() {
 
                             <td className="py-2 px-3 text-center border-none">
                               {newsLink !== "#" ? (
-                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
+                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
                                   <ExternalLink size={14} /> Baca
                                 </a>
                               ) : (
@@ -643,7 +641,6 @@ export default function SocialMediaMonitoring() {
                           <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
                         </div>
 
-                        {/* MOBILE ACTIONS */}
                         <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                           <button 
                             onClick={() => handleOpenPrompt(isu)} 
