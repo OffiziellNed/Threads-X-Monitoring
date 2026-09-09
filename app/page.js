@@ -10,74 +10,93 @@ import {
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
+  
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  
   const [ytData, setYtData] = useState([]);
   const [isLoadingYt, setIsLoadingYt] = useState(false);
   const [ytSortMode, setYtSortMode] = useState("views"); 
   const [ytFetchMode, setYtFetchMode] = useState("umum"); 
+  
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
+
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
 
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
-      let epTop = '';
-      let epTerkini = '';
+      let epTop = "";
+      let epTerkini = "";
+      let nowTime = String(Date.now());
 
-      if (currentPage === 'bencana') {
-        epTop = `/api/bencana?t=${Date.now()}`;
-        epTerkini = `/api/bencana?t=${Date.now()}`;
-      } else if (currentPage === 'pdip') {
-        epTop = `/api/pdip?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/pdip?hours=24&mode=terkini&t=${Date.now()}`;
-      } else if (currentPage === 'megawati') {
-        epTop = `/api/megawati?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/megawati?hours=24&mode=terkini&t=${Date.now()}`;
-      } else if (currentPage === 'puan') {
-        epTop = `/api/puan?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/puan?hours=24&mode=terkini&t=${Date.now()}`;
-      } else if (currentPage === 'nasional') {
-        epTop = `/api/news?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/news?hours=24&mode=terkini&t=${Date.now()}`;
+      if (currentPage === "bencana") {
+        epTop = "/api/bencana?t=" + nowTime;
+        epTerkini = "/api/bencana?t=" + nowTime;
+      } else if (currentPage === "pdip") {
+        epTop = "/api/pdip?hours=12&t=" + nowTime;
+        epTerkini = "/api/pdip?hours=24&mode=terkini&t=" + nowTime;
+      } else if (currentPage === "megawati") {
+        epTop = "/api/megawati?hours=12&t=" + nowTime;
+        epTerkini = "/api/megawati?hours=24&mode=terkini&t=" + nowTime;
+      } else if (currentPage === "puan") {
+        epTop = "/api/puan?hours=12&t=" + nowTime;
+        epTerkini = "/api/puan?hours=24&mode=terkini&t=" + nowTime;
+      } else if (currentPage === "nasional") {
+        epTop = "/api/news?hours=12&t=" + nowTime;
+        epTerkini = "/api/news?hours=24&mode=terkini&t=" + nowTime;
       }
 
       if (epTop && epTerkini) {
-        const [resTop, resTerkini] = await Promise.all([
-          fetch(epTop, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []})),
-          fetch(epTerkini, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []}))
-        ]);
+        const resTopRaw = await fetch(epTop, { cache: "no-store" });
+        const resTerkiniRaw = await fetch(epTerkini, { cache: "no-store" });
+        const resTop = await resTopRaw.json();
+        const resTerkini = await resTerkiniRaw.json();
         
-        if (resTop.success) setTopNewsData(resTop.data);
-        else setTopNewsData([]);
+        if (resTop && resTop.success) {
+           setTopNewsData(resTop.data);
+        } else {
+           setTopNewsData([]);
+        }
 
-        if (resTerkini.success) setTerkiniData(resTerkini.data);
-        else setTerkiniData([]);
+        if (resTerkini && resTerkini.success) {
+           setTerkiniData(resTerkini.data);
+        } else {
+           setTerkiniData([]);
+        }
       }
     } catch (error) {
       setTopNewsData([]);
       setTerkiniData([]);
     } 
-    finally { setIsLoading(false); }
+    finally { 
+      setIsLoading(false); 
+    }
   };
 
   const fetchYoutubeData = async () => {
     setIsLoadingYt(true);
     try {
-      const response = await fetch(`/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, { cache: 'no-store' });
+      const ytUrl = "/api/puan-yt?mode=" + ytFetchMode + "&t=" + String(Date.now());
+      const response = await fetch(ytUrl, { cache: "no-store" });
       const result = await response.json();
-      if (result.success) setYtData(result.data);
+      if (result && result.success) {
+         setYtData(result.data);
+      }
     } catch (error) {} 
-    finally { setIsLoadingYt(false); }
+    finally { 
+      setIsLoadingYt(false); 
+    }
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
-    else if (currentPage !== "main") {
+    if (currentPage === "puan-yt-analysis") {
+      fetchYoutubeData();
+    } else if (currentPage !== "main") {
       fetchLiveTrends();
       setSelectedCategory("Semua"); 
       setIsTopNewsFilter(false);
@@ -85,33 +104,71 @@ export default function SocialMediaMonitoring() {
   }, [currentPage, ytFetchMode]);
 
   const formatDateTime = (dateStr) => {
-    if (!dateStr) return { date: '-', time: '-' };
-    const str = String(dateStr);
-    const timeRegex = /(?:pukul\s*)?(\d{2}[.:]\d{2}(?:[.:]\d{2})?)\s*(?:WIB|WITA|WIT)?/i;
-    const match = str.match(timeRegex);
+    if (!dateStr) return { date: "-", time: "-" };
+    let str = String(dateStr);
+    let strLower = str.toLowerCase();
+    let datePart = str;
+    let timePart = "-";
     
-    if (match) {
-      let time = match[1].replace(/\./g, ':'); 
-      let date = str.replace(match[0], '').replace(/WIB|WITA|WIT/i, '').replace(/,/g, '').trim();
-      return { date: date || '-', time };
+    let pukulIdx = strLower.indexOf("pukul");
+    if (pukulIdx !== -1) {
+      datePart = str.substring(0, pukulIdx).trim();
+      if (datePart.endsWith(",")) {
+        datePart = datePart.substring(0, datePart.length - 1);
+      }
+      let afterPukul = strLower.substring(pukulIdx + 5);
+      afterPukul = afterPukul.split("wib").join("");
+      afterPukul = afterPukul.split("wita").join("");
+      afterPukul = afterPukul.split("wit").join("");
+      timePart = afterPukul.trim().split(".").join(":");
+    } else if (str.indexOf(":") !== -1) {
+      let parts = str.split(" ");
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf(":") !== -1) {
+          timePart = parts[i];
+          datePart = str.replace(timePart, "").trim();
+          if (datePart.endsWith(",")) {
+            datePart = datePart.substring(0, datePart.length - 1);
+          }
+          break;
+        }
+      }
     }
-    return { date: str, time: '-' };
+    
+    let cleanDate = datePart.toLowerCase().split("wib").join("").split("wita").join("").split("wit").join("").trim();
+    return { date: cleanDate || "-", time: timePart };
   };
 
   const getCleanLink = (isu) => {
-    const dataString = JSON.stringify(isu);
-    const urlMatch = dataString.match(/https?:\/\/[^\s"']+/);
-    if (urlMatch) {
-      let link = urlMatch[0];
-      if (link.includes('google.com/url')) {
-        try {
-          const urlObj = new URL(link.replace(/&amp;/g, '&'));
-          const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-          if (clean) return clean;
-        } catch (e) {}
+    try {
+      let dataString = JSON.stringify(isu);
+      let httpPrefix = "http";
+      let httpIndex = dataString.indexOf(httpPrefix);
+      if (httpIndex !== -1) {
+        let quote1 = dataString.indexOf('"', httpIndex);
+        let quote2 = dataString.indexOf("'", httpIndex);
+        let space = dataString.indexOf(" ", httpIndex);
+        
+        let endIndexes = [];
+        if (quote1 !== -1) endIndexes.push(quote1);
+        if (quote2 !== -1) endIndexes.push(quote2);
+        if (space !== -1) endIndexes.push(space);
+        
+        let end = endIndexes.length > 0 ? Math.min(...endIndexes) : dataString.length;
+        let link = dataString.substring(httpIndex, end);
+        link = link.split("\\").join(""); 
+        
+        if (link.indexOf("google.com") !== -1) {
+          try {
+            let cleanUrlStr = link.split("&amp;").join("&");
+            let urlObj = new URL(cleanUrlStr);
+            let clean = urlObj.searchParams.get("url") || urlObj.searchParams.get("q");
+            if (clean) return clean;
+          } catch (e) {}
+        }
+        return link; 
       }
-      return link; 
-    }
+    } catch(e) {}
     return "#";
   };
 
@@ -120,18 +177,25 @@ export default function SocialMediaMonitoring() {
     
     setPromptModalData({ 
       ...isu, 
-      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 8 detik)..." 
+      fullText: "Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 8 detik)..." 
     });
     
     if (newsLink && newsLink !== "#") {
       try {
-        const fetchPromise = fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
+        const fullScrapeUrl = "/api/scrape?url=" + encodeURIComponent(newsLink);
+        const fetchPromise = fetch(fullScrapeUrl);
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), 8000));
         
         const res = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (res.timeout) {
+           setPromptModalData({ ...isu, fullText: "Gagal memuat isi berita. Koneksi timeout." });
+           return;
+        }
+
         const data = await res.json();
         
-        if (data.success && data.text) {
+        if (data && data.success && data.text) {
           setPromptModalData({ ...isu, fullText: data.text });
         } else {
           setPromptModalData({ ...isu, fullText: "Gagal memuat isi berita. Halaman sumber diproteksi atau berupa video tanpa teks." });
@@ -145,7 +209,9 @@ export default function SocialMediaMonitoring() {
   };
 
   const generatePromptText = (data) => {
-    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nIsi Berita:\n${data.fullText || "Teks tidak tersedia."}`;
+    let titleText = data.articleTitle || data.topik || data.title || "";
+    let descText = data.fullText || "Teks tidak tersedia.";
+    return "Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n" + titleText + "\n\nIsi Berita:\n" + descText;
   };
 
   const handleCopyPrompt = async (text) => {
@@ -153,23 +219,25 @@ export default function SocialMediaMonitoring() {
       await navigator.clipboard.writeText(text);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
+    } catch (err) {}
   };
 
-  const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
-  const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
+  const isRedPrev = previousPage.indexOf("pdip") !== -1 || previousPage.indexOf("puan") !== -1 || previousPage.indexOf("megawati") !== -1;
+  const isRedCurr = currentPage.indexOf("pdip") !== -1 || currentPage.indexOf("puan") !== -1 || currentPage.indexOf("megawati") !== -1;
   const isRedTheme = isRedCurr || isRedPrev;
 
   const topNewsTitles = topNewsData.map(d => d.topik);
   let tableData = terkiniData.map(d => ({
     ...d,
-    isTrending: topNewsTitles.includes(d.topik)
+    isTrending: topNewsTitles.indexOf(d.topik) !== -1
   }));
 
-  if (selectedCategory !== "Semua") tableData = tableData.filter(d => d.kategori === selectedCategory);
-  if (isTopNewsFilter) tableData = tableData.filter(d => d.isTrending);
+  if (selectedCategory !== "Semua") {
+     tableData = tableData.filter(d => d.kategori === selectedCategory);
+  }
+  if (isTopNewsFilter) {
+     tableData = tableData.filter(d => d.isTrending);
+  }
 
   if (currentPage === "puan-yt-analysis") {
     let sortedYtVideos = ytData && ytData.length > 0 ? [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]) : [];
@@ -178,27 +246,27 @@ export default function SocialMediaMonitoring() {
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
         {promptModalData && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
-            <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ background: '#161b22', border: '1px solid #30363d' }}>
-              <div className="flex justify-between items-center p-5" style={{ background: '#1c2128', borderBottom: '1px solid #30363d' }}>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.85)" }}>
+            <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: "#161b22", border: "1px solid #30363d" }}>
+              <div className="flex justify-between items-center p-5" style={{ backgroundColor: "#1c2128", borderBottom: "1px solid #30363d" }}>
                 <h3 className="text-white font-bold flex items-center gap-2">
                   <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
                 </h3>
-                <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg" style={{ backgroundColor: "#2a313c" }}>
                   <X size={20} />
                 </button>
               </div>
-              <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ background: '#0d1117' }}>
-                <div className="rounded-xl p-5 shadow-inner" style={{ background: '#1c2128', border: '1px solid #30363d' }}>
+              <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: "#0d1117" }}>
+                <div className="rounded-xl p-5 shadow-inner" style={{ backgroundColor: "#1c2128", border: "1px solid #30363d" }}>
                   <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-[#1e3a8a]">
                     {generatePromptText(promptModalData)}
                   </pre>
                 </div>
               </div>
-              <div className="p-4 flex justify-end" style={{ background: '#1c2128', borderTop: '1px solid #30363d' }}>
+              <div className="p-4 flex justify-end" style={{ backgroundColor: "#1c2128", borderTop: "1px solid #30363d" }}>
                 <button 
                   onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-[#16a34a] text-white shadow-md' : 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md'}`}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? "bg-[#16a34a] text-white shadow-md" : "bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md"}`}
                 >
                   {isCopied ? <Check size={16} /> : <Copy size={16} />}
                   {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
@@ -222,7 +290,7 @@ export default function SocialMediaMonitoring() {
           </div>
 
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col pb-4">
-            <div className="w-full flex items-center" style={{ background: '#0d1117' }}>
+            <div className="w-full flex items-center" style={{ backgroundColor: "#0d1117" }}>
               <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-[#331c0b]" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
               <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-[#172033]" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita</button>
             </div>
@@ -245,7 +313,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {isLoadingYt ? (
-              <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
+              <div className="w-full flex justify-center items-center h-64"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2563eb]"></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
@@ -271,7 +339,7 @@ export default function SocialMediaMonitoring() {
                           <td className="py-4 px-4 border-none">
                             <div className="flex items-start justify-between w-full">
                               <div className="flex flex-col gap-1 flex-1 pr-4 max-w-[80%]">
-                                <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                                <span className={`text-[10px] font-black uppercase ${ytFetchMode === "kol" ? "text-blue-400" : "text-gray-400"}`}>@{vid.author}</span>
                                 <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed block">{vid.title}</span>
                               </div>
                               <div className="shrink-0 flex items-start justify-end w-[50px] mt-0.5">
@@ -299,9 +367,9 @@ export default function SocialMediaMonitoring() {
 
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
-                    <div key={vid.id} className="rounded-xl p-4 flex flex-col gap-3 border-none" style={{ backgroundColor: '#0d1117' }}>
+                    <div key={vid.id} className="rounded-xl p-4 flex flex-col gap-3 border-none" style={{ backgroundColor: "#0d1117" }}>
                       <div className="flex justify-between items-start gap-2">
-                        <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                        <span className={`text-[10px] font-black uppercase ${ytFetchMode === "kol" ? "text-blue-400" : "text-gray-400"}`}>@{vid.author}</span>
                         <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span>
                       </div>
                       <div className="flex items-start justify-between gap-3">
@@ -310,7 +378,7 @@ export default function SocialMediaMonitoring() {
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
                         <span>{vid.date}</span><span>•</span><span>{vid.time}</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 py-3 mt-1" style={{ borderTop: '1px solid #1c2128' }}>
+                      <div className="grid grid-cols-3 gap-2 py-3 mt-1" style={{ borderTop: "1px solid #1c2128" }}>
                          <div className="flex flex-col items-center justify-center">
                            <span className="text-gray-500 text-[10px] flex items-center gap-1"><Eye size={10}/> View</span>
                            <span className="text-gray-200 font-bold text-xs">{vid.views.toLocaleString()}</span>
@@ -324,7 +392,7 @@ export default function SocialMediaMonitoring() {
                            <span className="text-red-400 font-bold text-xs">{vid.dislikes.toLocaleString()}</span>
                          </div>
                       </div>
-                      <div className="pt-3 flex justify-end gap-2" style={{ borderTop: '1px solid #1c2128' }}>
+                      <div className="pt-3 flex justify-end gap-2" style={{ borderTop: "1px solid #1c2128" }}>
                         <button 
                           onClick={() => handleOpenPrompt(vid)} 
                           className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-[#2d333b] flex items-center justify-center gap-1.5"
@@ -424,30 +492,30 @@ export default function SocialMediaMonitoring() {
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
       {promptModalData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
-          <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ background: '#161b22', border: '1px solid #30363d' }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.85)" }}>
+          <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ backgroundColor: "#161b22", border: "1px solid #30363d" }}>
             
-            <div className="flex justify-between items-center p-5" style={{ background: '#1c2128', borderBottom: '1px solid #30363d' }}>
+            <div className="flex justify-between items-center p-5" style={{ backgroundColor: "#1c2128", borderBottom: "1px solid #30363d" }}>
               <h3 className="text-white font-bold flex items-center gap-2">
                 <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
               </h3>
-              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg" style={{ backgroundColor: "#2a313c" }}>
                 <X size={20} />
               </button>
             </div>
             
-            <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ background: '#0d1117' }}>
-              <div className="rounded-xl p-5 shadow-inner" style={{ background: '#1c2128', border: '1px solid #30363d' }}>
+            <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: "#0d1117" }}>
+              <div className="rounded-xl p-5 shadow-inner" style={{ backgroundColor: "#1c2128", border: "1px solid #30363d" }}>
                 <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-[#1e3a8a]">
                   {generatePromptText(promptModalData)}
                 </pre>
               </div>
             </div>
             
-            <div className="p-4 flex justify-end" style={{ background: '#1c2128', borderTop: '1px solid #30363d' }}>
+            <div className="p-4 flex justify-end" style={{ backgroundColor: "#1c2128", borderTop: "1px solid #30363d" }}>
               <button 
                 onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-[#16a34a] text-white shadow-md' : 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md'}`}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? "bg-[#16a34a] text-white shadow-md" : "bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md"}`}
               >
                 {isCopied ? <Check size={16} /> : <Copy size={16} />}
                 {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
@@ -482,8 +550,8 @@ export default function SocialMediaMonitoring() {
                 onClick={() => setSelectedCategory(cat)} 
                 className={`text-xs md:text-sm font-bold transition-all ${
                   selectedCategory === cat 
-                    ? (isRedTheme ? 'text-red-400 border-b-2 border-red-400 pb-1' : 'text-blue-400 border-b-2 border-blue-400 pb-1') 
-                    : 'text-gray-500 hover:text-gray-300'
+                    ? (isRedTheme ? "text-red-400 border-b-2 border-red-400 pb-1" : "text-blue-400 border-b-2 border-blue-400 pb-1") 
+                    : "text-gray-500 hover:text-gray-300"
                 }`}
               >
                 {cat}
@@ -494,7 +562,7 @@ export default function SocialMediaMonitoring() {
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? 'border-[#dc2626]' : 'border-[#2563eb]'}`}></div>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? "border-[#dc2626]" : "border-[#2563eb]"}`}></div>
           </div>
         ) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
@@ -504,9 +572,9 @@ export default function SocialMediaMonitoring() {
               <div className="flex items-center gap-3 md:ml-auto">
                 <button 
                   onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? 'bg-[#331c0b] text-orange-500' : 'bg-[#1c2128] text-gray-400 hover:text-orange-400'}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? "bg-[#331c0b] text-orange-500" : "bg-[#1c2128] text-gray-400 hover:text-orange-400"}`}
                 >
-                  <Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
+                  <Flame size={14} className={isTopNewsFilter ? "text-orange-500" : "text-gray-400"} /> Filter Top News
                 </button>
                 <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} data</span>
               </div>
@@ -537,9 +605,9 @@ export default function SocialMediaMonitoring() {
                             <td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
                             <td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td>
                             <td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td>
-                            <td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || '-'}</td>
+                            <td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || "-"}</td>
                             <td className="py-4 px-4 border-none">
-                              <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-[#450a0a] text-red-400' : 'bg-[#172033] text-blue-400'}`}>
+                              <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>
                                 {isu.kategori}
                               </span>
                             </td>
@@ -591,10 +659,10 @@ export default function SocialMediaMonitoring() {
                     const newsLink = getCleanLink(isu);
 
                     return (
-                      <div key={idx} className="rounded-xl p-4 flex flex-col gap-3 border-none" style={{ backgroundColor: '#0d1117' }}>
+                      <div key={idx} className="rounded-xl p-4 flex flex-col gap-3 border-none" style={{ backgroundColor: "#0d1117" }}>
                         
                         <div className="flex justify-between items-start gap-2">
-                          <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-[#450a0a] text-red-400' : 'bg-[#172033] text-blue-400'}`}>
+                          <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>
                             {isu.kategori}
                           </span>
                           <div className="flex items-center gap-2">
@@ -619,10 +687,10 @@ export default function SocialMediaMonitoring() {
                           <span>•</span>
                           <span>{time}</span>
                           <span>•</span>
-                          <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
+                          <span className="text-gray-400 font-medium">{isu.source || "-"}</span>
                         </div>
 
-                        <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: '1px solid #1c2128' }}>
+                        <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: "1px solid #1c2128" }}>
                           <button 
                             onClick={() => handleOpenPrompt(isu)} 
                             className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-[#2d333b] flex items-center justify-center gap-1.5"
