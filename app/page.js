@@ -11,7 +11,6 @@ export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
   
-  // Data State
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +24,6 @@ export default function SocialMediaMonitoring() {
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
-  // Prompt Modal State
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -122,22 +120,19 @@ export default function SocialMediaMonitoring() {
     return "#";
   };
 
-  // =========================================================================
-  // SISTEM SEDOT DATA BERITA PENUH DENGAN AUTO-FALLBACK 5 DETIK
-  // =========================================================================
   const handleOpenPrompt = async (isu) => {
     const newsLink = getCleanLink(isu);
     
     setPromptModalData({ 
       ...isu, 
-      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 5 detik)..." 
+      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 7 detik)..." 
     });
     
     if (newsLink && newsLink !== "#") {
       try {
         const fetchPromise = fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
-        // Pemutus otomatis (Race Condition) jika API nyangkut lebih dari 5 detik
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000));
+        // Limit timeout Frontend jadi 7.5 detik (menyesuaikan loading full page)
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 7500));
         
         const res = await Promise.race([fetchPromise, timeoutPromise]);
         const data = await res.json();
@@ -148,7 +143,6 @@ export default function SocialMediaMonitoring() {
           setPromptModalData({ ...isu, fullText: isu.articleDesc });
         }
       } catch (err) {
-        // Langsung tampilkan deskripsi singkat tanpa tulisan "Timeout" yang jelek
         setPromptModalData({ ...isu, fullText: isu.articleDesc });
       }
     } else {
@@ -156,8 +150,9 @@ export default function SocialMediaMonitoring() {
     }
   };
 
+  // REVISI TEMPLATE PROMPT AI (Sesuai Permintaan)
   const generatePromptText = (data) => {
-    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nIsi Berita:\n${data.fullText || data.articleDesc || "Tidak ada deskripsi rinci."}`;
+    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nDeskripsi Berita:\n${data.fullText || data.articleDesc || "Tidak ada deskripsi rinci."}`;
   };
 
   const handleCopyPrompt = async (text) => {
@@ -192,11 +187,10 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
-        {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
             <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
-              <div className="flex justify-between items-center p-5 border-b border-gray-600" style={{ backgroundColor: '#1c2128' }}>
+              <div className="flex justify-between items-center p-5 bg-[#1c2128]">
                 <h3 className="text-white font-bold flex items-center gap-2">
                   <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
                 </h3>
@@ -211,10 +205,10 @@ export default function SocialMediaMonitoring() {
                   </pre>
                 </div>
               </div>
-              <div className="p-4 border-t border-gray-600 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
+              <div className="p-4 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
                 <button 
                   onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
                 >
                   {isCopied ? <Check size={16} /> : <Copy size={16} />}
                   {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
@@ -224,8 +218,8 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        {/* CONTAINER DIPERSEMPIT KE 1080px AGAR TABEL LEBIH RAPAT & CENTER */}
-        <div className="w-full max-w-[1080px] mt-4">
+        {/* CONTAINER DI TENGAH DAN COMPACT (max-w-[1000px] + mx-auto) */}
+        <div className="w-full max-w-[1000px] mx-auto mt-4">
           <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
@@ -266,17 +260,18 @@ export default function SocialMediaMonitoring() {
             ) : sortedYtVideos.length > 0 ? (
               <>
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
-                  <table className="w-full border-collapse text-xs md:text-sm text-left">
+                  <table className="w-full text-xs md:text-sm text-left">
                     <thead>
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
-                        <th className="py-2 px-2 text-center w-10">No</th>
+                      {/* GARIS DI HAPUS 100% */}
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
+                        <th className="py-2 px-2 text-center w-8">No</th>
                         <th className="py-2 px-2 text-left w-24">Tanggal</th>
-                        <th className="py-2 px-2 text-center w-20">Waktu</th>
+                        <th className="py-2 px-2 text-center w-16">Waktu</th>
                         <th className="py-2 px-2 text-left">Judul Konten</th>
-                        <th className="py-2 px-2 text-right w-20">View</th>
-                        <th className="py-2 px-2 text-right w-20">Like</th>
-                        <th className="py-2 px-2 text-right w-20">Dislike</th>
-                        <th className="py-2 px-2 text-center w-12">AI</th>
+                        <th className="py-2 px-2 text-right w-16">View</th>
+                        <th className="py-2 px-2 text-right w-16">Like</th>
+                        <th className="py-2 px-2 text-right w-16">Dislike</th>
+                        <th className="py-2 px-2 text-center w-10">AI</th>
                         <th className="py-2 px-2 text-center w-20">Aksi</th>
                       </tr>
                     </thead>
@@ -287,7 +282,7 @@ export default function SocialMediaMonitoring() {
                           <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap">{vid.date}</td>
                           <td className="py-1.5 px-2 text-gray-400 text-center whitespace-nowrap">{vid.time}</td>
                           <td className="py-1.5 px-2">
-                            <div className="flex flex-col gap-0.5 max-w-[85%] pr-4">
+                            <div className="flex flex-col gap-0.5 pr-2">
                               <span className={`text-[9px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
                               <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed line-clamp-2">{vid.title}</span>
                             </div>
@@ -449,7 +444,7 @@ export default function SocialMediaMonitoring() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
           <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
             
-            <div className="flex justify-between items-center p-5 border-b border-gray-600" style={{ backgroundColor: '#1c2128' }}>
+            <div className="flex justify-between items-center p-5 bg-[#1c2128]">
               <h3 className="text-white font-bold flex items-center gap-2">
                 <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
               </h3>
@@ -466,7 +461,7 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
             
-            <div className="p-4 border-t border-gray-600 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
+            <div className="p-4 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
               <button 
                 onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
@@ -480,8 +475,8 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* CONTAINER DIPERSEMPIT KE 1080px AGAR TABEL LEBIH RAPAT & CENTER */}
-      <div className="w-full max-w-[1080px] mt-4">
+      {/* CONTAINER DIBIKIN COMPACT DAN DITENGAHKAN (max-w-[1000px] + mx-auto) */}
+      <div className="w-full max-w-[1000px] mx-auto mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -537,21 +532,21 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (TABEL RAPAT & CENTER) */}
+                {/* TAMPILAN DESKTOP (TABEL RAPAT, 100% TANPA GARIS, KOLOM TOP & AI MANDIRI) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
-                  <table className="w-full border-collapse text-xs md:text-sm text-left">
+                  <table className="w-full text-xs md:text-sm text-left">
                     <thead>
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
-                        {/* PADDING DIRAPATKAN px-2 py-2 */}
-                        <th className="py-2 px-2 text-center w-10">No</th>
+                      {/* BORDER DIHAPUS TOTAL, PADDING DIBUAT SUPER RAPAT (px-2) */}
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
+                        <th className="py-2 px-1 text-center w-8">No</th>
                         <th className="py-2 px-2 text-left w-24">Tanggal</th>
-                        <th className="py-2 px-2 text-center w-20">Waktu</th>
-                        <th className="py-2 px-2 text-left w-32">Sumber</th>
-                        <th className="py-2 px-2 text-left w-28">Kategori</th>
+                        <th className="py-2 px-2 text-center w-16">Waktu</th>
+                        <th className="py-2 px-2 text-left w-28">Sumber</th>
+                        <th className="py-2 px-2 text-left w-24">Kategori</th>
                         <th className="py-2 px-2 text-left">Judul Konten</th>
                         <th className="py-2 px-2 text-center w-14">Trend</th>
-                        <th className="py-2 px-2 text-center w-12">AI</th>
-                        <th className="py-2 px-2 text-center w-24">Aksi</th>
+                        <th className="py-2 px-2 text-center w-10">AI</th>
+                        <th className="py-2 px-2 text-center w-20">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -561,7 +556,7 @@ export default function SocialMediaMonitoring() {
 
                         return (
                           <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                            <td className="py-1.5 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
+                            <td className="py-1.5 px-1 text-center text-gray-500 font-medium">{idx + 1}</td>
                             <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap">{date}</td>
                             <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap text-center">{time}</td>
                             <td className="py-1.5 px-2 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
@@ -572,7 +567,7 @@ export default function SocialMediaMonitoring() {
                             </td>
                             
                             <td className="py-1.5 px-2">
-                              <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-4">
+                              <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-2">
                                 {isu.topik}
                               </span>
                             </td>
