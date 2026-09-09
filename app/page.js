@@ -79,4 +79,8 @@ export default function SocialMediaMonitoring() {
       let pNews = ["api", "news"].join("/");
       let pPdip = ["api", "pdip"].join("/");
       let pMega = ["api", "megawati"].join("/");
-      let pPuan = ["api", "puan"].join
+      let pPuan = ["api", "puan"].join("/");
+      let pBenc = ["api", "bencana"].join("/");
+
+      let uTop = "";
+      let uTerkini = "";
