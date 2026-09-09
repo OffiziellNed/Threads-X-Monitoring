@@ -4,7 +4,6 @@ import * as cheerio from 'cheerio';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Resolve Google News RSS -> link asli publisher
 async function resolveGoogleNewsUrl(googleUrl) {
   if (!googleUrl.includes('news.google.com')) return googleUrl;
   try {
@@ -12,9 +11,7 @@ async function resolveGoogleNewsUrl(googleUrl) {
       redirect: 'follow',
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' }
     });
-    // res.url adalah url akhir setelah redirect 302
-    if (res.url &&!res.url.includes('news.google.com')) return res.url;
-
+    if (res.url && !res.url.includes('news.google.com')) return res.url;
     const html = await res.text();
     const $ = cheerio.load(html);
     const meta = $('meta[http-equiv="refresh"]').attr('content');
@@ -33,35 +30,41 @@ async function scrapeOne(originalUrl) {
   let fetchUrl = realUrl;
 
   if (fetchUrl.includes('kompas.com') || fetchUrl.includes('tribunnews.com')) {
-    if (!fetchUrl.includes('page=all')) fetchUrl += fetchUrl.includes('?')? '&page=all' : '?page=all';
+    if (!fetchUrl.includes('page=all')) fetchUrl += fetchUrl.includes('?') ? '&page=all' : '?page=all';
   } else if (fetchUrl.includes('detik.com')) {
-    if (!fetchUrl.includes('single=1')) fetchUrl += fetchUrl.includes('?')? '&single=1' : '?single=1';
+    if (!fetchUrl.includes('single=1')) fetchUrl += fetchUrl.includes('?') ? '&single=1' : '?single=1';
   }
 
   const res = await fetch(fetchUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      'Accept': 'text/html',
       'Referer': 'https://www.google.com/'
     }
   });
   const html = await res.text();
   const $ = cheerio.load(html);
-  $('script, style, nav, footer, iframe').remove();
+  $('script, style, nav, footer, iframe, .ads').remove();
 
   const title = ($('meta[property="og:title"]').attr('content') || $('h1').first().text() || $('title').text()).trim();
-  const imageUrl = $('meta[property="og:image"]').attr('content') || $('article img').first().attr('src') || null;
+  const imageUrl = $('meta[property="og:image"]').attr('content') || null;
 
   let articleContent = '';
   const selectors = [
-    'div[itemprop="articleBody"]', '.post-content', '.article-content',
-    '.detail__body-text', '.read__content', '.entry-content', 'article'
+    'div[itemprop="articleBody"]',
+    '.post-content',
+    '.article-content',
+    '.detail__body-text',
+    '.read__content',
+    '.entry-content',
+    'article'
   ];
   for (const sel of selectors) {
     if ($(sel).length) {
       const parts = [];
       $(sel).find('p').each((i, el) => {
         const t = $(el).text().trim();
-        if (t.length > 40 &&!/baca juga/i.test(t)) parts.push(t);
+        if (t.length > 40 && !/baca juga/i.test(t)) parts.push(t);
       });
       if (parts.join(' ').length > 200) { articleContent = parts.join('\n\n'); break; }
     }
@@ -82,23 +85,23 @@ async function scrapeOne(originalUrl) {
     text: articleContent,
     description: articleContent,
     gambar_url: imageUrl,
-    sumber: hostname? `Sumber Berita: ${hostname}` : ""
+    sumber: hostname ? `Sumber Berita: ${hostname}` : ""
   };
 }
 
 export async function POST(req) {
   try {
-    const { url, urls } = await req.json();
-    const list = urls || (url? [url] : []);
+    const body = await req.json();
+    const url = body.url;
+    const urls = body.urls;
+    const list = urls || (url ? [url] : []);
     if (!list.length) return NextResponse.json({ status: 'error', message: 'URL kosong' }, { status: 400 });
-
-    // kalau cuma 1 URL, balikin format lama biar editor lo gak jebol
     if (list.length === 1) {
       const data = await scrapeOne(list[0]);
       return NextResponse.json(data);
     }
     const results = await Promise.allSettled(list.map(u => scrapeOne(u)));
-    const data = results.map((r,i) => r.status === 'fulfilled'? r.value : { url: list[i], status: 'error', text: r.reason.message });
+    const data = results.map((r,i) => r.status === 'fulfilled' ? r.value : { url: list[i], status: 'error', text: r.reason.message });
     return NextResponse.json({ success: true, count: data.length, data });
   } catch (e) {
     return NextResponse.json({ status: 'error', message: e.message }, { status: 500 });
