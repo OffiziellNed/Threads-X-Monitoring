@@ -14,7 +14,8 @@
     "react-dom": "^19.2.8",
     "recharts": "latest",
     "lucide-react": "latest",
-    "cheerio": "latest"
+    "cheerio": "latest",
+    "@extractus/article-extractor": "^8.0.14"
   },
   "devDependencies": {
     "typescript": "^5",
