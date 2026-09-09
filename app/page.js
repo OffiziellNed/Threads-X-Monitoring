@@ -128,7 +128,6 @@ export default function SocialMediaMonitoring() {
   const handleOpenPrompt = async (isu) => {
     const newsLink = getCleanLink(isu);
     
-    // State sementara sambil menunggu data penuh tersedot
     setPromptModalData({ 
       ...isu, 
       fullText: "⏳ Mengaktifkan sistem... Menyedot artikel penuh dari website sumber (Tunggu sebentar)..." 
@@ -142,7 +141,7 @@ export default function SocialMediaMonitoring() {
         if (data.success && data.text) {
           setPromptModalData({ ...isu, fullText: data.text });
         } else {
-          setPromptModalData({ ...isu, fullText: `Penyedotan Penuh Gagal. Menggunakan Deskripsi Singkat:\n\n${isu.articleDesc}` });
+          setPromptModalData({ ...isu, fullText: `${data.text}\n\n${isu.articleDesc}` });
         }
       } catch (err) {
         setPromptModalData({ ...isu, fullText: `Koneksi Timeout. Menggunakan Deskripsi Singkat:\n\n${isu.articleDesc}` });
@@ -245,11 +244,9 @@ export default function SocialMediaMonitoring() {
                           <td className="py-4 px-4 text-gray-400">{vid.date}</td>
                           <td className="py-4 px-4 text-gray-400">{vid.time}</td>
                           <td className="py-4 px-4">
-                            <div className="flex items-start w-full gap-2">
-                              <div className="flex-col gap-1 flex-1 pr-2">
-                                <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
-                                <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed block">{vid.title}</span>
-                              </div>
+                            <div className="flex flex-col gap-1 max-w-[85%] pr-4">
+                              <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                              <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed">{vid.title}</span>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
@@ -387,7 +384,7 @@ export default function SocialMediaMonitoring() {
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
       {/* ======================================================================= */}
-      {/* MODAL PROMPT ANALISIS AI DENGAN <PRE> (TEKS DIJAMIN RAPI & TERBACA) */}
+      {/* MODAL PROMPT ANALISIS AI (TEKS DIJAMIN RAPI & TERBACA JELAS 100%) */}
       {/* ======================================================================= */}
       {promptModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
@@ -404,10 +401,13 @@ export default function SocialMediaMonitoring() {
             
             <div className="p-5 md:p-6 bg-[#0d1117] flex-1">
               <div className="bg-[#1c2128] border border-[#30363d] rounded-xl p-5 max-h-[60vh] overflow-y-auto shadow-inner">
-                {/* Tag <pre> mencegah line-height bertumpuk dan menahan format asli text */}
-                <pre className="text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-500/30">
+                {/* Pakai div dengan style line-height statis agar mustahil tumpang tindih */}
+                <div 
+                  className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono selection:bg-blue-500/30 block" 
+                  style={{ lineHeight: '1.8' }}
+                >
                   {generatePromptText(promptModalData)}
-                </pre>
+                </div>
               </div>
             </div>
             
@@ -483,7 +483,7 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (Tabel Bersih, Tanpa Ubah Desain/Garis) */}
+                {/* TAMPILAN DESKTOP */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -514,19 +514,19 @@ export default function SocialMediaMonitoring() {
                               </span>
                             </td>
                             
-                            {/* KOLOM JUDUL KONTEN - STRUKTUR PENJAJARAN IKON LURUS MUTLAK */}
+                            {/* KOLOM JUDUL KONTEN - DIKUNCI MATI DENGAN GRID CSS */}
                             <td className="py-4 px-4">
-                              <div className="flex items-start w-full gap-2">
+                              <div className="grid grid-cols-[1fr_30px_60px] gap-2 items-start w-full">
                                 
-                                {/* 1. KONTEN JUDUL (flex-1 agar ambil sisa ruang) */}
-                                <div className="flex-1 pr-2">
+                                {/* 1. Judul (Ambil semua sisa ruang yang ada) */}
+                                <div className="pr-4">
                                   <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block">
                                     {isu.topik}
                                   </span>
                                 </div>
                                 
-                                {/* 2. KOLOM MEGAPHONE (Lebar statis 30px, posisi selalu di samping kiri TOP) */}
-                                <div className="shrink-0 w-[30px] flex justify-center items-start pt-0.5">
+                                {/* 2. Megaphone (Dikunci lebar absolut 30px) */}
+                                <div className="flex justify-center pt-0.5">
                                   <button 
                                     onClick={() => handleOpenPrompt(isu)} 
                                     title="Generate Prompt Analisis" 
@@ -536,8 +536,8 @@ export default function SocialMediaMonitoring() {
                                   </button>
                                 </div>
 
-                                {/* 3. KOLOM TOP (Lebar statis 60px, posisi mentok kanan) */}
-                                <div className="shrink-0 w-[60px] flex justify-end items-start pt-0.5">
+                                {/* 3. TOP Badge (Dikunci lebar absolut 60px) */}
+                                <div className="flex justify-end pt-0.5">
                                   {isu.isTrending && (
                                     <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 h-[26px]" title="Top News (Trending)">
                                       <Flame size={12} className="text-orange-500" />
@@ -565,7 +565,7 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE (Card View, Agar Tidak Scroll Samping) */}
+                {/* TAMPILAN MOBILE */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {tableData.map((isu, idx) => {
                     const { date, time } = formatDateTime(isu.pubDate);
@@ -573,7 +573,6 @@ export default function SocialMediaMonitoring() {
 
                     return (
                       <div key={idx} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-                        
                         <div className="flex justify-between items-start gap-2">
                           <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
                             {isu.kategori}
@@ -603,10 +602,7 @@ export default function SocialMediaMonitoring() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
-                          <span>{date}</span>
-                          <span>•</span>
-                          <span>{time}</span>
-                          <span>•</span>
+                          <span>{date}</span><span>•</span><span>{time}</span><span>•</span>
                           <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
                         </div>
 
@@ -619,7 +615,6 @@ export default function SocialMediaMonitoring() {
                             <span className="text-gray-600 text-xs font-medium italic w-full text-center">No Link Available</span>
                           )}
                         </div>
-
                       </div>
                     );
                   })}
