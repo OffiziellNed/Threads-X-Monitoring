@@ -8,69 +8,67 @@ export async function GET(request) {
     let targetUrl = searchParams.get('url');
     
     if (!targetUrl || targetUrl === '#') {
-      return NextResponse.json({ success: false, text: "URL tidak ditemukan atau tidak valid." });
+      return NextResponse.json({ success: false, text: "URL tidak valid." });
     }
 
     const headers = { 
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.5'
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     };
 
-    // 1. Fetch Inisial (Menembus Google News Redirect)
+    // Langkah 1: Tembus redirect Google News
     let res = await fetch(targetUrl, { headers, redirect: 'follow' });
     let html = await res.text();
 
-    // Mendeteksi dan mengikuti Javascript Redirect dari Google News
-    if (targetUrl.includes('news.google.com') || html.includes('<c-wiz')) {
-        const jsRedirectMatch = html.match(/data-n-v="([^"]+)"/);
-        const aHrefMatch = html.match(/<a[^>]+href="([^"]+)"[^>]*>here<\/a>/i);
-        
-        let realUrl = null;
-        if (jsRedirectMatch && jsRedirectMatch[1]) {
-            realUrl = jsRedirectMatch[1];
-        } else if (aHrefMatch && aHrefMatch[1]) {
-            realUrl = aHrefMatch[1];
-        }
+    // Bongkar link asli dari sistem Redirect Google
+    let realUrl = targetUrl;
+    const metaRefresh = html.match(/url=([^"'>]+)/i);
+    const jsReplace = html.match(/window\.location\.replace\(['"]([^'"]+)['"]\)/i);
 
-        if (realUrl) {
-            targetUrl = realUrl;
-            res = await fetch(targetUrl, { headers, redirect: 'follow' });
-            html = await res.text();
-        }
+    if (metaRefresh && metaRefresh[1]) {
+        realUrl = metaRefresh[1];
+    } else if (jsReplace && jsReplace[1]) {
+        realUrl = jsReplace[1];
     }
 
-    // 2. Ekstraksi Paragraf dari Website Berita Asli
+    // Fetch ulang ke link asli penerbit (Kompas, Detik, dll)
+    if (realUrl !== targetUrl) {
+        realUrl = realUrl.replace(/&amp;/g, '&');
+        res = await fetch(realUrl, { headers, redirect: 'follow' });
+        html = await res.text();
+    }
+
+    // Langkah 2: Ekstrak semua teks berformat Paragraf (<p>)
     const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
     let paragraphs = [];
     let match;
     
     while ((match = pRegex.exec(html)) !== null) {
       let text = match[1]
-        .replace(/<[^>]+>/g, '') // Hapus tag HTML sisa (misal link <a> di dalam paragraf)
+        .replace(/<[^>]+>/g, '') // Buang sisa kode HTML
         .replace(/&nbsp;/g, ' ')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
-        .replace(/\s+/g, ' ')    // Rata spasi
+        .replace(/\s+/g, ' ')
         .trim();
         
-      // Hanya ambil paragraf yang panjangnya wajar (menghindari teks menu/footer nyasar)
-      if (text.length > 50) { 
+      // Hanya sedot teks panjang (Bukan menu navigasi atau tombol "Baca Juga")
+      if (text.length > 60 && !text.toLowerCase().includes('baca juga') && !text.toLowerCase().includes('halaman selanjutnya')) { 
         paragraphs.push(text);
       }
     }
 
     let articleText = paragraphs.join('\n\n');
 
-    if (!articleText || articleText.length < 150) {
+    if (!articleText || paragraphs.length < 2) {
       return NextResponse.json({ 
         success: false, 
-        text: "Sistem keamanan website sumber (Paywall/Anti-Bot) mencegah penyedotan otomatis teks penuh. Silakan baca artikel secara manual melalui tombol 'Baca'." 
+        text: "Website sumber mengunci artikel (Paywall/Anti-Bot). Menggunakan Deskripsi Singkat." 
       });
     }
 
+    // Balikin full text (Limit 15.000 karakter agar tidak error di prompt AI)
     return NextResponse.json({ success: true, text: articleText.substring(0, 15000) });
   } catch (error) {
-    return NextResponse.json({ success: false, text: "Gagal menyedot isi berita penuh karena website sumber diproteksi atau server timeout." });
+    return NextResponse.json({ success: false, text: "Koneksi Timeout. Menggunakan Deskripsi Singkat." });
   }
 }
