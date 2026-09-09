@@ -16,14 +16,13 @@ export async function GET(request) {
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
     };
 
-    // Pasang Timer Timeout 6 Detik agar tidak nyangkut di Vercel Serverless
+    // Waktu tunggu dinaikkan jadi 8 detik untuk loading full page
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
         let res = await fetch(targetUrl, { headers, redirect: 'follow', signal: controller.signal });
         let html = await res.text();
-        clearTimeout(timeoutId);
 
         let realUrl = targetUrl;
         const metaRefresh = html.match(/url=([^"'>]+)/i);
@@ -34,14 +33,29 @@ export async function GET(request) {
         else if (jsReplace && jsReplace[1]) realUrl = jsReplace[1];
         else if (aHrefMatch && aHrefMatch[1] && targetUrl.includes('google.com')) realUrl = aHrefMatch[1];
 
-        if (realUrl !== targetUrl) {
+        // BYPASS PAGINATION UNTUK BERITA INDONESIA AGAR FULL 2-3 HALAMAN
+        if (realUrl !== targetUrl || realUrl.includes('detik.com') || realUrl.includes('kompas.com') || realUrl.includes('tribunnews.com')) {
             realUrl = realUrl.replace(/&amp;/g, '&');
+            const urlObj = new URL(realUrl);
+            
+            // Panggil mode single page (Tampilkan semua halaman)
+            if (urlObj.hostname.includes('detik.com') && !urlObj.search.includes('single')) {
+                urlObj.searchParams.set('single', '1');
+            } else if (urlObj.hostname.includes('kompas.com') && !urlObj.search.includes('page=')) {
+                urlObj.searchParams.set('page', 'all');
+            } else if (urlObj.hostname.includes('tribunnews.com') && !urlObj.search.includes('page=')) {
+                urlObj.searchParams.set('page', 'all');
+            }
+            
+            realUrl = urlObj.toString();
+            
             const controller2 = new AbortController();
-            const timeoutId2 = setTimeout(() => controller2.abort(), 6000);
+            const timeoutId2 = setTimeout(() => controller2.abort(), 8000);
             res = await fetch(realUrl, { headers, redirect: 'follow', signal: controller2.signal });
             html = await res.text();
             clearTimeout(timeoutId2);
         }
+        clearTimeout(timeoutId);
 
         const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
         let paragraphs = [];
@@ -63,15 +77,20 @@ export async function GET(request) {
 
         let articleText = paragraphs.join('\n\n');
 
+        // Jika paragraf dikunci, ambil Meta Description sebagai Fallback terbaik
         if (!articleText || paragraphs.length < 2) {
-          return NextResponse.json({ success: false, text: "Gagal memproses (Paywall)." });
+            const ogDescMatch = html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]+)"/i) || html.match(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i);
+            if (ogDescMatch && ogDescMatch[1]) {
+                articleText = ogDescMatch[1];
+            } else {
+                return NextResponse.json({ success: false, text: "Gagal memproses (Paywall)." });
+            }
         }
 
-        return NextResponse.json({ success: true, text: articleText.substring(0, 12000) });
+        return NextResponse.json({ success: true, text: articleText.substring(0, 15000) });
         
     } catch (fetchError) {
         clearTimeout(timeoutId);
-        // Jika Timeout, return false agar Front-End pakai deskripsi singkat
         return NextResponse.json({ success: false, text: "Timeout" });
     }
   } catch (error) {
