@@ -4,44 +4,31 @@ import * as cheerio from 'cheerio';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// 1. RESOLVE LINK GOOGLE NEWS RSS JADI LINK ASLI
+// Resolve Google News RSS -> link asli publisher
 async function resolveGoogleNewsUrl(googleUrl) {
   if (!googleUrl.includes('news.google.com')) return googleUrl;
-
   try {
-    // fetch dengan follow redirect, Google akan redirect 302 ke situs asli
     const res = await fetch(googleUrl, {
       redirect: 'follow',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-      }
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' }
     });
+    // res.url adalah url akhir setelah redirect 302
+    if (res.url &&!res.url.includes('news.google.com')) return res.url;
 
-    // res.url ini adalah URL akhir setelah redirect
-    if (res.url &&!res.url.includes('news.google.com')) {
-      return res.url;
-    }
-
-    // Fallback: kadang Google kasih meta refresh
     const html = await res.text();
     const $ = cheerio.load(html);
     const meta = $('meta[http-equiv="refresh"]').attr('content');
     if (meta) {
-      const match = meta.match(/url=(.+)/i);
-      if (match) return match[1].replace(/['"]/g, '');
+      const m = meta.match(/url=(.+)/i);
+      if (m) return m[1].replace(/['"]/g, '');
     }
-
     return res.url;
-  } catch (e) {
-    console.log('Gagal resolve GNews:', e.message);
+  } catch {
     return googleUrl;
   }
 }
 
 async function scrapeOne(originalUrl) {
-  if (!originalUrl || originalUrl === '#') throw new Error('URL kosong');
-
-  // STEP 1: ubah dulu link Google News jadi link asli
   const realUrl = await resolveGoogleNewsUrl(originalUrl.trim());
   let fetchUrl = realUrl;
 
@@ -54,7 +41,6 @@ async function scrapeOne(originalUrl) {
   const res = await fetch(fetchUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-      'Accept': 'text/html',
       'Referer': 'https://www.google.com/'
     }
   });
@@ -63,21 +49,13 @@ async function scrapeOne(originalUrl) {
   $('script, style, nav, footer, iframe').remove();
 
   const title = ($('meta[property="og:title"]').attr('content') || $('h1').first().text() || $('title').text()).trim();
-  const imageUrl = $('meta[property="og:image"]').attr('content') || null;
+  const imageUrl = $('meta[property="og:image"]').attr('content') || $('article img').first().attr('src') || null;
 
   let articleContent = '';
   const selectors = [
-    'div[itemprop="articleBody"]',
-    '.post-content',
-    '.post-body',
-    '.article-content',
-    '.content-article',
-    '.detail__body-text',
-    '.read__content',
-    '.entry-content',
-    'article'
+    'div[itemprop="articleBody"]', '.post-content', '.article-content',
+    '.detail__body-text', '.read__content', '.entry-content', 'article'
   ];
-
   for (const sel of selectors) {
     if ($(sel).length) {
       const parts = [];
@@ -85,43 +63,55 @@ async function scrapeOne(originalUrl) {
         const t = $(el).text().trim();
         if (t.length > 40 &&!/baca juga/i.test(t)) parts.push(t);
       });
-      if (parts.join(' ').length > 200) {
-        articleContent = parts.join('\n\n');
-        break;
-      }
+      if (parts.join(' ').length > 200) { articleContent = parts.join('\n\n'); break; }
     }
   }
-
   if (!articleContent) {
     articleContent = $('p').map((i, el) => $(el).text().trim()).get().filter(t => t.length > 60).join('\n\n');
   }
 
+  let hostname = "";
+  try { hostname = new URL(realUrl).hostname; } catch {}
+
   return {
-    url: originalUrl, // url asli google news
-    real_url: realUrl, // url publisher yang udah ke-resolve
+    status: "success",
     success: true,
+    url: originalUrl,
+    real_url: realUrl,
     title: title.replace(/\s+/g, ' ').trim(),
     text: articleContent,
     description: articleContent,
-    gambar_url: imageUrl
+    gambar_url: imageUrl,
+    sumber: hostname? `Sumber Berita: ${hostname}` : ""
   };
 }
 
+export async function POST(req) {
+  try {
+    const { url, urls } = await req.json();
+    const list = urls || (url? [url] : []);
+    if (!list.length) return NextResponse.json({ status: 'error', message: 'URL kosong' }, { status: 400 });
+
+    // kalau cuma 1 URL, balikin format lama biar editor lo gak jebol
+    if (list.length === 1) {
+      const data = await scrapeOne(list[0]);
+      return NextResponse.json(data);
+    }
+    const results = await Promise.allSettled(list.map(u => scrapeOne(u)));
+    const data = results.map((r,i) => r.status === 'fulfilled'? r.value : { url: list[i], status: 'error', text: r.reason.message });
+    return NextResponse.json({ success: true, count: data.length, data });
+  } catch (e) {
+    return NextResponse.json({ status: 'error', message: e.message }, { status: 500 });
+  }
+}
+
 export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const url = searchParams.get('url');
-  if (!url) return NextResponse.json({ success: false, text: 'URL kosong' }, { status: 400 });
+  const url = new URL(req.url).searchParams.get('url');
+  if (!url) return NextResponse.json({ status: 'error', message: 'URL kosong' }, { status: 400 });
   try {
     const data = await scrapeOne(url);
     return NextResponse.json(data);
   } catch (e) {
-    return NextResponse.json({ success: false, text: e.message }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: e.message }, { status: 500 });
   }
-}
-
-export async function POST(req) {
-  const { urls } = await req.json();
-  const results = await Promise.allSettled(urls.map(u => scrapeOne(u)));
-  const data = results.map((r, i) => r.status === 'fulfilled'? r.value : { url: urls[i], success: false, text: r.reason.message });
-  return NextResponse.json({ success: true, count: data.length, data });
 }
