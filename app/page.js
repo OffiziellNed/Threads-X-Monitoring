@@ -411,11 +411,12 @@ export default function SocialMediaMonitoring() {
         clearTimeout(tId);
         const data = await res.json();
         let isi = data.description || data.text || "";
-        if (data.status === "success" && isi && !isErrorPage(isi)) {
+        let isDuplicate = isi && titleRaw && isi.trim() === titleRaw.trim();
+        if (data.status === "success" && isi && !isErrorPage(isi) && !isDuplicate && isi.length > 80) {
           setPromptModalData({ ...isu, fullText: preamble + isi });
         } else {
-          let fallback = isu.articleDesc || isu.description || "Gagal bypass Cloudflare, pakai ringkasan RSS.";
-          if (isErrorPage(isi)) fallback = isu.articleDesc || "Berita ini diblokir Cloudflare 522. Silakan buka manual via tombol Baca.";
+          let fallback = isu.articleDesc || isu.description || "Gagal ekstrak isi (tribratanews), pakai ringkasan RSS.";
+          if (isErrorPage(isi) || isDuplicate) fallback = isu.articleDesc || isu.description || "Berita ini struktur HTML nya tidak standar. Pakai ringkasan RSS.";
           setPromptModalData({ ...isu, fullText: preamble + fallback });
         }
       } catch (err) {
@@ -471,8 +472,9 @@ export default function SocialMediaMonitoring() {
         const data = await res.json();
         if (data && data.status === "success") {
           let isiBerita = data.description || data.text || "";
-          if (!isiBerita || isErrorPage(isiBerita)) {
-            isiBerita = isu.articleDesc || isu.description || "Gagal bypass Cloudflare 522 - Situs berita memblokir IP Vercel. Silakan klik Baca untuk buka manual, atau coba berita dari sumber lain (Kompas, Liputan6, Antara).";
+          // Fix tribratanews: kalau isi == judul, anggap gagal
+          if (!isiBerita || isErrorPage(isiBerita) || isiBerita.trim() === judulBerita.trim() || isiBerita.length < 100) {
+            isiBerita = isu.articleDesc || isu.description || "Gagal ekstrak isi, pakai ringkasan RSS. Situs tribratanews polri struktur HTML nya berbeda.";
           }
           setPromptTeks(preambleFull + isiBerita); 
           if(data.sumber) setSumberBerita(data.sumber);
