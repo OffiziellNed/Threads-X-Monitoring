@@ -10,20 +10,16 @@ import {
 export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
-  
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  
   const [ytData, setYtData] = useState([]);
   const [isLoadingYt, setIsLoadingYt] = useState(false);
   const [ytSortMode, setYtSortMode] = useState("views"); 
   const [ytFetchMode, setYtFetchMode] = useState("umum"); 
-  
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
-
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -34,41 +30,26 @@ export default function SocialMediaMonitoring() {
       let epTerkini = '';
 
       if (currentPage === 'bencana') {
-        epTop = `?t=${Date.now()}`;
-        epTerkini = `?t=${Date.now()}`;
+        epTop = `/api/bencana?t=${Date.now()}`;
+        epTerkini = `/api/bencana?t=${Date.now()}`;
       } else if (currentPage === 'pdip') {
-        epTop = `?hours=12&t=${Date.now()}`;
-        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `/api/pdip?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/pdip?hours=24&mode=terkini&t=${Date.now()}`;
       } else if (currentPage === 'megawati') {
-        epTop = `?hours=12&t=${Date.now()}`;
-        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `/api/megawati?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/megawati?hours=24&mode=terkini&t=${Date.now()}`;
       } else if (currentPage === 'puan') {
-        epTop = `?hours=12&t=${Date.now()}`;
-        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `/api/puan?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/puan?hours=24&mode=terkini&t=${Date.now()}`;
       } else if (currentPage === 'nasional') {
-        epTop = `?hours=12&t=${Date.now()}`;
-        epTerkini = `?hours=24&mode=terkini&t=${Date.now()}`;
+        epTop = `/api/news?hours=12&t=${Date.now()}`;
+        epTerkini = `/api/news?hours=24&mode=terkini&t=${Date.now()}`;
       }
 
-      const apiPathNews = ["api", "news"].join("/");
-      const apiPathPdip = ["api", "pdip"].join("/");
-      const apiPathMega = ["api", "megawati"].join("/");
-      const apiPathPuan = ["api", "puan"].join("/");
-      const apiPathBencana = ["api", "bencana"].join("/");
-
-      let urlTop = "";
-      let urlTerkini = "";
-
-      if (currentPage === 'bencana') { urlTop = [apiPathBencana, epTop].join(""); urlTerkini = [apiPathBencana, epTerkini].join(""); }
-      if (currentPage === 'pdip') { urlTop = [apiPathPdip, epTop].join(""); urlTerkini = [apiPathPdip, epTerkini].join(""); }
-      if (currentPage === 'megawati') { urlTop = [apiPathMega, epTop].join(""); urlTerkini = [apiPathMega, epTerkini].join(""); }
-      if (currentPage === 'puan') { urlTop = [apiPathPuan, epTop].join(""); urlTerkini = [apiPathPuan, epTerkini].join(""); }
-      if (currentPage === 'nasional') { urlTop = [apiPathNews, epTop].join(""); urlTerkini = [apiPathNews, epTerkini].join(""); }
-
-      if (urlTop && urlTerkini) {
+      if (epTop && epTerkini) {
         const [resTop, resTerkini] = await Promise.all([
-          fetch(["", urlTop].join("/"), { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []})),
-          fetch(["", urlTerkini].join("/"), { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []}))
+          fetch(epTop, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []})),
+          fetch(epTerkini, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []}))
         ]);
         
         if (resTop.success) setTopNewsData(resTop.data);
@@ -87,9 +68,7 @@ export default function SocialMediaMonitoring() {
   const fetchYoutubeData = async () => {
     setIsLoadingYt(true);
     try {
-      const apiPathYt = ["api", "puan-yt"].join("/");
-      const ytUrl = ["", apiPathYt].join("/") + `?mode=${ytFetchMode}&t=${Date.now()}`;
-      const response = await fetch(ytUrl, { cache: 'no-store' });
+      const response = await fetch(`/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, { cache: 'no-store' });
       const result = await response.json();
       if (result.success) setYtData(result.data);
     } catch (error) {} 
@@ -108,40 +87,31 @@ export default function SocialMediaMonitoring() {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const str = String(dateStr);
-    const tRegex = new RegExp("(?:pukul\\s*)?(\\d{2}[.:]\\d{2}(?:[.:]\\d{2})?)\\s*(?:WIB|WITA|WIT)?", "i");
-    const match = str.match(tRegex);
+    const timeRegex = /(?:pukul\s*)?(\d{2}[.:]\d{2}(?:[.:]\d{2})?)\s*(?:WIB|WITA|WIT)?/i;
+    const match = str.match(timeRegex);
     
     if (match) {
-      let time = match[1].split('.').join(':'); 
-      let date = str;
-      if (match[0]) {
-         date = date.replace(match[0], '');
-      }
-      const zoneRegex = new RegExp("WIB|WITA|WIT", "i");
-      date = date.replace(zoneRegex, '').split(',').join('').trim();
+      let time = match[1].replace(/\./g, ':'); 
+      let date = str.replace(match[0], '').replace(/WIB|WITA|WIT/i, '').replace(/,/g, '').trim();
       return { date: date || '-', time };
     }
     return { date: str, time: '-' };
   };
 
   const getCleanLink = (isu) => {
-    try {
-      const dataString = JSON.stringify(isu);
-      const urlRegex = new RegExp("https?://[^\\s\"']+");
-      const urlMatch = dataString.match(urlRegex);
-      if (urlMatch) {
-        let link = urlMatch[0];
-        if (link.includes('google.com')) {
-          try {
-            const cleanUrlStr = link.split('&amp;').join('&');
-            const urlObj = new URL(cleanUrlStr);
-            const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-            if (clean) return clean;
-          } catch (e) {}
-        }
-        return link; 
+    const dataString = JSON.stringify(isu);
+    const urlMatch = dataString.match(/https?:\/\/[^\s"']+/);
+    if (urlMatch) {
+      let link = urlMatch[0];
+      if (link.includes('google.com/url')) {
+        try {
+          const urlObj = new URL(link.replace(/&amp;/g, '&'));
+          const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
+          if (clean) return clean;
+        } catch (e) {}
       }
-    } catch(e) {}
+      return link; 
+    }
     return "#";
   };
 
@@ -150,16 +120,13 @@ export default function SocialMediaMonitoring() {
     
     setPromptModalData({ 
       ...isu, 
-      fullText: "⏳ Mengaktifkan sistem...\nMenyedot full teks artikel dari website sumber..." 
+      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 8 detik)..." 
     });
     
     if (newsLink && newsLink !== "#") {
       try {
-        const scrapePath = ["api", "scrape"].join("/");
-        const fullScrapeUrl = ["", scrapePath].join("/") + `?url=${encodeURIComponent(newsLink)}`;
-        
-        const fetchPromise = fetch(fullScrapeUrl);
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 9000));
+        const fetchPromise = fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
         
         const res = await Promise.race([fetchPromise, timeoutPromise]);
         const data = await res.json();
@@ -167,18 +134,18 @@ export default function SocialMediaMonitoring() {
         if (data.success && data.text) {
           setPromptModalData({ ...isu, fullText: data.text });
         } else {
-          setPromptModalData({ ...isu, fullText: `Gagal menyedot isi berita penuh. Alasan: ${data.text || "Terblokir atau Video"}` });
+          setPromptModalData({ ...isu, fullText: "Gagal memuat isi berita. Halaman sumber diproteksi atau berupa video tanpa teks." });
         }
       } catch (err) {
-        setPromptModalData({ ...isu, fullText: `Gagal menyedot isi berita penuh. Alasan: Website sumber sangat lambat merespon (lebih dari 9 detik).` });
+        setPromptModalData({ ...isu, fullText: "Gagal memuat isi berita. Koneksi timeout." });
       }
     } else {
-      setPromptModalData({ ...isu, fullText: `Gagal menyedot isi berita penuh. Alasan: Link tautan tidak ditemukan.` });
+      setPromptModalData({ ...isu, fullText: "URL tidak valid." });
     }
   };
 
   const generatePromptText = (data) => {
-    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nIsi Berita Lengkap:\n${data.fullText || "Teks tidak tersedia."}`;
+    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nIsi Berita:\n${data.fullText || "Teks tidak tersedia."}`;
   };
 
   const handleCopyPrompt = async (text) => {
@@ -204,9 +171,6 @@ export default function SocialMediaMonitoring() {
   if (selectedCategory !== "Semua") tableData = tableData.filter(d => d.kategori === selectedCategory);
   if (isTopNewsFilter) tableData = tableData.filter(d => d.isTrending);
 
-  // =========================================================================
-  // HALAMAN YOUTUBE DATA ANALYSIS
-  // =========================================================================
   if (currentPage === "puan-yt-analysis") {
     let sortedYtVideos = ytData && ytData.length > 0 ? [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]) : [];
 
@@ -258,7 +222,7 @@ export default function SocialMediaMonitoring() {
           </div>
 
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col pb-4">
-            <div className="w-full flex items-center" style={{ backgroundColor: '#0d1117' }}>
+            <div className="w-full flex items-center" style={{ background: '#0d1117' }}>
               <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-[#331c0b]" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
               <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-[#172033]" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita</button>
             </div>
@@ -281,7 +245,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {isLoadingYt ? (
-              <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-[#2563eb]`}></div></div>
+              <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
@@ -396,7 +360,7 @@ export default function SocialMediaMonitoring() {
           
           <div className="flex flex-col gap-5 md:gap-6 w-full px-2 md:px-8">
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
+              <img src="nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Berita Nasional</h2>
                 <button onClick={() => setCurrentPage("nasional")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -406,7 +370,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
+              <img src="bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Bencana Terkini</h2>
                 <button onClick={() => setCurrentPage("bencana")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -416,7 +380,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
+              <img src="pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">PDI Perjuangan</h2>
                 <button onClick={() => setCurrentPage("pdip")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -426,7 +390,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
+              <img src="megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Megawati Soekarnoputri</h2>
                 <button onClick={() => setCurrentPage("megawati")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
@@ -436,7 +400,7 @@ export default function SocialMediaMonitoring() {
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-[#1c2128]" />
+              <img src="puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Puan Maharani</h2>
                 <div className="flex flex-wrap gap-2 md:gap-3">
@@ -494,7 +458,6 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* KEMBALI KE LEBAR ORIGINAL (1400px) */}
       <div className="w-full max-w-[1400px] mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
@@ -543,7 +506,7 @@ export default function SocialMediaMonitoring() {
                   onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? 'bg-[#331c0b] text-orange-500' : 'bg-[#1c2128] text-gray-400 hover:text-orange-400'}`}
                 >
-                  <Flame size={14} className={isTopNewsFilter ? "text-orange-500" : "text-gray-400"} /> Filter Top News
+                  <Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
                 </button>
                 <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} data</span>
               </div>
@@ -551,7 +514,6 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP ORIGINAL (STRUKTUR 7 KOLOM, TANPA GARIS) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
@@ -582,7 +544,6 @@ export default function SocialMediaMonitoring() {
                               </span>
                             </td>
                             
-                            {/* STRUKTUR ORIGINAL KONTEN JUDUL */}
                             <td className="py-4 px-4 border-none">
                               <div className="flex items-start justify-between w-full">
                                 <span className="flex-1 max-w-[80%] pr-4 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
@@ -624,7 +585,6 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {tableData.map((isu, idx) => {
                     const { date, time } = formatDateTime(isu.pubDate);
@@ -662,7 +622,6 @@ export default function SocialMediaMonitoring() {
                           <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
                         </div>
 
-                        {/* MOBILE ACTIONS */}
                         <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: '1px solid #1c2128' }}>
                           <button 
                             onClick={() => handleOpenPrompt(isu)} 
