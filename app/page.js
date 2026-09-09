@@ -104,7 +104,9 @@ export default function SocialMediaMonitoring() {
 
   const getCleanLink = (isu) => {
     const dataString = JSON.stringify(isu);
-    const urlMatch = dataString.match(/https?:\/\/[^\s"'\\]+/);
+    // Regex ini udah diperbaiki agar bebas bug dari compiler Turbopack Vercel
+    const urlMatch = dataString.match(/https?:\/\/[^\s"']+/);
+    
     if (urlMatch) {
       let link = urlMatch[0];
       if (link.includes('google.com/url')) {
@@ -148,9 +150,8 @@ export default function SocialMediaMonitoring() {
     }
   };
 
-  // REVISI TEMPLATE PROMPT AI (SINGKAT & ADA X/THREADS)
   const generatePromptText = (data) => {
-    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nIsi Berita:\n${data.fullText || data.articleDesc || "Tidak ada deskripsi rinci."}`;
+    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra untuk X atau Threads, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam. Pastikan singkat singkat saja\n\nJudul Berita:\n${data.articleTitle || data.topik || data.title}\n\nDeskripsi Berita:\n${data.fullText || data.articleDesc || "Tidak ada deskripsi rinci."}`;
   };
 
   const handleCopyPrompt = async (text) => {
@@ -185,7 +186,6 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
-        {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
             <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ background: '#161b22', border: '1px solid #30363d' }}>
@@ -217,7 +217,6 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        {/* CONTAINER YT RAPAT TENGAH */}
         <div className="w-full max-w-[900px] mx-auto mt-4">
           <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -308,7 +307,6 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE YT */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
                     <div key={vid.id} className="bg-[#0d1117]/50 rounded-xl p-4 flex flex-col gap-3 border border-white/5">
@@ -439,7 +437,6 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
-      {/* MODAL PROMPT ANALISIS AI DENGAN STYLE BACKGROUND ABSOLUT */}
       {promptModalData && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
           <div className="w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col rounded-2xl" style={{ background: '#161b22', border: '1px solid #30363d' }}>
@@ -475,7 +472,7 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* CONTAINER DITENGAH & COMPACT (max-w-[900px] mx-auto) */}
+      {/* CONTAINER DIBIKIN MAKIN COMPACT (max-w-[900px] + mx-auto) */}
       <div className="w-full max-w-[900px] mx-auto mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
@@ -532,7 +529,7 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (TABEL RAPAT, CENTER, 100% BEBAS GARIS) */}
+                {/* TAMPILAN DESKTOP (TABEL RAPAT, 100% TANPA GARIS) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
@@ -644,7 +641,6 @@ export default function SocialMediaMonitoring() {
                           <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
                         </div>
 
-                        {/* MOBILE ACTIONS */}
                         <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                           <button 
                             onClick={() => handleOpenPrompt(isu)} 
@@ -674,7 +670,7 @@ export default function SocialMediaMonitoring() {
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
     </main>
   );
