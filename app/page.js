@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import { 
   ArrowLeft, RefreshCw, ExternalLink, Calendar, Filter, 
   PlaySquare, Zap, Search, Flame, Megaphone, Copy, Check, X, Eye, ThumbsUp, ThumbsDown
@@ -26,13 +26,12 @@ export default function SocialMediaMonitoring() {
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  // State Editor Agora Vada
-  const [urlBerita, setUrlBerita] = useState('');
-  const [promptTeks, setPromptTeks] = useState('');
-  const [judulHtml, setJudulHtml] = useState('');
-  const [sumberBerita, setSumberBerita] = useState('');
-  const [imageUrl, setImageUrl] = useState(''); 
-  const [editorSubPage, setEditorSubPage] = useState(2); // Langsung ke prompt/teks
+  const [urlBerita, setUrlBerita] = useState("");
+  const [promptTeks, setPromptTeks] = useState("");
+  const [judulHtml, setJudulHtml] = useState("");
+  const [sumberBerita, setSumberBerita] = useState("");
+  const [imageUrl, setImageUrl] = useState(""); 
+  const [editorSubPage, setEditorSubPage] = useState(2);
 
   const [imgX, setImgX] = useState(0);
   const [imgY, setImgY] = useState(0);
@@ -56,36 +55,50 @@ export default function SocialMediaMonitoring() {
   const fetchLiveTrends = async () => {
     setIsLoading(true);
     try {
-      let epTop = '';
-      let epTerkini = '';
+      let epTop = "";
+      let epTerkini = "";
+      let nTime = String(Date.now());
 
-      if (currentPage === 'bencana') {
-        epTop = `/api/bencana?t=${Date.now()}`;
-        epTerkini = `/api/bencana?t=${Date.now()}`;
-      } else if (currentPage === 'pdip') {
-        epTop = `/api/pdip?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/pdip?hours=24&mode=terkini&t=${Date.now()}`;
-      } else if (currentPage === 'megawati') {
-        epTop = `/api/megawati?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/megawati?hours=24&mode=terkini&t=${Date.now()}`;
-      } else if (currentPage === 'puan') {
-        epTop = `/api/puan?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/puan?hours=24&mode=terkini&t=${Date.now()}`;
-      } else if (currentPage === 'nasional') {
-        epTop = `/api/news?hours=12&t=${Date.now()}`;
-        epTerkini = `/api/news?hours=24&mode=terkini&t=${Date.now()}`;
+      if (currentPage === "bencana") {
+        epTop = "?t=" + nTime;
+        epTerkini = "?t=" + nTime;
+      } else if (currentPage === "pdip") {
+        epTop = "?hours=12&t=" + nTime;
+        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
+      } else if (currentPage === "megawati") {
+        epTop = "?hours=12&t=" + nTime;
+        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
+      } else if (currentPage === "puan") {
+        epTop = "?hours=12&t=" + nTime;
+        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
+      } else if (currentPage === "nasional") {
+        epTop = "?hours=12&t=" + nTime;
+        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
       }
 
-      if (epTop && epTerkini) {
-        const [resTop, resTerkini] = await Promise.all([
-          fetch(epTop, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []})),
-          fetch(epTerkini, { cache: 'no-store' }).then(res => res.json()).catch(() => ({success: false, data: []}))
-        ]);
+      let pNews = ["api", "news"].join("/");
+      let pPdip = ["api", "pdip"].join("/");
+      let pMega = ["api", "megawati"].join("/");
+      let pPuan = ["api", "puan"].join("/");
+      let pBenc = ["api", "bencana"].join("/");
+
+      let uTop = "";
+      let uTerkini = "";
+
+      if (currentPage === "bencana") { uTop = ["", pBenc].join("/") + epTop; uTerkini = ["", pBenc].join("/") + epTerkini; }
+      if (currentPage === "pdip") { uTop = ["", pPdip].join("/") + epTop; uTerkini = ["", pPdip].join("/") + epTerkini; }
+      if (currentPage === "megawati") { uTop = ["", pMega].join("/") + epTop; uTerkini = ["", pMega].join("/") + epTerkini; }
+      if (currentPage === "puan") { uTop = ["", pPuan].join("/") + epTop; uTerkini = ["", pPuan].join("/") + epTerkini; }
+      if (currentPage === "nasional") { uTop = ["", pNews].join("/") + epTop; uTerkini = ["", pNews].join("/") + epTerkini; }
+
+      if (uTop && uTerkini) {
+        const resTop = await fetch(uTop, { cache: "no-store" }).then(r => r.json()).catch(() => ({success: false, data: []}));
+        const resTerkini = await fetch(uTerkini, { cache: "no-store" }).then(r => r.json()).catch(() => ({success: false, data: []}));
         
-        if (resTop.success) setTopNewsData(resTop.data);
+        if (resTop && resTop.success) setTopNewsData(resTop.data);
         else setTopNewsData([]);
 
-        if (resTerkini.success) setTerkiniData(resTerkini.data);
+        if (resTerkini && resTerkini.success) setTerkiniData(resTerkini.data);
         else setTerkiniData([]);
       }
     } catch (error) {
@@ -98,19 +111,22 @@ export default function SocialMediaMonitoring() {
   const fetchYoutubeData = async () => {
     setIsLoadingYt(true);
     try {
-      const response = await fetch(`/api/puan-yt?mode=${ytFetchMode}&t=${Date.now()}`, { cache: 'no-store' });
+      let pYt = ["api", "puan-yt"].join("/");
+      let ytUrl = ["", pYt].join("/") + "?mode=" + ytFetchMode + "&t=" + String(Date.now());
+      const response = await fetch(ytUrl, { cache: "no-store" });
       const result = await response.json();
-      if (result.success) setYtData(result.data);
+      if (result && result.success) setYtData(result.data);
     } catch (error) {} 
     finally { setIsLoadingYt(false); }
   };
 
   useEffect(() => {
-    if (currentPage === "puan-yt-analysis") fetchYoutubeData();
-    else if (currentPage !== "main" && currentPage !== "agora-editor") {
-      fetchLiveTrends();
-      setSelectedCategory("Semua"); 
-      setIsTopNewsFilter(false);
+    if (currentPage === "puan-yt-analysis") {
+        fetchYoutubeData();
+    } else if (currentPage !== "main" && currentPage !== "agora-editor") {
+        fetchLiveTrends();
+        setSelectedCategory("Semua"); 
+        setIsTopNewsFilter(false);
     }
   }, [currentPage, ytFetchMode]);
 
@@ -118,11 +134,11 @@ export default function SocialMediaMonitoring() {
     if (currentPage !== "agora-editor") return;
     const loadFonts = async () => {
       try {
-        const fontSB = new FontFace('PoppinsSemiBold', 'url(/Poppins-SemiBold.ttf)');
+        const fontSB = new FontFace("PoppinsSemiBold", "url(/Poppins-SemiBold.ttf)");
         await fontSB.load();
         document.fonts.add(fontSB);
 
-        const fontSBI = new FontFace('PoppinsSemiBoldItalic', 'url(/Poppins-SemiBoldItalic.ttf)');
+        const fontSBI = new FontFace("PoppinsSemiBoldItalic", "url(/Poppins-SemiBoldItalic.ttf)");
         await fontSBI.load();
         document.fonts.add(fontSBI);
       } catch (err) {}
@@ -130,7 +146,7 @@ export default function SocialMediaMonitoring() {
     loadFonts();
 
     const tImg = new Image();
-    tImg.src = '/Agora Vada Template.png';
+    tImg.src = "/Agora Vada Template.png";
     tImg.onload = () => setTemplateImgObj(tImg);
   }, [currentPage]);
 
@@ -141,15 +157,15 @@ export default function SocialMediaMonitoring() {
     }
     let isCancelled = false;
     const fetchImageSafely = async () => {
-      const tryLoad = (url) => new Promise((resolve, reject) => {
+      const tryLoad = (urlLoad) => new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
         img.onerror = () => reject();
-        img.src = url;
+        img.src = urlLoad;
       });
 
-      if (!imageUrl.startsWith('http')) {
+      if (imageUrl.indexOf("http") !== 0) {
         try { 
           const img = await tryLoad(imageUrl); 
           if (!isCancelled) setLoadedBgImg(img); 
@@ -158,15 +174,14 @@ export default function SocialMediaMonitoring() {
       }
 
       const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`,
-        `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`,
+        "https://api.allorigins.win/raw?url=" + encodeURIComponent(imageUrl),
+        "https://wsrv.nl/?url=" + encodeURIComponent(imageUrl),
         imageUrl 
       ];
 
-      for (let proxy of proxies) {
+      for (let i=0; i<proxies.length; i++) {
         try {
-          const img = await tryLoad(proxy);
+          const img = await tryLoad(proxies[i]);
           if (!isCancelled) setLoadedBgImg(img);
           return; 
         } catch(e) {
@@ -180,32 +195,32 @@ export default function SocialMediaMonitoring() {
 
   const handleFormat = (command, value = null) => {
     document.execCommand(command, false, value);
-    const editor = document.getElementById('judul-editor');
+    const editor = document.getElementById("judul-editor");
     if (editor) setJudulHtml(editor.innerHTML);
   };
 
   const renderRichText = (ctx, htmlString, x, y, maxWidth, lineHeight, baseFontSize) => {
     if (!htmlString) return; 
-    ctx.textAlign = 'left'; 
-    ctx.textBaseline = 'top'; 
+    ctx.textAlign = "left"; 
+    ctx.textBaseline = "top"; 
 
     const cleanHTML = htmlString
-      .replace(/<div[^>]*><br><\/div>/gi, '\n')
-      .replace(/<div[^>]*>/gi, '\n')
-      .replace(/<\/div>/gi, '')
-      .replace(/<br\s*[\/]?>/gi, '\n');
+      .replace(new RegExp("<div[^>]*><br><\\/div>", "gi"), "\n")
+      .replace(new RegExp("<div[^>]*>", "gi"), "\n")
+      .replace(new RegExp("<\\/div>", "gi"), "")
+      .replace(new RegExp("<br\\s*[\\/]?>", "gi"), "\n");
 
-    const tempDiv = document.createElement('div');
+    const tempDiv = document.createElement("div");
     tempDiv.innerHTML = cleanHTML;
     
     let wordsWithContext = [];
     const extract = (node, currentContext) => {
       if (node.nodeType === Node.TEXT_NODE) {
         let text = node.textContent;
-        let tokens = text.split('\n');
+        let tokens = text.split("\n");
         tokens.forEach((lineText, index) => {
-          if (index > 0) wordsWithContext.push({ word: '', ...currentContext, isNewline: true });
-          let words = lineText.split(/\s+/);
+          if (index > 0) wordsWithContext.push({ word: "", ...currentContext, isNewline: true });
+          let words = lineText.split(new RegExp("\\s+"));
           words.forEach(w => {
             if (w.trim().length > 0) wordsWithContext.push({ word: w.trim(), ...currentContext, isNewline: false });
           });
@@ -213,20 +228,20 @@ export default function SocialMediaMonitoring() {
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         let newContext = { ...currentContext };
         const tag = node.tagName.toLowerCase();
-        if (tag === 'i' || tag === 'em') newContext.isItalic = true;
+        if (tag === "i" || tag === "em") newContext.isItalic = true;
         if (node.style && node.style.color) newContext.color = node.style.color;
-        if (tag === 'font' && node.getAttribute('color')) newContext.color = node.getAttribute('color');
+        if (tag === "font" && node.getAttribute("color")) newContext.color = node.getAttribute("color");
         node.childNodes.forEach(child => extract(child, newContext));
       }
     };
-    extract(tempDiv, { color: '#FFFFFF', isItalic: false }); 
+    extract(tempDiv, { color: "#FFFFFF", isItalic: false }); 
 
     let lines = [];
     let currentLine = [];
     let currentWidth = 0;
     
-    ctx.font = `${baseFontSize}px PoppinsSemiBold, sans-serif`;
-    const spaceWidth = ctx.measureText(' ').width;
+    ctx.font = baseFontSize + "px PoppinsSemiBold, sans-serif";
+    const spaceWidth = ctx.measureText(" ").width;
 
     wordsWithContext.forEach(item => {
       if (item.isNewline) {
@@ -234,8 +249,8 @@ export default function SocialMediaMonitoring() {
         currentLine = [];
         currentWidth = 0;
       } else {
-        const fontName = item.isItalic ? 'PoppinsSemiBoldItalic' : 'PoppinsSemiBold';
-        ctx.font = `${baseFontSize}px ${fontName}, sans-serif`;
+        const fontName = item.isItalic ? "PoppinsSemiBoldItalic" : "PoppinsSemiBold";
+        ctx.font = baseFontSize + "px " + fontName + ", sans-serif";
         let wWidth = ctx.measureText(item.word).width;
         
         if (currentWidth + wWidth > maxWidth && currentLine.length > 0) {
@@ -254,8 +269,8 @@ export default function SocialMediaMonitoring() {
     lines.forEach(lineArr => {
       let currentX = x;
       lineArr.forEach(item => {
-        const fontName = item.isItalic ? 'PoppinsSemiBoldItalic' : 'PoppinsSemiBold';
-        ctx.font = `${baseFontSize}px ${fontName}, sans-serif`;
+        const fontName = item.isItalic ? "PoppinsSemiBoldItalic" : "PoppinsSemiBold";
+        ctx.font = baseFontSize + "px " + fontName + ", sans-serif";
         ctx.fillStyle = item.color;
         ctx.fillText(item.word, currentX, currentY);
         currentX += ctx.measureText(item.word).width + spaceWidth;
@@ -268,9 +283,9 @@ export default function SocialMediaMonitoring() {
     if (currentPage !== "agora-editor" || editorSubPage !== 3) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = "#111827";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (loadedBgImg) {
@@ -289,10 +304,10 @@ export default function SocialMediaMonitoring() {
     renderRichText(ctx, judulHtml, teksX, teksY, 950, lh, ukuranFont);
 
     if (sumberBerita) {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = `${ukuranFontSumber}px PoppinsSemiBoldItalic, sans-serif`;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = ukuranFontSumber + "px PoppinsSemiBoldItalic, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
       ctx.fillText(sumberBerita, sumberX, sumberY);
     }
   }, [currentPage, editorSubPage, loadedBgImg, templateImgObj, imgX, imgY, imgScale, teksX, teksY, ukuranFont, jarakBaris, sumberX, sumberY, ukuranFontSumber, judulHtml, sumberBerita]);
@@ -326,239 +341,370 @@ export default function SocialMediaMonitoring() {
   const downloadGambar = () => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const link = document.createElement('a');
-      link.download = 'AgoraVada_Post.jpg';
+      const link = document.createElement("a");
+      link.download = "AgoraVada_Post.jpg";
       link.href = canvas.toDataURL("image/jpeg", 0.95);
       link.click();
     }
   };
 
   const formatDateTime = (dateStr) => {
-    if (!dateStr) return { date: '-', time: '-' };
-    const str = String(dateStr);
-    const timeRegex = /(?:pukul\s*)?(\d{2}[.:]\d{2}(?:[.:]\d{2})?)\s*(?:WIB|WITA|WIT)?/i;
-    const match = str.match(timeRegex);
+    if (!dateStr) return { date: "-", time: "-" };
+    let str = String(dateStr);
+    let strLower = str.toLowerCase();
+    let datePart = str;
+    let timePart = "-";
     
-    if (match) {
-      let time = match[1].replace(/\./g, ':'); 
-      let date = str.replace(match[0], '').replace(/WIB|WITA|WIT/i, '').replace(/,/g, '').trim();
-      return { date: date || '-', time };
+    let pukulIdx = strLower.indexOf("pukul");
+    if (pukulIdx !== -1) {
+      datePart = str.substring(0, pukulIdx).trim();
+      if (datePart.endsWith(",")) datePart = datePart.substring(0, datePart.length - 1);
+      let afterPukul = strLower.substring(pukulIdx + 5);
+      afterPukul = afterPukul.split("wib").join("").split("wita").join("").split("wit").join("");
+      timePart = afterPukul.trim().split(".").join(":");
+    } else if (str.indexOf(":") !== -1) {
+      let parts = str.split(" ");
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf(":") !== -1) {
+          timePart = parts[i];
+          datePart = str.replace(timePart, "").trim();
+          if (datePart.endsWith(",")) datePart = datePart.substring(0, datePart.length - 1);
+          break;
+        }
+      }
     }
-    return { date: str, time: '-' };
+    let cleanDate = datePart.toLowerCase().split("wib").join("").split("wita").join("").split("wit").join("").trim();
+    return { date: cleanDate || "-", time: timePart };
   };
 
   const getCleanLink = (isu) => {
-    const dataString = JSON.stringify(isu);
-    const urlMatch = dataString.match(/https?:\/\/[^\s"'\\]+/);
-    if (urlMatch) {
-      let link = urlMatch[0];
-      if (link.includes('google.com/url')) {
-        try {
-          const urlObj = new URL(link.replace(/&amp;/g, '&'));
-          const clean = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-          if (clean) return clean;
-        } catch (e) {}
+    try {
+      let dataString = JSON.stringify(isu);
+      let httpPrefix = "http";
+      let httpIndex = dataString.indexOf(httpPrefix);
+      if (httpIndex !== -1) {
+        let quote1 = dataString.indexOf('"', httpIndex);
+        let quote2 = dataString.indexOf("'", httpIndex);
+        let space = dataString.indexOf(" ", httpIndex);
+        
+        let endIndexes = [];
+        if (quote1 !== -1) endIndexes.push(quote1);
+        if (quote2 !== -1) endIndexes.push(quote2);
+        if (space !== -1) endIndexes.push(space);
+        
+        let end = endIndexes.length > 0 ? Math.min(...endIndexes) : dataString.length;
+        let link = dataString.substring(httpIndex, end);
+        link = link.split("\\").join(""); 
+        
+        if (link.indexOf("google.com") !== -1) {
+          try {
+            let cleanUrlStr = link.split("&amp;").join("&");
+            let urlObj = new URL(cleanUrlStr);
+            let clean = urlObj.searchParams.get("url") || urlObj.searchParams.get("q");
+            if (clean) return clean;
+          } catch (e) {}
+        }
+        return link; 
       }
-      return link; 
-    }
+    } catch(e) {}
     return "#";
   };
 
-  // FUNGSI UTAMA: KLIK MEGAPHONE -> TARIK DATA KE EDITOR TANPA KE MENU UTAMA
-  const handleOpenEditorFromMegaphone = async (isu) => {
+  const getPreamble = (titleText) => {
+    let pre = "Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif \"AgoraVada\", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).\n\nJudul Berita:\n" + titleText + "\n\nIsi Berita:\n";
+    return pre;
+  };
+
+  const handleOpenPrompt = async (isu) => {
     const newsLink = getCleanLink(isu);
-    const judulBerita = isu.articleTitle || isu.topik || isu.title || "Tanpa Judul";
-    const sumberText = isu.source ? `Sumber Berita: ${isu.source}` : (newsLink !== "#" ? `Sumber Berita: ${new URL(newsLink).hostname}` : '');
-
-    setPreviousPage(currentPage); // Simpan halaman aktif saat ini agar tombol Kembali akurat
-    setUrlBerita(newsLink);
-    setSumberBerita(sumberText);
-    setJudulHtml(judulBerita);
-    setPromptTeks("Menyedot data dari web, tunggu sebentar...");
-    setCurrentPage("agora-editor");
-    setEditorSubPage(2); // Langsung ke prompt/teks
-
+    let titleRaw = isu.articleTitle || isu.topik || isu.title || "Tanpa Judul";
+    let preamble = getPreamble(titleRaw);
+    
+    setPromptModalData({ 
+      ...isu, 
+      fullText: "Mengaktifkan sistem...\nMenyedot teks penuh dari sumber (mohon tunggu)..." 
+    });
+    
     if (newsLink && newsLink !== "#") {
       try {
-        const res = await fetch("/api/tarik-berita", { 
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }) 
+        let fetchUrl = ["", "api", "tarik-berita"].join("/");
+        const res = await fetch(fetchUrl, {
+           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink })
         });
         const data = await res.json();
-        if(data.status === "success") {
-          const promptSakti = `Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif "AgoraVada", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).\n\n${data.prompt}`;
-          setPromptTeks(promptSakti); 
-          if(data.sumber) setSumberBerita(data.sumber);
-          if(data.gambar_url) setImageUrl(data.gambar_url);
+        if (data && data.status === "success") {
+          let tRes = data.description || data.text || "Tidak ada teks.";
+          setPromptModalData({ ...isu, fullText: preamble + tRes });
         } else {
-          setPromptTeks(`Judul: ${judulBerita}\n\nIsi Berita Lengkap:\n${isu.articleDesc || "Tidak ada deskripsi."}`);
+          setPromptModalData({ ...isu, fullText: preamble + (isu.articleDesc || "Gagal menyedot sumber.") });
         }
-      } catch(err) {
-        setPromptTeks(`Judul: ${judulBerita}\n\nIsi Berita Lengkap:\n${isu.articleDesc || "Tidak ada deskripsi."}`);
+      } catch (err) {
+        setPromptModalData({ ...isu, fullText: preamble + (isu.articleDesc || "Koneksi Timeout.") });
       }
     } else {
-      setPromptTeks(`Judul: ${judulBerita}\n\nIsi Berita Lengkap:\n${isu.articleDesc || "Tidak ada deskripsi."}`);
+      setPromptModalData({ ...isu, fullText: preamble + (isu.articleDesc || "URL tidak valid.") });
     }
   };
 
-  const isRedPrev = previousPage.includes("pdip") || previousPage.includes("puan") || previousPage.includes("megawati");
-  const isRedCurr = currentPage.includes("pdip") || currentPage.includes("puan") || currentPage.includes("megawati");
+  const handleCopyPrompt = async (textRaw) => {
+    try {
+      await navigator.clipboard.writeText(textRaw);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {}
+  };
+
+  const isRedPrev = previousPage.indexOf("pdip") !== -1 || previousPage.indexOf("puan") !== -1 || previousPage.indexOf("megawati") !== -1;
+  const isRedCurr = currentPage.indexOf("pdip") !== -1 || currentPage.indexOf("puan") !== -1 || currentPage.indexOf("megawati") !== -1;
   const isRedTheme = isRedCurr || isRedPrev;
 
   const topNewsTitles = topNewsData.map(d => d.topik);
   let tableData = terkiniData.map(d => ({
     ...d,
-    isTrending: topNewsTitles.includes(d.topik)
+    isTrending: topNewsTitles.indexOf(d.topik) !== -1
   }));
 
-  if (selectedCategory !== "Semua") tableData = tableData.filter(d => d.kategori === selectedCategory);
-  if (isTopNewsFilter) tableData = tableData.filter(d => d.isTrending);
+  if (selectedCategory !== "Semua") {
+      tableData = tableData.filter(d => d.kategori === selectedCategory);
+  }
+  if (isTopNewsFilter) {
+      tableData = tableData.filter(d => d.isTrending);
+  }
 
-  // =========================================================================
-  // HALAMAN EDITOR AGORA VADA
-  // =========================================================================
+  const handleOpenEditorFromMegaphone = async (isu) => {
+    const newsLink = getCleanLink(isu);
+    const judulBerita = isu.articleTitle || isu.topik || isu.title || "Tanpa Judul";
+    let sumberText = "";
+    
+    try {
+        if (isu.source) sumberText = "Sumber Berita: " + isu.source;
+        else if (newsLink !== "#") sumberText = "Sumber Berita: " + new URL(newsLink).hostname;
+    } catch(e) {}
+
+    setPreviousPage(currentPage); 
+    setUrlBerita(newsLink);
+    setSumberBerita(sumberText);
+    setJudulHtml(judulBerita);
+    setPromptTeks("Menyedot isi berita penuh, mohon tunggu sebentar...");
+    setCurrentPage("agora-editor");
+    setEditorSubPage(2); 
+
+    let preambleFull = getPreamble(judulBerita);
+
+    if (newsLink && newsLink !== "#") {
+      try {
+        let reqUrl = ["", "api", "tarik-berita"].join("/");
+        const res = await fetch(reqUrl, { 
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }) 
+        });
+        const data = await res.json();
+        
+        if (data && data.status === "success") {
+          let isiBerita = data.description || data.text || "Tidak ada detail teks.";
+          setPromptTeks(preambleFull + isiBerita); 
+          if(data.sumber) setSumberBerita(data.sumber);
+          if(data.gambar_url) setImageUrl(data.gambar_url);
+        } else {
+          setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita."));
+        }
+      } catch(err) {
+        setPromptTeks(preambleFull + (isu.articleDesc || "Koneksi ke API terputus."));
+      }
+    } else {
+      setPromptTeks(preambleFull + (isu.articleDesc || "URL tidak tersedia."));
+    }
+  };
+
   if (currentPage === "agora-editor") {
     return (
-      <div style={{ width: '100%', maxWidth: editorSubPage === 3 ? '950px' : '480px', margin: '0 auto', padding: '20px', transition: 'max-width 0.3s ease' }}>
+      <div style={{ width: "100%", maxWidth: editorSubPage === 3 ? "950px" : "480px", margin: "0 auto", padding: "20px", transition: "max-width 0.3s ease" }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <button 
-            onClick={() => setCurrentPage(previousPage || "nasional")} 
-            style={{ backgroundColor: '#21262d', color: '#c9d1d9', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', border: '1px solid #30363d', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={() => setCurrentPage(previousPage || "main")} 
+            style={{ backgroundColor: "#21262d", color: "#c9d1d9", padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "600", border: "1px solid #30363d", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
           >
             <ArrowLeft size={14} /> Kembali
           </button>
-          <h1 style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '1px', color: '#ffffff', margin: 0 }}>
+          <h1 style={{ fontSize: "16px", fontWeight: "800", letterSpacing: "1px", color: "#ffffff", margin: 0 }}>
             ⚡ AGORA VADA EDITOR
           </h1>
         </div>
 
-        <div style={{ backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '16px', padding: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+        <div style={{ backgroundColor: "#161b22", border: "1px solid #30363d", borderRadius: "16px", padding: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
+
+          {editorSubPage === 1 && (
+            <div>
+              <h2 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px", color: "#c9d1d9", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>1. Masukkan Link Berita</h2>
+              <input 
+                type="text" placeholder="https://news.com/..." 
+                style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#ffffff", padding: "12px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", marginBottom: "16px", boxSizing: "border-box" }}
+                value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)}
+              />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button 
+                  style={{ width: "50%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "12px", borderRadius: "10px", fontWeight: "600", fontSize: "13px", border: "1px solid #30363d", cursor: "pointer" }}
+                  onClick={async () => {
+                    if (!urlBerita) return alert("Masukkan link dulu!");
+                    setPromptTeks("Menyedot data dari web, tunggu sebentar...");
+                    try {
+                      let tUrl = ["", "api", "tarik-berita"].join("/");
+                      const res = await fetch(tUrl, { 
+                        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) 
+                      });
+                      const data = await res.json();
+                      if(data && data.status === "success") {
+                        let jdInput = data.title || "Tanpa Judul";
+                        let preambuleTop = getPreamble(jdInput);
+                        setPromptTeks(preambuleTop + (data.description || data.text || "")); 
+                        setJudulHtml(jdInput);
+                        let hm = "";
+                        try { hm = new URL(urlBerita).hostname; } catch(e){}
+                        setSumberBerita(data.sumber || (hm ? "Sumber Berita: " + hm : ""));
+                        if(data.gambar_url) setImageUrl(data.gambar_url);
+                        setEditorSubPage(2);
+                      } else {
+                        alert("Gagal menyedot: " + (data.error || data.message));
+                      }
+                    } catch(err) { alert("API Vercel error."); }
+                  }}
+                >Tarik Data 🔄</button>
+                <button 
+                  style={{ width: "50%", backgroundColor: "#238636", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "13px", border: "none", cursor: "pointer" }}
+                  onClick={() => {
+                    if(urlBerita) { try { setSumberBerita("Sumber Berita: " + new URL(urlBerita).hostname); } catch(e) {} }
+                    setEditorSubPage(3);
+                  }}
+                >Ke Visual Editor ➔</button>
+              </div>
+            </div>
+          )}
 
           {editorSubPage === 2 && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #30363d', paddingBottom: '8px' }}>
-                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#c9d1d9', margin: 0 }}>Prompt AI & Teks Berita</h2>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>
+                <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#c9d1d9", margin: 0 }}>Prompt AI & Teks Berita</h2>
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(promptTeks);
                     setIsCopied(true);
                     setTimeout(() => setIsCopied(false), 2000);
                   }}
-                  style={{ backgroundColor: isCopied ? '#238636' : '#21262d', color: '#ffffff', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', border: '1px solid #30363d', cursor: 'pointer' }}
+                  style={{ backgroundColor: isCopied ? "#238636" : "#21262d", color: "#ffffff", padding: "6px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: "600", border: "1px solid #30363d", cursor: "pointer" }}
                 >
                   {isCopied ? "✅ Tersalin!" : "📋 Copy Prompt"}
                 </button>
               </div>
               <textarea 
-                style={{ width: '100%', backgroundColor: '#0d1117', border: '1px solid #30363d', color: '#e6edf3', padding: '12px', borderRadius: '10px', fontSize: '13px', minHeight: '280px', outline: 'none', marginBottom: '12px', boxSizing: 'border-box', resize: 'vertical' }}
+                style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#e6edf3", padding: "12px", borderRadius: "10px", fontSize: "13px", minHeight: "280px", outline: "none", marginBottom: "12px", boxSizing: "border-box", resize: "vertical" }}
                 value={promptTeks} onChange={(e) => setPromptTeks(e.target.value)}
               />
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button style={{ width: '35%', backgroundColor: '#21262d', color: '#c9d1d9', padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '13px', border: '1px solid #30363d', cursor: 'pointer' }} onClick={() => setCurrentPage(previousPage || "nasional")}>⬅ Kembali</button>
-                <button style={{ width: '65%', backgroundColor: '#1f6feb', color: '#ffffff', padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '13px', border: 'none', cursor: 'pointer' }} onClick={() => setEditorSubPage(3)}>Ke Visual Editor ➔</button>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button style={{ width: "35%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "12px", borderRadius: "10px", fontWeight: "600", fontSize: "13px", border: "1px solid #30363d", cursor: "pointer" }} onClick={() => setCurrentPage(previousPage || "main")}>⬅ Kembali</button>
+                <button style={{ width: "65%", backgroundColor: "#1f6feb", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "600", fontSize: "13px", border: "none", cursor: "pointer" }} onClick={() => setEditorSubPage(3)}>Ke Visual Editor ➔</button>
               </div>
             </div>
           )}
 
           {editorSubPage === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ backgroundColor: '#0d1117', border: '1px solid #30363d', borderRadius: '12px', padding: '20px' }}>
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '12px', color: '#8b949e', textAlign: 'center', letterSpacing: '1px' }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              <div style={{ backgroundColor: "#0d1117", border: "1px solid #30363d", borderRadius: "12px", padding: "20px" }}>
+                <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <h2 style={{ fontSize: "14px", fontWeight: "700", marginBottom: "12px", color: "#8b949e", textAlign: "center", letterSpacing: "1px" }}>
                       LIVE PREVIEW (1080 x 1350)
                     </h2>
-                    <div style={{ border: '2px dashed #30363d', borderRadius: '10px', padding: '8px', cursor: isDragging ? 'grabbing' : 'grab', backgroundColor: '#161b22' }}>
+                    <div style={{ border: "2px dashed #30363d", borderRadius: "10px", padding: "8px", cursor: isDragging ? "grabbing" : "grab", backgroundColor: "#161b22" }}>
                       <canvas 
                         ref={canvasRef} width="1080" height="1350" 
                         onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
                         onTouchStart={handleMouseDown} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp} onWheel={handleWheel}
-                        style={{ width: '280px', height: 'auto', borderRadius: '6px', display: 'block', touchAction: 'none' }}
+                        style={{ width: "280px", height: "auto", borderRadius: "6px", display: "block", touchAction: "none" }}
                       ></canvas>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '280px', marginTop: '28px' }}>
-                    <div style={{ backgroundColor: '#161b22', padding: '16px', borderRadius: '10px', border: '1px solid #30363d' }}>
-                      <label style={{ fontSize: '11px', fontWeight: '700', color: '#3fb950', display: 'block', marginBottom: '8px' }}>🖼️ UPLOAD GAMBAR</label>
-                      <input type="file" accept="image/*" onChange={handleUploadFoto} style={{ fontSize: '11px', color: '#c9d1d9', width: '100%' }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "280px", marginTop: "28px" }}>
+                    <div style={{ backgroundColor: "#161b22", padding: "16px", borderRadius: "10px", border: "1px solid #30363d" }}>
+                      <label style={{ fontSize: "11px", fontWeight: "700", color: "#3fb950", display: "block", marginBottom: "8px" }}>🖼️ UPLOAD GAMBAR</label>
+                      <input type="file" accept="image/*" onChange={handleUploadFoto} style={{ fontSize: "11px", color: "#c9d1d9", width: "100%" }} />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ backgroundColor: '#0d1117', padding: '16px', borderRadius: '12px', border: '1px solid #30363d' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#a371f7', display: 'block', marginBottom: '10px', letterSpacing: '1px' }}>📝 EDIT JUDUL</label>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
-                      <button onClick={() => handleFormat('foreColor', '#E7E820')} style={{ backgroundColor: '#E7E820', color: '#000', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}>Kuning</button>
-                      <button onClick={() => handleFormat('italic')} style={{ backgroundColor: '#21262d', color: '#fff', padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', cursor: 'pointer', border: '1px solid #30363d' }}>I</button>
-                      <button onClick={() => handleFormat('foreColor', '#ffffff')} style={{ backgroundColor: 'transparent', color: '#c9d1d9', padding: '6px 10px', borderRadius: '6px', fontSize: '10px', cursor: 'pointer', border: '1px solid #30363d' }}>Reset Warna</button>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ backgroundColor: "#0d1117", padding: "16px", borderRadius: "12px", border: "1px solid #30363d" }}>
+                    <label style={{ fontSize: "11px", fontWeight: "700", color: "#a371f7", display: "block", marginBottom: "10px", letterSpacing: "1px" }}>📝 EDIT JUDUL</label>
+                    <div style={{ display: "flex", gap: "8px", marginBottom: "10px", alignItems: "center" }}>
+                      <button onClick={() => handleFormat("foreColor", "#E7E820")} style={{ backgroundColor: "#E7E820", color: "#000", padding: "6px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer", border: "none" }}>Kuning</button>
+                      <button onClick={() => handleFormat("italic")} style={{ backgroundColor: "#21262d", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: "bold", fontStyle: "italic", cursor: "pointer", border: "1px solid #30363d" }}>I</button>
+                      <button onClick={() => handleFormat("foreColor", "#ffffff")} style={{ backgroundColor: "transparent", color: "#c9d1d9", padding: "6px 10px", borderRadius: "6px", fontSize: "10px", cursor: "pointer", border: "1px solid #30363d" }}>Reset Warna</button>
                     </div>
                     <div 
                       id="judul-editor" contentEditable suppressContentEditableWarning={true}
                       dangerouslySetInnerHTML={{ __html: judulHtml }}
                       onInput={(e) => setJudulHtml(e.currentTarget.innerHTML)}
-                      style={{ width: '100%', backgroundColor: '#161b22', border: '1px solid #30363d', color: '#ffffff', padding: '12px', borderRadius: '8px', fontSize: '14px', minHeight: '110px', outline: 'none', boxSizing: 'border-box', overflowY: 'auto', lineHeight: '1.5' }}
+                      style={{ width: "100%", backgroundColor: "#161b22", border: "1px solid #30363d", color: "#ffffff", padding: "12px", borderRadius: "8px", fontSize: "14px", minHeight: "110px", outline: "none", boxSizing: "border-box", overflowY: "auto", lineHeight: "1.5" }}
                     />
                   </div>
 
-                  <div style={{ backgroundColor: '#0d1117', padding: '16px', borderRadius: '12px', border: '1px solid #30363d' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#f78166', display: 'block', marginBottom: '8px', letterSpacing: '1px' }}>🔗 SUMBER BERITA</label>
+                  <div style={{ backgroundColor: "#0d1117", padding: "16px", borderRadius: "12px", border: "1px solid #30363d" }}>
+                    <label style={{ fontSize: "11px", fontWeight: "700", color: "#f78166", display: "block", marginBottom: "8px", letterSpacing: "1px" }}>🔗 SUMBER BERITA</label>
                     <input 
                       type="text" 
-                      style={{ width: '100%', backgroundColor: '#161b22', border: '1px solid #30363d', color: '#ffffff', padding: '10px', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                      style={{ width: "100%", backgroundColor: "#161b22", border: "1px solid #30363d", color: "#ffffff", padding: "10px", borderRadius: "8px", fontSize: "13px", outline: "none", boxSizing: "border-box" }}
                       value={sumberBerita} onChange={(e) => setSumberBerita(e.target.value)}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ backgroundColor: '#0d1117', padding: '12px 16px', borderRadius: '12px', border: '1px solid #30363d' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#3fb950', display: 'block', marginBottom: '8px' }}>🖼️ SKALA GAMBAR</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ backgroundColor: "#0d1117", padding: "12px 16px", borderRadius: "12px", border: "1px solid #30363d" }}>
+                    <label style={{ fontSize: "11px", fontWeight: "700", color: "#3fb950", display: "block", marginBottom: "8px" }}>🖼️ SKALA GAMBAR</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
                       <div>
-                        <span style={{ fontSize: '10px', color: '#8b949e', display: 'flex', justifyContent: 'space-between' }}><span>Zoom</span> <span>{imgScale.toFixed(2)}</span></span>
-                        <input type="range" min="0.2" max="3" step="0.05" value={imgScale} onChange={(e) => setImgScale(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#3fb950' }} />
+                        <span style={{ fontSize: "10px", color: "#8b949e", display: "flex", justifyContent: "space-between" }}><span>Zoom</span> <span>{imgScale.toFixed(2)}</span></span>
+                        <input type="range" min="0.2" max="3" step="0.05" value={imgScale} onChange={(e) => setImgScale(parseFloat(e.target.value))} style={{ width: "100%", accentColor: "#3fb950" }} />
                       </div>
                       <div>
-                        <span style={{ fontSize: '10px', color: '#8b949e', display: 'flex', justifyContent: 'space-between' }}><span>X</span> <span>{imgX}</span></span>
-                        <input type="range" min="-1000" max="1000" step="10" value={imgX} onChange={(e) => setImgX(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#3fb950' }} />
+                        <span style={{ fontSize: "10px", color: "#8b949e", display: "flex", justifyContent: "space-between" }}><span>X</span> <span>{imgX}</span></span>
+                        <input type="range" min="-1000" max="1000" step="10" value={imgX} onChange={(e) => setImgX(parseInt(e.target.value))} style={{ width: "100%", accentColor: "#3fb950" }} />
                       </div>
                       <div>
-                        <span style={{ fontSize: '10px', color: '#8b949e', display: 'flex', justifyContent: 'space-between' }}><span>Y</span> <span>{imgY}</span></span>
-                        <input type="range" min="-1000" max="1000" step="10" value={imgY} onChange={(e) => setImgY(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#3fb950' }} />
+                        <span style={{ fontSize: "10px", color: "#8b949e", display: "flex", justifyContent: "space-between" }}><span>Y</span> <span>{imgY}</span></span>
+                        <input type="range" min="-1000" max="1000" step="10" value={imgY} onChange={(e) => setImgY(parseInt(e.target.value))} style={{ width: "100%", accentColor: "#3fb950" }} />
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ backgroundColor: '#0d1117', padding: '12px 16px', borderRadius: '12px', border: '1px solid #30363d' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: '#a371f7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ backgroundColor: "#0d1117", padding: "12px 16px", borderRadius: "12px", border: "1px solid #30363d" }}>
+                    <label style={{ fontSize: "11px", fontWeight: "700", color: "#a371f7", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                       <span>✨ POSISI JUDUL</span>
-                      <button onClick={() => { setTeksX(140); setTeksY(800); setUkuranFont(79); setJarakBaris(1.4); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: 0 }}>🔄</button>
+                      <button onClick={() => { setTeksX(140); setTeksY(800); setUkuranFont(79); setJarakBaris(1.4); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", padding: 0 }}>🔄</button>
                     </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
                       <div>
-                        <span style={{ fontSize: '10px', color: '#8b949e', display: 'flex', justifyContent: 'space-between' }}><span>Font Size</span> <span>{ukuranFont}</span></span>
-                        <input type="range" min="30" max="400" step="1" value={ukuranFont} onChange={(e) => setUkuranFont(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#a371f7' }} />
+                        <span style={{ fontSize: "10px", color: "#8b949e", display: "flex", justifyContent: "space-between" }}><span>Font Size</span> <span>{ukuranFont}</span></span>
+                        <input type="range" min="30" max="400" step="1" value={ukuranFont} onChange={(e) => setUkuranFont(parseInt(e.target.value))} style={{ width: "100%", accentColor: "#a371f7" }} />
                       </div>
                       <div>
-                        <span style={{ fontSize: '10px', color: '#8b949e', display: 'flex', justifyContent: 'space-between' }}><span>X</span> <span>{teksX}</span></span>
-                        <input type="range" min="-500" max="1080" step="1" value={teksX} onChange={(e) => setTeksX(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#a371f7' }} />
+                        <span style={{ fontSize: "10px", color: "#8b949e", display: "flex", justifyContent: "space-between" }}><span>X</span> <span>{teksX}</span></span>
+                        <input type="range" min="-500" max="1080" step="1" value={teksX} onChange={(e) => setTeksX(parseInt(e.target.value))} style={{ width: "100%", accentColor: "#a371f7" }} />
                       </div>
                       <div>
-                        <span style={{ fontSize: '10px', color: '#8b949e', display: 'flex', justifyContent: 'space-between' }}><span>Y</span> <span>{teksY}</span></span>
-                        <input type="range" min="-500" max="2000" step="1" value={teksY} onChange={(e) => setTeksY(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#a371f7' }} />
+                        <span style={{ fontSize: "10px", color: "#8b949e", display: "flex", justifyContent: "space-between" }}><span>Y</span> <span>{teksY}</span></span>
+                        <input type="range" min="-500" max="2000" step="1" value={teksY} onChange={(e) => setTeksY(parseInt(e.target.value))} style={{ width: "100%", accentColor: "#a371f7" }} />
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', borderTop: '1px solid #30363d', paddingTop: '16px' }}>
-                <button style={{ width: '30%', backgroundColor: '#21262d', color: '#c9d1d9', padding: '14px', borderRadius: '10px', fontWeight: '600', fontSize: '13px', border: '1px solid #30363d', cursor: 'pointer' }} onClick={() => setEditorSubPage(2)}>⬅ Kembali</button>
-                <button style={{ width: '70%', backgroundColor: '#238636', color: '#ffffff', padding: '14px', borderRadius: '10px', fontWeight: '700', fontSize: '14px', border: 'none', cursor: 'pointer' }} onClick={downloadGambar}>📥 Download Postingan IG</button>
+              <div style={{ display: "flex", gap: "10px", borderTop: "1px solid #30363d", paddingTop: "16px" }}>
+                <button style={{ width: "30%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "14px", borderRadius: "10px", fontWeight: "600", fontSize: "13px", border: "1px solid #30363d", cursor: "pointer" }} onClick={() => setEditorSubPage(2)}>⬅ Kembali</button>
+                <button style={{ width: "70%", backgroundColor: "#238636", color: "#ffffff", padding: "14px", borderRadius: "10px", fontWeight: "700", fontSize: "14px", border: "none", cursor: "pointer" }} onClick={downloadGambar}>📥 Download Postingan IG</button>
               </div>
             </div>
           )}
@@ -568,9 +714,6 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // =========================================================================
-  // HALAMAN YOUTUBE DATA ANALYSIS
-  // =========================================================================
   if (currentPage === "puan-yt-analysis") {
     let sortedYtVideos = ytData && ytData.length > 0 ? [...ytData].sort((a, b) => b[ytSortMode] - a[ytSortMode]) : [];
 
@@ -578,27 +721,27 @@ export default function SocialMediaMonitoring() {
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
         {promptModalData && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
-            <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
-              <div className="flex justify-between items-center p-5 border-b border-gray-600" style={{ backgroundColor: '#1c2128' }}>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.85)" }}>
+            <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: "#161b22", opacity: 1 }}>
+              <div className="flex justify-between items-center p-5 border-b border-gray-600" style={{ backgroundColor: "#1c2128" }}>
                 <h3 className="text-white font-bold flex items-center gap-2">
                   <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
                 </h3>
-                <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 bg-white/5 hover:bg-white/10 rounded-lg">
+                <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 bg-[#2a313c] rounded-lg">
                   <X size={20} />
                 </button>
               </div>
-              <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: '#0d1117' }}>
-                <div className="border border-gray-700 rounded-xl p-5 shadow-inner" style={{ backgroundColor: '#1c2128' }}>
-                  <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-500/30">
-                    {generatePromptText(promptModalData)}
+              <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: "#0d1117" }}>
+                <div className="border border-gray-700 rounded-xl p-5 shadow-inner" style={{ backgroundColor: "#1c2128" }}>
+                  <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-[#1e3a8a]">
+                    {promptModalData.fullText}
                   </pre>
                 </div>
               </div>
-              <div className="p-4 border-t border-gray-600 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
+              <div className="p-4 border-t border-gray-600 flex justify-end" style={{ backgroundColor: "#1c2128" }}>
                 <button 
-                  onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
+                  onClick={() => handleCopyPrompt(promptModalData.fullText)}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? "bg-[#16a34a] text-white shadow-md" : "bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md"}`}
                 >
                   {isCopied ? <Check size={16} /> : <Copy size={16} />}
                   {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
@@ -620,8 +763,8 @@ export default function SocialMediaMonitoring() {
 
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden flex flex-col pb-4">
             <div className="w-full bg-[#0d1117] flex items-center">
-              <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-red-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
-              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-blue-950/10" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita</button>
+              <button onClick={() => setYtFetchMode("umum")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "umum" ? "text-red-500 bg-[#331c0b]" : "text-gray-400 hover:bg-[#161b22]"}`}>Semua Saluran</button>
+              <button onClick={() => setYtFetchMode("kol")} className={`flex-1 py-4 text-sm font-bold text-center transition-colors ${ytFetchMode === "kol" ? "text-blue-500 bg-[#172033]" : "text-gray-400 hover:bg-[#161b22]"}`}>KOL / Berita</button>
             </div>
 
             <div className="w-full p-4 md:p-6 flex flex-col lg:flex-row justify-between items-start md:items-center gap-6">
@@ -642,39 +785,50 @@ export default function SocialMediaMonitoring() {
             </div>
 
             {isLoadingYt ? (
-              <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
+              <div className="w-full flex justify-center items-center h-64"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2563eb]"></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
-                  <table className="w-full border-collapse text-xs md:text-sm text-left">
-                    <thead>
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                        <th className="py-5 px-4 text-center w-10">No</th>
-                        <th className="py-5 px-4 text-left w-24">Tanggal</th>
-                        <th className="py-5 px-4 text-left w-20">Waktu</th>
-                        <th className="py-5 px-4 text-left">Judul Konten</th>
-                        <th className="py-5 px-4 text-right w-20">View</th>
-                        <th className="py-5 px-4 text-right w-20">Like</th>
-                        <th className="py-5 px-4 text-right w-20">Dislike</th>
-                        <th className="py-5 px-4 text-center w-16">Link</th>
+                  <table className="w-full border-collapse text-xs md:text-sm text-left border-none">
+                    <thead className="border-none">
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none">
+                        <th className="py-5 px-4 text-center w-10 border-none">No</th>
+                        <th className="py-5 px-4 text-left w-24 border-none">Tanggal</th>
+                        <th className="py-5 px-4 text-left w-20 border-none">Waktu</th>
+                        <th className="py-5 px-4 text-left border-none">Judul Konten</th>
+                        <th className="py-5 px-4 text-right w-20 border-none">View</th>
+                        <th className="py-5 px-4 text-right w-20 border-none">Like</th>
+                        <th className="py-5 px-4 text-right w-20 border-none">Dislike</th>
+                        <th className="py-5 px-4 text-center w-24 border-none">Link</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="border-none">
                       {sortedYtVideos.map((vid, idx) => (
-                        <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                          <td className="py-4 px-4 text-center text-gray-500 font-medium">{idx + 1}</td>
-                          <td className="py-4 px-4 text-gray-400">{vid.date}</td>
-                          <td className="py-4 px-4 text-gray-400">{vid.time}</td>
-                          <td className="py-4 px-4">
-                            <div className="flex flex-col gap-1 max-w-[85%] pr-4">
-                              <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
-                              <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed">{vid.title}</span>
+                        <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none">
+                          <td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
+                          <td className="py-4 px-4 text-gray-400 border-none">{vid.date}</td>
+                          <td className="py-4 px-4 text-gray-400 border-none">{vid.time}</td>
+                          <td className="py-4 px-4 border-none">
+                            <div className="flex items-start justify-between w-full">
+                              <div className="flex flex-col gap-1 flex-1 pr-4 max-w-[80%]">
+                                <span className={`text-[10px] font-black uppercase ${ytFetchMode === "kol" ? "text-blue-400" : "text-gray-400"}`}>@{vid.author}</span>
+                                <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed block">{vid.title}</span>
+                              </div>
+                              <div className="shrink-0 flex items-start justify-end w-[50px] mt-0.5">
+                                <button 
+                                  onClick={() => handleOpenPrompt(vid)} 
+                                  title="Generate Prompt Analisis" 
+                                  className="text-gray-400 hover:text-blue-400 transition-colors bg-[#2a313c] hover:bg-[#1e3a5f] p-1.5 rounded-md flex items-center justify-center"
+                                >
+                                  <Megaphone size={14} />
+                                </button>
+                              </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
-                          <td className="py-4 px-4 text-right text-blue-400">{vid.likes.toLocaleString()}</td>
-                          <td className="py-4 px-4 text-right text-red-400">{vid.dislikes.toLocaleString()}</td>
-                          <td className="py-4 px-4 text-center">
+                          <td className="py-4 px-4 text-right text-gray-200 font-bold border-none">{vid.views.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right text-blue-400 border-none">{vid.likes.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right text-red-400 border-none">{vid.dislikes.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-center border-none">
                             <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-gray-500 hover:text-white"><ExternalLink size={16} /></a>
                           </td>
                         </tr>
@@ -685,16 +839,16 @@ export default function SocialMediaMonitoring() {
 
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
-                    <div key={vid.id} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md">
+                    <div key={vid.id} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg">
                       <div className="flex justify-between items-start gap-2">
-                        <span className={`text-[10px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
+                        <span className={`text-[10px] font-black uppercase ${ytFetchMode === "kol" ? "text-blue-400" : "text-gray-400"}`}>@{vid.author}</span>
                         <span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span>
                       </div>
                       <h3 className="text-gray-200 font-medium text-sm leading-snug">{vid.title}</h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
                         <span>{vid.date}</span><span>•</span><span>{vid.time}</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 py-3 mt-1 border-t border-white/5">
+                      <div className="grid grid-cols-3 gap-2 py-3 mt-1 border-t border-[#30363d]">
                          <div className="flex flex-col items-center justify-center">
                            <span className="text-gray-500 text-[10px] flex items-center gap-1"><Eye size={10}/> View</span>
                            <span className="text-gray-200 font-bold text-xs">{vid.views.toLocaleString()}</span>
@@ -708,8 +862,14 @@ export default function SocialMediaMonitoring() {
                            <span className="text-red-400 font-bold text-xs">{vid.dislikes.toLocaleString()}</span>
                          </div>
                       </div>
-                      <div className="pt-2 border-t border-white/5 flex justify-end">
-                        <a href={vid.link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 w-full bg-gray-700 hover:bg-gray-600 shadow-md">
+                      <div className="pt-2 border-t border-[#30363d] flex justify-end gap-2">
+                        <button 
+                          onClick={() => handleOpenPrompt(vid)} 
+                          className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-[#2d333b] flex items-center justify-center gap-1.5"
+                        >
+                          <Megaphone size={14} /> Prompt
+                        </button>
+                        <a href={vid.link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 flex-1 bg-[#374151] hover:bg-[#4b5563] shadow-md">
                           <ExternalLink size={14} /> Tonton Video
                         </a>
                       </div>
@@ -738,54 +898,54 @@ export default function SocialMediaMonitoring() {
           
           <div className="flex flex-col gap-5 md:gap-6 w-full px-2 md:px-8">
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/nasional.png" alt="Nasional" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Berita Nasional</h2>
-                <button onClick={() => setCurrentPage("nasional")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("nasional")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/bencana.png" alt="Bencana" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Bencana Terkini</h2>
-                <button onClick={() => setCurrentPage("bencana")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("bencana")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/pdip.png" alt="PDIP" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">PDI Perjuangan</h2>
-                <button onClick={() => setCurrentPage("pdip")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("pdip")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/megawati.png" alt="Megawati" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Megawati Soekarnoputri</h2>
-                <button onClick={() => setCurrentPage("megawati")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                <button onClick={() => setCurrentPage("megawati")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                   <Search size={16}/> Cek Sekarang
                 </button>
               </div>
             </div>
 
             <div className="flex flex-row items-center w-full group cursor-pointer transition-transform duration-300 hover:translate-x-2">
-              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-gray-800/50" />
+              <img src="/puan.png" alt="Puan Maharani" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover object-top shrink-0 shadow-lg border border-[#1c2128]" />
               <div className="flex flex-col ml-6 md:ml-8 flex-1 justify-center text-left">
                 <h2 className="text-white font-bold text-xl md:text-2xl mb-2 md:mb-3">Puan Maharani</h2>
                 <div className="flex flex-wrap gap-2 md:gap-3">
-                  <button onClick={() => setCurrentPage("puan")} className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
+                  <button onClick={() => setCurrentPage("puan")} className="bg-[#374151] hover:bg-[#4b5563] text-white py-2 px-6 md:px-8 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 shadow-md w-max transition-colors">
                     <Search size={16}/> Cek Sekarang
                   </button>
-                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white py-2 px-4 md:px-5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 transition-colors">
+                  <button onClick={() => setCurrentPage("puan-yt-analysis")} className="bg-transparent text-gray-400 hover:bg-[#1c2128] hover:text-white py-2 px-4 md:px-5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-2 transition-colors">
                     <PlaySquare size={16}/> YouTube
                   </button>
                 </div>
@@ -798,7 +958,6 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING BERITA ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
@@ -826,8 +985,8 @@ export default function SocialMediaMonitoring() {
                 onClick={() => setSelectedCategory(cat)} 
                 className={`text-xs md:text-sm font-bold transition-all ${
                   selectedCategory === cat 
-                    ? (isRedTheme ? 'text-red-400 border-b-2 border-red-400 pb-1' : 'text-blue-400 border-b-2 border-blue-400 pb-1') 
-                    : 'text-gray-500 hover:text-gray-300'
+                    ? (isRedTheme ? "text-red-400 border-b-2 border-red-400 pb-1" : "text-blue-400 border-b-2 border-blue-400 pb-1") 
+                    : "text-gray-500 hover:text-gray-300"
                 }`}
               >
                 {cat}
@@ -838,7 +997,7 @@ export default function SocialMediaMonitoring() {
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? 'border-red-500' : 'border-blue-500'}`}></div>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? "border-[#dc2626]" : "border-[#2563eb]"}`}></div>
           </div>
         ) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
@@ -848,7 +1007,7 @@ export default function SocialMediaMonitoring() {
               <div className="flex items-center gap-3 md:ml-auto">
                 <button 
                   onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} 
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? 'bg-orange-500 text-white' : 'bg-[#1c2128] text-gray-400 hover:text-orange-400'}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? "bg-[#331c0b] text-orange-500" : "bg-[#1c2128] text-gray-400 hover:text-orange-400"}`}
                 >
                   <Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News
                 </button>
@@ -858,67 +1017,64 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (BERSIH TANPA GARIS) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
-                  <table className="w-full border-collapse text-xs md:text-sm text-left">
-                    <thead>
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                        <th className="py-3 px-3 text-center w-10">No</th>
-                        <th className="py-3 px-3 text-left w-24">Tanggal</th>
-                        <th className="py-3 px-3 text-center w-20">Waktu</th>
-                        <th className="py-3 px-3 text-left w-32">Sumber</th>
-                        <th className="py-3 px-3 text-left w-28">Kategori</th>
-                        <th className="py-3 px-3 text-left">Judul Konten</th>
-                        <th className="py-3 px-3 text-center w-14">Trend</th>
-                        <th className="py-3 px-3 text-center w-12">AI</th>
-                        <th className="py-3 px-3 text-center w-24">Aksi</th>
+                  <table className="w-full border-collapse text-xs md:text-sm text-left border-none">
+                    <thead className="border-none">
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none">
+                        <th className="py-5 px-4 w-12 text-center border-none">No</th>
+                        <th className="py-5 px-4 w-32 whitespace-nowrap border-none">Tanggal</th>
+                        <th className="py-5 px-4 w-20 whitespace-nowrap text-center border-none">Waktu</th>
+                        <th className="py-5 px-4 w-32 whitespace-nowrap border-none">Sumber</th>
+                        <th className="py-5 px-4 w-28 border-none">Kategori</th>
+                        <th className="py-5 px-4 w-[50%] border-none">Judul Konten</th>
+                        <th className="py-5 px-4 w-24 text-center border-none">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="border-none">
                       {tableData.map((isu, idx) => {
                         const { date, time } = formatDateTime(isu.pubDate);
                         const newsLink = getCleanLink(isu);
 
                         return (
-                          <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                            <td className="py-2.5 px-3 text-center text-gray-500 font-medium">{idx + 1}</td>
-                            <td className="py-2.5 px-3 text-gray-400 whitespace-nowrap">{date}</td>
-                            <td className="py-2.5 px-3 text-gray-400 whitespace-nowrap text-center">{time}</td>
-                            <td className="py-2.5 px-3 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
-                            <td className="py-2.5 px-3">
-                              <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
+                          <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none">
+                            <td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
+                            <td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td>
+                            <td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td>
+                            <td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || "-"}</td>
+                            <td className="py-4 px-4 border-none">
+                              <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>
                                 {isu.kategori}
                               </span>
                             </td>
                             
-                            <td className="py-2.5 px-3">
-                              <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-4">
-                                {isu.topik}
-                              </span>
-                            </td>
-
-                            <td className="py-2.5 px-3 text-center">
-                              {isu.isTrending && (
-                                <div className="mx-auto bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 w-max" title="Top News (Trending)">
-                                  <Flame size={12} className="text-orange-500" />
-                                  <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                            <td className="py-4 px-4 border-none">
+                              <div className="flex items-start justify-between w-full">
+                                <span className="flex-1 max-w-[80%] pr-4 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
+                                  {isu.topik}
+                                </span>
+                                <div className="shrink-0 flex items-start justify-end gap-2 w-[100px] mt-0.5">
+                                  <button 
+                                    onClick={() => handleOpenEditorFromMegaphone(isu)} 
+                                    title="Generate Prompt Analisis" 
+                                    className="text-gray-400 hover:text-blue-400 transition-colors bg-[#2a313c] hover:bg-[#1e3a5f] p-1.5 rounded-md flex items-center justify-center"
+                                  >
+                                    <Megaphone size={14} />
+                                  </button>
+                                  <div className="w-[50px] flex justify-end">
+                                    {isu.isTrending && (
+                                      <div className="bg-[#332211] px-1.5 py-0.5 rounded flex items-center justify-center gap-1" title="Top News (Trending)">
+                                        <Flame size={12} className="text-orange-500" />
+                                        <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
+                              </div>
                             </td>
 
-                            <td className="py-2.5 px-3 text-center">
-                              <button 
-                                onClick={() => handleOpenEditorFromMegaphone(isu)} 
-                                title="Buka Editor Agora Vada" 
-                                className="mx-auto text-gray-400 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/20 p-1.5 rounded-md flex items-center justify-center"
-                              >
-                                <Megaphone size={14} />
-                              </button>
-                            </td>
-
-                            <td className="py-2.5 px-3 text-center">
+                            <td className="py-4 px-4 text-center border-none">
                               {newsLink !== "#" ? (
-                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
+                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-[#374151] hover:bg-[#4b5563] shadow-md">
                                   <ExternalLink size={14} /> Baca
                                 </a>
                               ) : (
@@ -932,22 +1088,21 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE (BERSIH TANPA GARIS) */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {tableData.map((isu, idx) => {
                     const { date, time } = formatDateTime(isu.pubDate);
                     const newsLink = getCleanLink(isu);
 
                     return (
-                      <div key={idx} className="bg-[#0d1117]/50 rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg">
+                      <div key={idx} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg">
                         
                         <div className="flex justify-between items-start gap-2">
-                          <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
+                          <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>
                             {isu.kategori}
                           </span>
                           <div className="flex items-center gap-2">
                             {isu.isTrending && (
-                              <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <div className="bg-[#332211] px-1.5 py-0.5 rounded flex items-center gap-1">
                                 <Flame size={10} className="text-orange-500" />
                                 <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
                               </div>
@@ -967,19 +1122,18 @@ export default function SocialMediaMonitoring() {
                           <span>•</span>
                           <span>{time}</span>
                           <span>•</span>
-                          <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
+                          <span className="text-gray-400 font-medium">{isu.source || "-"}</span>
                         </div>
 
-                        {/* MOBILE ACTIONS */}
-                        <div className="pt-3 mt-1 flex items-center justify-between gap-2">
+                        <div className="pt-3 mt-1 border-t border-[#30363d] flex items-center justify-between gap-2">
                           <button 
                             onClick={() => handleOpenEditorFromMegaphone(isu)} 
-                            className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-gray-700 flex items-center justify-center gap-1.5"
+                            className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-[#2d333b] flex items-center justify-center gap-1.5"
                           >
                             <Megaphone size={14} /> Editor
                           </button>
                           {newsLink !== "#" ? (
-                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-gray-700 hover:bg-gray-600 shadow-md">
+                            <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-[#374151] hover:bg-[#4b5563] shadow-md">
                               <ExternalLink size={14} /> Baca Artikel
                             </a>
                           ) : (
