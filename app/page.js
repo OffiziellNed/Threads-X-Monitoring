@@ -26,13 +26,13 @@ export default function SocialMediaMonitoring() {
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  // State Editor Agora Vada (Terintegrasi di dalam Dashboard)
+  // State Editor Agora Vada
   const [urlBerita, setUrlBerita] = useState('');
   const [promptTeks, setPromptTeks] = useState('');
   const [judulHtml, setJudulHtml] = useState('');
   const [sumberBerita, setSumberBerita] = useState('');
   const [imageUrl, setImageUrl] = useState(''); 
-  const [editorSubPage, setEditorSubPage] = useState(1);
+  const [editorSubPage, setEditorSubPage] = useState(2); // Langsung ke prompt/teks
 
   const [imgX, setImgX] = useState(0);
   const [imgY, setImgY] = useState(0);
@@ -364,28 +364,26 @@ export default function SocialMediaMonitoring() {
     return "#";
   };
 
-  // FUNGSI UTAMA: KLIK MEGAPHONE -> TARIK DATA OTOMATIS KE EDITOR AGORA VADA
+  // FUNGSI UTAMA: KLIK MEGAPHONE -> TARIK DATA KE EDITOR TANPA KE MENU UTAMA
   const handleOpenEditorFromMegaphone = async (isu) => {
     const newsLink = getCleanLink(isu);
     const judulBerita = isu.articleTitle || isu.topik || isu.title || "Tanpa Judul";
     const sumberText = isu.source ? `Sumber Berita: ${isu.source}` : (newsLink !== "#" ? `Sumber Berita: ${new URL(newsLink).hostname}` : '');
 
+    setPreviousPage(currentPage); // Simpan halaman aktif saat ini agar tombol Kembali akurat
     setUrlBerita(newsLink);
     setSumberBerita(sumberText);
     setJudulHtml(judulBerita);
     setPromptTeks("Menyedot data dari web, tunggu sebentar...");
     setCurrentPage("agora-editor");
-    setEditorSubPage(2); // Langsung masuk ke halaman Editor / Prompt
+    setEditorSubPage(2); // Langsung ke prompt/teks
 
     if (newsLink && newsLink !== "#") {
       try {
         const res = await fetch("/api/tarik-berita", { 
-          method: "POST", 
-          headers: { "Content-Type": "application/json" }, 
-          body: JSON.stringify({ url: newsLink }) 
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }) 
         });
         const data = await res.json();
-        
         if(data.status === "success") {
           const promptSakti = `Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif "AgoraVada", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).\n\n${data.prompt}`;
           setPromptTeks(promptSakti); 
@@ -416,7 +414,7 @@ export default function SocialMediaMonitoring() {
   if (isTopNewsFilter) tableData = tableData.filter(d => d.isTrending);
 
   // =========================================================================
-  // HALAMAN EDITOR AGORA VADA (MUNCUL KETIKA IKON MEGAPHONE DI-TAP)
+  // HALAMAN EDITOR AGORA VADA
   // =========================================================================
   if (currentPage === "agora-editor") {
     return (
@@ -427,7 +425,7 @@ export default function SocialMediaMonitoring() {
             onClick={() => setCurrentPage(previousPage || "nasional")} 
             style={{ backgroundColor: '#21262d', color: '#c9d1d9', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', border: '1px solid #30363d', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <ArrowLeft size={14} /> Kembali ke Dashboard
+            <ArrowLeft size={14} /> Kembali
           </button>
           <h1 style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '1px', color: '#ffffff', margin: 0 }}>
             ⚡ AGORA VADA EDITOR
@@ -436,54 +434,10 @@ export default function SocialMediaMonitoring() {
 
         <div style={{ backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '16px', padding: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
 
-          {/* SubPage 1: Link Input */}
-          {editorSubPage === 1 && (
-            <div>
-              <h2 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', color: '#c9d1d9', borderBottom: '1px solid #30363d', paddingBottom: '8px' }}>1. Masukkan Link Berita</h2>
-              <input 
-                type="text" placeholder="https://news.com/..." 
-                style={{ width: '100%', backgroundColor: '#0d1117', border: '1px solid #30363d', color: '#ffffff', padding: '12px 14px', borderRadius: '10px', fontSize: '14px', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
-                value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)}
-              />
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  style={{ width: '50%', backgroundColor: '#21262d', color: '#c9d1d9', padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '13px', border: '1px solid #30363d', cursor: 'pointer' }}
-                  onClick={async () => {
-                    if (!urlBerita) return alert("Masukkan link dulu!");
-                    setPromptTeks("Menyedot data dari web, tunggu sebentar...");
-                    try {
-                      const res = await fetch("/api/tarik-berita", { 
-                        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) 
-                      });
-                      const data = await res.json();
-                      if(data.status === "success") {
-                        const promptSakti = `Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif "AgoraVada", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).\n\n${data.prompt}`;
-                        setPromptTeks(promptSakti); 
-                        setSumberBerita(data.sumber || `Sumber Berita: ${new URL(urlBerita).hostname}`);
-                        if(data.gambar_url) setImageUrl(data.gambar_url);
-                        setEditorSubPage(2);
-                      } else {
-                        alert("Gagal menyedot: " + (data.error || data.message));
-                      }
-                    } catch(err) { alert("API Vercel error."); }
-                  }}
-                >Tarik Data 🔄</button>
-                <button 
-                  style={{ width: '50%', backgroundColor: '#238636', color: '#ffffff', padding: '12px', borderRadius: '10px', fontWeight: '700', fontSize: '13px', border: 'none', cursor: 'pointer' }}
-                  onClick={() => {
-                    if(urlBerita) { try { setSumberBerita(`Sumber Berita: ${new URL(urlBerita).hostname}`); } catch(e) {} }
-                    setEditorSubPage(3);
-                  }}
-                >Langsung ke Editor ➔</button>
-              </div>
-            </div>
-          )}
-
-          {/* SubPage 2: Prompt / Edit Teks */}
           {editorSubPage === 2 && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #30363d', paddingBottom: '8px' }}>
-                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#c9d1d9', margin: 0 }}>2. Prompt AI & Teks Berita</h2>
+                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#c9d1d9', margin: 0 }}>Prompt AI & Teks Berita</h2>
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(promptTeks);
@@ -500,13 +454,12 @@ export default function SocialMediaMonitoring() {
                 value={promptTeks} onChange={(e) => setPromptTeks(e.target.value)}
               />
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button style={{ width: '35%', backgroundColor: '#21262d', color: '#c9d1d9', padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '13px', border: '1px solid #30363d', cursor: 'pointer' }} onClick={() => setEditorSubPage(1)}>⬅ Kembali</button>
+                <button style={{ width: '35%', backgroundColor: '#21262d', color: '#c9d1d9', padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '13px', border: '1px solid #30363d', cursor: 'pointer' }} onClick={() => setCurrentPage(previousPage || "nasional")}>⬅ Kembali</button>
                 <button style={{ width: '65%', backgroundColor: '#1f6feb', color: '#ffffff', padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '13px', border: 'none', cursor: 'pointer' }} onClick={() => setEditorSubPage(3)}>Ke Visual Editor ➔</button>
               </div>
             </div>
           )}
 
-          {/* SubPage 3: Canvas / Visual Editor */}
           {editorSubPage === 3 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ backgroundColor: '#0d1117', border: '1px solid #30363d', borderRadius: '12px', padding: '20px' }}>
@@ -849,41 +802,6 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
-      {promptModalData && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
-          <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
-            
-            <div className="flex justify-between items-center p-5 border-b border-gray-600" style={{ backgroundColor: '#1c2128' }}>
-              <h3 className="text-white font-bold flex items-center gap-2">
-                <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
-              </h3>
-              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1.5 bg-white/5 hover:bg-white/10 rounded-lg">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]" style={{ backgroundColor: '#0d1117' }}>
-              <div className="border border-gray-700 rounded-xl p-5 shadow-inner" style={{ backgroundColor: '#1c2128' }}>
-                <pre className="text-[13px] md:text-sm text-gray-200 whitespace-pre-wrap font-mono leading-relaxed font-normal selection:bg-blue-500/30">
-                  {generatePromptText(promptModalData)}
-                </pre>
-              </div>
-            </div>
-            
-            <div className="p-4 border-t border-gray-600 flex justify-end" style={{ backgroundColor: '#1c2128' }}>
-              <button 
-                onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
-              >
-                {isCopied ? <Check size={16} /> : <Copy size={16} />}
-                {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
       <div className="w-full max-w-[1400px] mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
@@ -940,11 +858,11 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (TABEL DIRAPATKAN, CLEAN TANPA GARIS, KOLOM TOP & AI MANDIRI) */}
+                {/* TAMPILAN DESKTOP (BERSIH TANPA GARIS) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
                         <th className="py-3 px-3 text-center w-10">No</th>
                         <th className="py-3 px-3 text-left w-24">Tanggal</th>
                         <th className="py-3 px-3 text-center w-20">Waktu</th>
@@ -988,7 +906,6 @@ export default function SocialMediaMonitoring() {
                               )}
                             </td>
 
-                            {/* TOMBOL MEGAPHONE TERINTEGRASI KE AGORA VADA EDITOR */}
                             <td className="py-2.5 px-3 text-center">
                               <button 
                                 onClick={() => handleOpenEditorFromMegaphone(isu)} 
@@ -1015,14 +932,14 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE (Card View Menurun Ke Bawah, Center, One Board One Board) */}
+                {/* TAMPILAN MOBILE (BERSIH TANPA GARIS) */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {tableData.map((isu, idx) => {
                     const { date, time } = formatDateTime(isu.pubDate);
                     const newsLink = getCleanLink(isu);
 
                     return (
-                      <div key={idx} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg">
+                      <div key={idx} className="bg-[#0d1117]/50 rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg">
                         
                         <div className="flex justify-between items-start gap-2">
                           <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
@@ -1053,8 +970,8 @@ export default function SocialMediaMonitoring() {
                           <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
                         </div>
 
-                        {/* MOBILE ACTIONS DENGAN TOMBOL MEGAPHONE KE EDITOR */}
-                        <div className="pt-3 mt-1 border-t border-white/5 flex items-center justify-between gap-2">
+                        {/* MOBILE ACTIONS */}
+                        <div className="pt-3 mt-1 flex items-center justify-between gap-2">
                           <button 
                             onClick={() => handleOpenEditorFromMegaphone(isu)} 
                             className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-gray-700 flex items-center justify-center gap-1.5"
