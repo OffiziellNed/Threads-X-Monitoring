@@ -11,6 +11,7 @@ export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
   
+  // Data State
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +25,7 @@ export default function SocialMediaMonitoring() {
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
+  // Prompt Modal State
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -121,29 +123,32 @@ export default function SocialMediaMonitoring() {
   };
 
   // =========================================================================
-  // SISTEM SEDOT DATA BERITA PENUH DENGAN GRACEFUL FALLBACK
+  // SISTEM SEDOT DATA BERITA PENUH DENGAN AUTO-FALLBACK 5 DETIK
   // =========================================================================
   const handleOpenPrompt = async (isu) => {
     const newsLink = getCleanLink(isu);
     
     setPromptModalData({ 
       ...isu, 
-      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Mohon tunggu sebentar)..." 
+      fullText: "⏳ Mengaktifkan sistem...\nMenyedot artikel penuh dari website sumber (Maksimal 5 detik)..." 
     });
     
     if (newsLink && newsLink !== "#") {
       try {
-        const res = await fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
+        const fetchPromise = fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
+        // Pemutus otomatis (Race Condition) jika API nyangkut lebih dari 5 detik
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000));
+        
+        const res = await Promise.race([fetchPromise, timeoutPromise]);
         const data = await res.json();
         
-        // Jika sukses dapet teks panjang, pakai teksnya. 
-        // Jika gagal/timeout diam-diam langsung beralih ke deskripsi singkat tanpa pesan error jelek
         if (data.success && data.text) {
           setPromptModalData({ ...isu, fullText: data.text });
         } else {
           setPromptModalData({ ...isu, fullText: isu.articleDesc });
         }
       } catch (err) {
+        // Langsung tampilkan deskripsi singkat tanpa tulisan "Timeout" yang jelek
         setPromptModalData({ ...isu, fullText: isu.articleDesc });
       }
     } else {
@@ -187,6 +192,7 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
+        {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
             <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
@@ -218,8 +224,8 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        {/* BATAS LEBAR TABLE YOUTUBE DIBIKIN COMPACT (max-w-[1200px]) */}
-        <div className="w-full max-w-[1200px] mt-4">
+        {/* CONTAINER DIPERSEMPIT KE 1080px AGAR TABEL LEBIH RAPAT & CENTER */}
+        <div className="w-full max-w-[1080px] mt-4">
           <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
@@ -246,6 +252,7 @@ export default function SocialMediaMonitoring() {
                   <p className="text-xs md:text-sm text-gray-400">7 hari terakhir (Filter &gt; 1.000 Views).</p>
                 </div>
               </div>
+              
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-xs font-bold text-gray-400 mr-1">Urutkan:</span>
                 <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white" : "bg-transparent text-gray-400 hover:bg-[#1c2128]"}`}>View</button>
@@ -262,7 +269,6 @@ export default function SocialMediaMonitoring() {
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
                       <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
-                        {/* PADDING DIRAPATKAN px-2 py-2 */}
                         <th className="py-2 px-2 text-center w-10">No</th>
                         <th className="py-2 px-2 text-left w-24">Tanggal</th>
                         <th className="py-2 px-2 text-center w-20">Waktu</th>
@@ -474,8 +480,8 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* LEBAR TABEL BERITA DIBIKIN COMPACT (max-w-[1200px]) */}
-      <div className="w-full max-w-[1200px] mt-4">
+      {/* CONTAINER DIPERSEMPIT KE 1080px AGAR TABEL LEBIH RAPAT & CENTER */}
+      <div className="w-full max-w-[1080px] mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -531,21 +537,21 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (TABEL RAPAT, TANPA GARIS, KOLOM TOP & AI MANDIRI) */}
+                {/* TAMPILAN DESKTOP (TABEL RAPAT & CENTER) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
                       <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
-                        {/* PADDING DIRAPATKAN (px-2) */}
-                        <th className="py-3 px-2 text-center w-10">No</th>
-                        <th className="py-3 px-2 text-left w-24">Tanggal</th>
-                        <th className="py-3 px-2 text-center w-20">Waktu</th>
-                        <th className="py-3 px-2 text-left w-32">Sumber</th>
-                        <th className="py-3 px-2 text-left w-24">Kategori</th>
-                        <th className="py-3 px-2 text-left">Judul Konten</th>
-                        <th className="py-3 px-2 text-center w-14">Trend</th>
-                        <th className="py-3 px-2 text-center w-12">AI</th>
-                        <th className="py-3 px-2 text-center w-24">Aksi</th>
+                        {/* PADDING DIRAPATKAN px-2 py-2 */}
+                        <th className="py-2 px-2 text-center w-10">No</th>
+                        <th className="py-2 px-2 text-left w-24">Tanggal</th>
+                        <th className="py-2 px-2 text-center w-20">Waktu</th>
+                        <th className="py-2 px-2 text-left w-32">Sumber</th>
+                        <th className="py-2 px-2 text-left w-28">Kategori</th>
+                        <th className="py-2 px-2 text-left">Judul Konten</th>
+                        <th className="py-2 px-2 text-center w-14">Trend</th>
+                        <th className="py-2 px-2 text-center w-12">AI</th>
+                        <th className="py-2 px-2 text-center w-24">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -555,7 +561,6 @@ export default function SocialMediaMonitoring() {
 
                         return (
                           <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                            {/* PADDING DATA DIRAPATKAN (py-1.5) */}
                             <td className="py-1.5 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
                             <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap">{date}</td>
                             <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap text-center">{time}</td>
@@ -572,7 +577,6 @@ export default function SocialMediaMonitoring() {
                               </span>
                             </td>
 
-                            {/* KOLOM MANDIRI: TREND (TOP) */}
                             <td className="py-1.5 px-2 text-center">
                               {isu.isTrending && (
                                 <div className="mx-auto bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 w-max" title="Top News (Trending)">
@@ -582,7 +586,6 @@ export default function SocialMediaMonitoring() {
                               )}
                             </td>
 
-                            {/* KOLOM MANDIRI: AI (Megaphone) */}
                             <td className="py-1.5 px-2 text-center">
                               <button 
                                 onClick={() => handleOpenPrompt(isu)} 
@@ -593,7 +596,6 @@ export default function SocialMediaMonitoring() {
                               </button>
                             </td>
 
-                            {/* KOLOM MANDIRI: AKSI */}
                             <td className="py-1.5 px-2 text-center">
                               {newsLink !== "#" ? (
                                 <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
