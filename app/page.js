@@ -11,7 +11,6 @@ export default function SocialMediaMonitoring() {
   const [currentPage, setCurrentPage] = useState("main");
   const [previousPage, setPreviousPage] = useState("main");
   
-  // Data State
   const [topNewsData, setTopNewsData] = useState([]);
   const [terkiniData, setTerkiniData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +24,6 @@ export default function SocialMediaMonitoring() {
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
 
-  // Prompt Modal State
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -123,7 +121,7 @@ export default function SocialMediaMonitoring() {
   };
 
   // =========================================================================
-  // SISTEM SEDOT DATA BERITA PENUH & MODAL PROMPT
+  // SISTEM SEDOT DATA BERITA PENUH DENGAN GRACEFUL FALLBACK
   // =========================================================================
   const handleOpenPrompt = async (isu) => {
     const newsLink = getCleanLink(isu);
@@ -138,13 +136,15 @@ export default function SocialMediaMonitoring() {
         const res = await fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
         const data = await res.json();
         
+        // Jika sukses dapet teks panjang, pakai teksnya. 
+        // Jika gagal/timeout diam-diam langsung beralih ke deskripsi singkat tanpa pesan error jelek
         if (data.success && data.text) {
           setPromptModalData({ ...isu, fullText: data.text });
         } else {
-          setPromptModalData({ ...isu, fullText: `${data.text}\n\nDeskripsi Singkat:\n${isu.articleDesc}` });
+          setPromptModalData({ ...isu, fullText: isu.articleDesc });
         }
       } catch (err) {
-        setPromptModalData({ ...isu, fullText: `Koneksi Timeout. Menggunakan Deskripsi Singkat:\n\n${isu.articleDesc}` });
+        setPromptModalData({ ...isu, fullText: isu.articleDesc });
       }
     } else {
       setPromptModalData({ ...isu, fullText: isu.articleDesc });
@@ -187,7 +187,6 @@ export default function SocialMediaMonitoring() {
     return (
       <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
         
-        {/* MODAL PROMPT YOUTUBE */}
         {promptModalData && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
             <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
@@ -219,7 +218,8 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        <div className="w-full max-w-[1400px] mt-4">
+        {/* BATAS LEBAR TABLE YOUTUBE DIBIKIN COMPACT (max-w-[1200px]) */}
+        <div className="w-full max-w-[1200px] mt-4">
           <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
@@ -246,7 +246,6 @@ export default function SocialMediaMonitoring() {
                   <p className="text-xs md:text-sm text-gray-400">7 hari terakhir (Filter &gt; 1.000 Views).</p>
                 </div>
               </div>
-              
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-xs font-bold text-gray-400 mr-1">Urutkan:</span>
                 <button onClick={() => setYtSortMode("views")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${ytSortMode === "views" ? "bg-[#1f242c] text-white" : "bg-transparent text-gray-400 hover:bg-[#1c2128]"}`}>View</button>
@@ -262,34 +261,35 @@ export default function SocialMediaMonitoring() {
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                        <th className="py-2 px-3 text-center w-10">No</th>
-                        <th className="py-2 px-3 text-left w-24">Tanggal</th>
-                        <th className="py-2 px-3 text-center w-20">Waktu</th>
-                        <th className="py-2 px-3 text-left">Judul Konten</th>
-                        <th className="py-2 px-3 text-right w-20">View</th>
-                        <th className="py-2 px-3 text-right w-20">Like</th>
-                        <th className="py-2 px-3 text-right w-20">Dislike</th>
-                        <th className="py-2 px-3 text-center w-12">AI</th>
-                        <th className="py-2 px-3 text-center w-20">Aksi</th>
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
+                        {/* PADDING DIRAPATKAN px-2 py-2 */}
+                        <th className="py-2 px-2 text-center w-10">No</th>
+                        <th className="py-2 px-2 text-left w-24">Tanggal</th>
+                        <th className="py-2 px-2 text-center w-20">Waktu</th>
+                        <th className="py-2 px-2 text-left">Judul Konten</th>
+                        <th className="py-2 px-2 text-right w-20">View</th>
+                        <th className="py-2 px-2 text-right w-20">Like</th>
+                        <th className="py-2 px-2 text-right w-20">Dislike</th>
+                        <th className="py-2 px-2 text-center w-12">AI</th>
+                        <th className="py-2 px-2 text-center w-20">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {sortedYtVideos.map((vid, idx) => (
                         <tr key={vid.id} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                          <td className="py-1.5 px-3 text-center text-gray-500 font-medium">{idx + 1}</td>
-                          <td className="py-1.5 px-3 text-gray-400 whitespace-nowrap">{vid.date}</td>
-                          <td className="py-1.5 px-3 text-gray-400 text-center whitespace-nowrap">{vid.time}</td>
-                          <td className="py-1.5 px-3">
+                          <td className="py-1.5 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
+                          <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap">{vid.date}</td>
+                          <td className="py-1.5 px-2 text-gray-400 text-center whitespace-nowrap">{vid.time}</td>
+                          <td className="py-1.5 px-2">
                             <div className="flex flex-col gap-0.5 max-w-[85%] pr-4">
                               <span className={`text-[9px] font-black uppercase ${ytFetchMode === 'kol' ? 'text-blue-400' : 'text-gray-400'}`}>@{vid.author}</span>
                               <span className="text-gray-100 group-hover:text-white transition-colors leading-relaxed line-clamp-2">{vid.title}</span>
                             </div>
                           </td>
-                          <td className="py-1.5 px-3 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
-                          <td className="py-1.5 px-3 text-right text-blue-400">{vid.likes.toLocaleString()}</td>
-                          <td className="py-1.5 px-3 text-right text-red-400">{vid.dislikes.toLocaleString()}</td>
-                          <td className="py-1.5 px-3 text-center">
+                          <td className="py-1.5 px-2 text-right text-gray-200 font-bold">{vid.views.toLocaleString()}</td>
+                          <td className="py-1.5 px-2 text-right text-blue-400">{vid.likes.toLocaleString()}</td>
+                          <td className="py-1.5 px-2 text-right text-red-400">{vid.dislikes.toLocaleString()}</td>
+                          <td className="py-1.5 px-2 text-center">
                             <button 
                               onClick={() => handleOpenPrompt(vid)} 
                               title="Generate Prompt Analisis" 
@@ -298,7 +298,7 @@ export default function SocialMediaMonitoring() {
                               <Megaphone size={14} />
                             </button>
                           </td>
-                          <td className="py-1.5 px-3 text-center">
+                          <td className="py-1.5 px-2 text-center">
                             <a href={vid.link} target="_blank" rel="noopener noreferrer" className="inline-flex px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all items-center justify-center gap-1.5 mx-auto bg-gray-700 hover:bg-gray-600 shadow-md">
                               <ExternalLink size={14} /> Tonton
                             </a>
@@ -439,9 +439,6 @@ export default function SocialMediaMonitoring() {
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
-      {/* ======================================================================= */}
-      {/* MODAL PROMPT ANALISIS AI */}
-      {/* ======================================================================= */}
       {promptModalData && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
           <div className="rounded-2xl w-full max-w-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col border border-gray-600" style={{ backgroundColor: '#161b22', opacity: 1 }}>
@@ -477,7 +474,8 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      <div className="w-full max-w-[1400px] mt-4">
+      {/* LEBAR TABEL BERITA DIBIKIN COMPACT (max-w-[1200px]) */}
+      <div className="w-full max-w-[1200px] mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -533,23 +531,21 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* ==================================================================================== */}
-                {/* TAMPILAN DESKTOP (TABEL RAPAT, TANPA GARIS) */}
-                {/* ==================================================================================== */}
+                {/* TAMPILAN DESKTOP (TABEL RAPAT, TANPA GARIS, KOLOM TOP & AI MANDIRI) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
-                      {/* BORDER DIHAPUS TOTAL, PADDING DIBUAT RAPAT */}
-                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px]">
-                        <th className="py-2 px-3 text-center w-10">No</th>
-                        <th className="py-2 px-3 text-left w-24">Tanggal</th>
-                        <th className="py-2 px-3 text-center w-20">Waktu</th>
-                        <th className="py-2 px-3 text-left w-32">Sumber</th>
-                        <th className="py-2 px-3 text-left w-28">Kategori</th>
-                        <th className="py-2 px-3 text-left">Judul Konten</th>
-                        <th className="py-2 px-3 text-center w-14">Trend</th>
-                        <th className="py-2 px-3 text-center w-12">AI</th>
-                        <th className="py-2 px-3 text-center w-24">Aksi</th>
+                      <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-b border-[#30363d]/30">
+                        {/* PADDING DIRAPATKAN (px-2) */}
+                        <th className="py-3 px-2 text-center w-10">No</th>
+                        <th className="py-3 px-2 text-left w-24">Tanggal</th>
+                        <th className="py-3 px-2 text-center w-20">Waktu</th>
+                        <th className="py-3 px-2 text-left w-32">Sumber</th>
+                        <th className="py-3 px-2 text-left w-24">Kategori</th>
+                        <th className="py-3 px-2 text-left">Judul Konten</th>
+                        <th className="py-3 px-2 text-center w-14">Trend</th>
+                        <th className="py-3 px-2 text-center w-12">AI</th>
+                        <th className="py-3 px-2 text-center w-24">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -559,24 +555,25 @@ export default function SocialMediaMonitoring() {
 
                         return (
                           <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05]">
-                            <td className="py-1.5 px-3 text-center text-gray-500 font-medium">{idx + 1}</td>
-                            <td className="py-1.5 px-3 text-gray-400 whitespace-nowrap">{date}</td>
-                            <td className="py-1.5 px-3 text-gray-400 whitespace-nowrap text-center">{time}</td>
-                            <td className="py-1.5 px-3 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
-                            <td className="py-1.5 px-3">
+                            {/* PADDING DATA DIRAPATKAN (py-1.5) */}
+                            <td className="py-1.5 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
+                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap">{date}</td>
+                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap text-center">{time}</td>
+                            <td className="py-1.5 px-2 text-gray-300 font-medium truncate max-w-[128px]">{isu.source || '-'}</td>
+                            <td className="py-1.5 px-2">
                               <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
                                 {isu.kategori}
                               </span>
                             </td>
                             
-                            <td className="py-1.5 px-3">
+                            <td className="py-1.5 px-2">
                               <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-4">
                                 {isu.topik}
                               </span>
                             </td>
 
                             {/* KOLOM MANDIRI: TREND (TOP) */}
-                            <td className="py-1.5 px-3 text-center">
+                            <td className="py-1.5 px-2 text-center">
                               {isu.isTrending && (
                                 <div className="mx-auto bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 w-max" title="Top News (Trending)">
                                   <Flame size={12} className="text-orange-500" />
@@ -586,7 +583,7 @@ export default function SocialMediaMonitoring() {
                             </td>
 
                             {/* KOLOM MANDIRI: AI (Megaphone) */}
-                            <td className="py-1.5 px-3 text-center">
+                            <td className="py-1.5 px-2 text-center">
                               <button 
                                 onClick={() => handleOpenPrompt(isu)} 
                                 title="Generate Prompt Analisis" 
@@ -597,7 +594,7 @@ export default function SocialMediaMonitoring() {
                             </td>
 
                             {/* KOLOM MANDIRI: AKSI */}
-                            <td className="py-1.5 px-3 text-center">
+                            <td className="py-1.5 px-2 text-center">
                               {newsLink !== "#" ? (
                                 <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
                                   <ExternalLink size={14} /> Baca
