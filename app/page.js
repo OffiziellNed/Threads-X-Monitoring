@@ -104,7 +104,10 @@ export default function SocialMediaMonitoring() {
 
   const getCleanLink = (isu) => {
     const dataString = JSON.stringify(isu);
-    const urlMatch = dataString.match(/https?:\/\/[^\s"']+/);
+    // Solusi anti error Turbopack: Ubah penulisan Regex ke format String object
+    const urlRegex = new RegExp("https?://[^\\s\"']+");
+    const urlMatch = dataString.match(urlRegex);
+    
     if (urlMatch) {
       let link = urlMatch[0];
       if (link.includes('google.com/url')) {
@@ -216,7 +219,7 @@ export default function SocialMediaMonitoring() {
           </div>
         )}
 
-        <div className="w-full max-w-[1100px] mx-auto mt-4">
+        <div className="w-full max-w-[1000px] mx-auto mt-4">
           <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
             <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
               <ArrowLeft size={18} /> Menu Utama
@@ -263,7 +266,7 @@ export default function SocialMediaMonitoring() {
                         <th className="py-2 px-3 text-center w-10 border-none">No</th>
                         <th className="py-2 px-3 text-left w-24 border-none">Tanggal</th>
                         <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
-                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
+                        <th className="py-2 px-3 text-left w-32 border-none">Judul Konten</th>
                         <th className="py-2 px-3 text-right w-20 border-none">View</th>
                         <th className="py-2 px-3 text-right w-20 border-none">Like</th>
                         <th className="py-2 px-3 text-right w-20 border-none">Dislike</th>
@@ -306,7 +309,6 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE YT */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
                     <div key={vid.id} className="bg-[#0d1117]/50 rounded-xl p-4 flex flex-col gap-3 border border-white/5">
@@ -472,8 +474,8 @@ export default function SocialMediaMonitoring() {
         </div>
       )}
 
-      {/* CONTAINER DIBIKIN PAS DI TENGAH */}
-      <div className="w-full max-w-[1100px] mx-auto mt-4">
+      {/* DITENGAH & PAS, Jarak kolom nempel (max-w-[1000px] + mx-auto) */}
+      <div className="w-full max-w-[1000px] mx-auto mt-4">
         
         <div className="flex flex-wrap gap-4 justify-between items-center w-full px-2 mb-8">
           <button onClick={() => setCurrentPage("main")} className="flex items-center gap-2 text-gray-400 hover:text-white font-semibold transition-colors">
@@ -529,20 +531,20 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
+                {/* TAMPILAN DESKTOP (TABEL TENGAH, RAPAT, 100% BEBAS GARIS, KOLOM MANDIRI) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2 px-4">
                   <table className="w-full text-xs md:text-sm text-left border-none">
                     <thead className="border-none">
                       <tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none">
-                        <th className="py-2 px-3 text-center w-10 border-none">No</th>
-                        <th className="py-2 px-3 text-left w-24 border-none">Tanggal</th>
-                        <th className="py-2 px-3 text-center w-20 border-none">Waktu</th>
-                        <th className="py-2 px-3 text-left w-32 border-none">Sumber</th>
-                        <th className="py-2 px-3 text-left w-28 border-none">Kategori</th>
-                        {/* KUNCI LEBAR JUDUL AGAR TIDAK MENGGENCET, DAN TIDAK TERLALU JAUH */}
-                        <th className="py-2 px-3 text-left w-[450px] border-none">Judul Konten</th>
-                        <th className="py-2 px-3 text-center w-16 border-none">Trend</th>
-                        <th className="py-2 px-3 text-center w-12 border-none">AI</th>
-                        <th className="py-2 px-3 text-center w-20 border-none">Aksi</th>
+                        <th className="py-2 px-2 text-center w-8 border-none">No</th>
+                        <th className="py-2 px-2 text-left w-20 border-none">Tanggal</th>
+                        <th className="py-2 px-2 text-center w-16 border-none">Waktu</th>
+                        <th className="py-2 px-2 text-left w-24 border-none">Sumber</th>
+                        <th className="py-2 px-2 text-left w-20 border-none">Kategori</th>
+                        <th className="py-2 px-2 text-left border-none">Judul Konten</th>
+                        <th className="py-2 px-2 text-center w-12 border-none">Trend</th>
+                        <th className="py-2 px-2 text-center w-10 border-none">AI</th>
+                        <th className="py-2 px-2 text-center w-20 border-none">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="border-none">
@@ -552,23 +554,23 @@ export default function SocialMediaMonitoring() {
 
                         return (
                           <tr key={idx} className="group transition-colors odd:bg-transparent even:bg-white/[0.02] hover:bg-white/[0.05] border-none">
-                            <td className="py-2 px-3 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
-                            <td className="py-2 px-3 text-gray-400 whitespace-nowrap border-none">{date}</td>
-                            <td className="py-2 px-3 text-gray-400 whitespace-nowrap text-center border-none">{time}</td>
-                            <td className="py-2 px-3 text-gray-300 font-medium truncate max-w-[150px] border-none">{isu.source || '-'}</td>
-                            <td className="py-2 px-3 border-none">
+                            <td className="py-1.5 px-2 text-center text-gray-500 font-medium border-none">{idx + 1}</td>
+                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap border-none">{date}</td>
+                            <td className="py-1.5 px-2 text-gray-400 whitespace-nowrap text-center border-none">{time}</td>
+                            <td className="py-1.5 px-2 text-gray-300 font-medium truncate max-w-[100px] border-none">{isu.source || '-'}</td>
+                            <td className="py-1.5 px-2 border-none">
                               <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? 'bg-red-950/30 text-red-400' : 'bg-blue-950/30 text-blue-400'}`}>
                                 {isu.kategori}
                               </span>
                             </td>
                             
-                            <td className="py-2 px-3 border-none">
-                              <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-4">
+                            <td className="py-1.5 px-2 border-none">
+                              <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors block pr-2">
                                 {isu.topik}
                               </span>
                             </td>
 
-                            <td className="py-2 px-3 text-center border-none">
+                            <td className="py-1.5 px-2 text-center border-none">
                               {isu.isTrending && (
                                 <div className="mx-auto bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 w-max" title="Top News (Trending)">
                                   <Flame size={12} className="text-orange-500" />
@@ -577,7 +579,7 @@ export default function SocialMediaMonitoring() {
                               )}
                             </td>
 
-                            <td className="py-2 px-3 text-center border-none">
+                            <td className="py-1.5 px-2 text-center border-none">
                               <button 
                                 onClick={() => handleOpenPrompt(isu)} 
                                 title="Generate Prompt Analisis" 
@@ -587,9 +589,9 @@ export default function SocialMediaMonitoring() {
                               </button>
                             </td>
 
-                            <td className="py-2 px-3 text-center border-none">
+                            <td className="py-1.5 px-2 text-center border-none">
                               {newsLink !== "#" ? (
-                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
+                                <a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto w-max bg-gray-700 hover:bg-gray-600 shadow-md">
                                   <ExternalLink size={14} /> Baca
                                 </a>
                               ) : (
@@ -641,6 +643,7 @@ export default function SocialMediaMonitoring() {
                           <span className="text-gray-400 font-medium">{isu.source || '-'}</span>
                         </div>
 
+                        {/* MOBILE ACTIONS */}
                         <div className="pt-3 mt-1 flex justify-end gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                           <button 
                             onClick={() => handleOpenPrompt(isu)} 
