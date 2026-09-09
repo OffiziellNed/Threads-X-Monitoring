@@ -119,13 +119,41 @@ export default function SocialMediaMonitoring() {
       }
       return link; 
     }
-    const query = encodeURIComponent(`"${isu.topik}" ${isu.source ? isu.source : ''}`);
-    return `https://www.google.com/search?q=${query}`;
+    return "#";
   };
 
-  // FUNGSI COPY PROMPT DENGAN FORMAT SATIR/SARKAS
-  const generatePromptText = (isu) => {
-    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam\n\nJudul Berita:\n${isu.articleTitle || isu.topik}\n\nDeskripsi Berita:\n${isu.articleDesc || "Tidak ada deskripsi rinci."}`;
+  // =========================================================================
+  // SISTEM SEDOT DATA BERITA PENUH
+  // =========================================================================
+  const handleOpenPrompt = async (isu) => {
+    const newsLink = getCleanLink(isu);
+    
+    // State sementara sambil menunggu data penuh tersedot
+    setPromptModalData({ 
+      ...isu, 
+      fullText: "⏳ Mengaktifkan sistem... Menyedot artikel penuh dari website sumber (Tunggu sebentar)..." 
+    });
+    
+    if (newsLink && newsLink !== "#") {
+      try {
+        const res = await fetch(`/api/scrape?url=${encodeURIComponent(newsLink)}`);
+        const data = await res.json();
+        
+        if (data.success && data.text) {
+          setPromptModalData({ ...isu, fullText: data.text });
+        } else {
+          setPromptModalData({ ...isu, fullText: `Gagal menyedot (Website dikunci). Deskripsi Singkat:\n${isu.articleDesc}` });
+        }
+      } catch (err) {
+        setPromptModalData({ ...isu, fullText: `Koneksi gagal. Deskripsi Singkat:\n${isu.articleDesc}` });
+      }
+    } else {
+      setPromptModalData({ ...isu, fullText: isu.articleDesc });
+    }
+  };
+
+  const generatePromptText = (data) => {
+    return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam\n\nJudul Berita:\n${data.articleTitle || data.topik}\n\nIsi Berita:\n${data.fullText || data.articleDesc}`;
   };
 
   const handleCopyPrompt = async (text) => {
@@ -196,7 +224,6 @@ export default function SocialMediaMonitoring() {
               <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -235,7 +262,6 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
                     <div key={vid.id} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
@@ -354,16 +380,16 @@ export default function SocialMediaMonitoring() {
     );
   }
 
-  // --- HALAMAN DAFTAR MONITORING ---
+  // --- HALAMAN DAFTAR MONITORING (TABEL) ---
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
       {/* ======================================================================= */}
-      {/* MODAL PROMPT ANALISIS (TAMPILAN POP-UP PREMIUM DENGAN BACKGROUND TERANG) */}
+      {/* MODAL PROMPT ANALISIS AI (Diperbaiki jarak spasi teks agar rapi & jelas) */}
       {/* ======================================================================= */}
       {promptModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
-          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200">
             
             <div className="flex justify-between items-center p-5 border-b border-[#30363d] bg-[#1c2128]">
               <h3 className="text-white font-bold flex items-center gap-2">
@@ -375,7 +401,8 @@ export default function SocialMediaMonitoring() {
             </div>
             
             <div className="p-5 md:p-6 bg-[#0d1117] flex-1">
-              <div className="bg-[#1c2128] border border-[#30363d] rounded-xl p-5 text-sm text-gray-200 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono shadow-inner selection:bg-blue-500/30">
+              {/* Box Teks Diatur Jarak Spasi (leading-7) agar tulisan tidak bertumpuk */}
+              <div className="bg-[#1c2128] border border-[#30363d] rounded-xl p-5 text-[13px] md:text-sm text-gray-200 leading-7 whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono shadow-inner selection:bg-blue-500/30">
                 {generatePromptText(promptModalData)}
               </div>
             </div>
@@ -452,7 +479,7 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP */}
+                {/* TAMPILAN DESKTOP (Tabel Bersih, Struktur Tidak Berubah) */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -489,24 +516,31 @@ export default function SocialMediaMonitoring() {
                                   {isu.topik}
                                 </span>
                                 
-                                {/* CONTAINER KANAN: Megaphone berdampingan dengan TOP */}
-                                <div className="shrink-0 flex justify-end items-center gap-2 mt-0.5 min-w-[80px]">
+                                {/* CONTAINER KANAN TETAP: Megaphone berdampingan dengan TOP */}
+                                {/* Perbaikan dengan membagi ruang tetap (Fixed Width) agar ikon Megaphone selalu sejajar lurus ke bawah */}
+                                <div className="shrink-0 flex items-center mt-0.5 w-[90px]">
                                   
-                                  {/* ICON MEGAPHONE DI KIRI TOP */}
-                                  <button 
-                                    onClick={() => setPromptModalData(isu)} 
-                                    title="Generate Prompt Analisis" 
-                                    className="text-gray-400 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/20 p-1.5 rounded-md flex items-center justify-center h-[26px]"
-                                  >
-                                    <Megaphone size={14} />
-                                  </button>
+                                  {/* ICON MEGAPHONE (Lebar Tetap 30px, selalu di sisi kiri dari space ini) */}
+                                  <div className="w-[30px] flex justify-start">
+                                    <button 
+                                      onClick={() => handleOpenPrompt(isu)} 
+                                      title="Generate Prompt Analisis" 
+                                      className="text-gray-400 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/20 p-1.5 rounded-md flex items-center justify-center h-[26px]"
+                                    >
+                                      <Megaphone size={14} />
+                                    </button>
+                                  </div>
 
-                                  {isu.isTrending && (
-                                    <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 h-[26px]" title="Top News (Trending)">
-                                      <Flame size={12} className="text-orange-500" />
-                                      <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
-                                    </div>
-                                  )}
+                                  {/* BADGE TOP (Lebar Tetap 60px, selalu di sisi kanan) */}
+                                  <div className="w-[60px] flex justify-end">
+                                    {isu.isTrending && (
+                                      <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 h-[26px]" title="Top News (Trending)">
+                                        <Flame size={12} className="text-orange-500" />
+                                        <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
+                                      </div>
+                                    )}
+                                  </div>
+
                                 </div>
 
                               </div>
@@ -556,7 +590,7 @@ export default function SocialMediaMonitoring() {
                             {isu.topik}
                           </h3>
                           <button 
-                            onClick={() => setPromptModalData(isu)} 
+                            onClick={() => handleOpenPrompt(isu)} 
                             title="Generate Prompt Analisis" 
                             className="shrink-0 mt-0.5 text-gray-400 hover:text-blue-400 bg-white/5 p-2 rounded-lg transition-colors"
                           >
