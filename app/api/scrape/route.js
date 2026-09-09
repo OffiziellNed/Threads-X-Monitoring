@@ -1,104 +1,119 @@
 import { NextResponse } from 'next/server';
+import * as cheerio from 'cheerio';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    let targetUrl = searchParams.get('url');
-    
-    if (!targetUrl || targetUrl === '#') {
-      return NextResponse.json({ success: false, text: "URL tidak valid." });
+    let fetchUrl = searchParams.get('url');
+
+    if (!fetchUrl || fetchUrl === '#') {
+      return NextResponse.json({ success: false, text: 'URL kosong atau tidak valid' });
     }
 
-    const headers = { 
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+    fetchUrl = fetchUrl.trim();
+
+    // 1. Menyamar sebagai Googlebot agar lolos dari blokir Vercel[cite: 1]
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Referer': 'https://www.google.com/'
     };
 
-    const fetchWithTimeout = async (url, ms) => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), ms);
-      try {
-        const res = await fetch(url, { headers, redirect: 'follow', signal: controller.signal });
-        clearTimeout(timeout);
-        return res;
-      } catch (err) {
-        clearTimeout(timeout);
-        return null;
+    // Eksekusi Fetch awal
+    let response = await fetch(fetchUrl, { method: 'GET', headers });
+    let html = await response.text();
+
+    // 2. Deteksi & Tembus Halaman Redirect Google News
+    let realUrl = fetchUrl;
+    const metaRefresh = html.match(/<meta[^>]*http-equiv="refresh"[^>]*content="[^"]*url=([^"]+)"/i);
+    const aHrefMatch = html.match(/<a[^>]*href="([^"]+)"[^>]*>here<\/a>/i);
+    const jsMatch = html.match(/window\.location\.replace\(['"]([^'"]+)['"]\)/i);
+    const jsDataMatch = html.match(/data-n-v="([^"]+)"/i);
+
+    if (jsDataMatch && jsDataMatch[1] && jsDataMatch[1].startsWith('http')) realUrl = jsDataMatch[1];
+    else if (metaRefresh && metaRefresh[1]) realUrl = metaRefresh[1];
+    else if (aHrefMatch && aHrefMatch[1]) realUrl = aHrefMatch[1];
+    else if (jsMatch && jsMatch[1]) realUrl = jsMatch[1];
+
+    // Jika tertangkap sebagai redirect, kita set target ke URL aslinya
+    if (realUrl !== fetchUrl) {
+        realUrl = realUrl.replace(/&amp;/g, '&');
+        fetchUrl = realUrl;
+    }
+
+    // 3. Trik Khusus Media Indonesia: Paksa tampilkan semua halaman[cite: 1]
+    if (fetchUrl.includes('kompas.com') || fetchUrl.includes('tribunnews.com')) {
+      if (!fetchUrl.includes('page=all')) {
+        fetchUrl += fetchUrl.includes('?') ? '&page=all' : '?page=all';
       }
-    };
-
-    try {
-        // 1. Tembus Redirect Google News
-        let res = await fetchWithTimeout(targetUrl, 3000);
-        if (!res) return NextResponse.json({ success: false, text: "Timeout" });
-        let html = await res.text();
-
-        let realUrl = targetUrl;
-        const metaRefresh = html.match(/<meta[^>]*http-equiv="refresh"[^>]*content="[^"]*url=([^"]+)"/i);
-        const aHrefMatch = html.match(/<a[^>]*href="([^"]+)"[^>]*>here<\/a>/i);
-        const jsMatch = html.match(/window\.location\.replace\(['"]([^'"]+)['"]\)/i);
-        const jsDataMatch = html.match(/data-n-v="([^"]+)"/i);
-
-        if (jsDataMatch && jsDataMatch[1] && jsDataMatch[1].startsWith('http')) realUrl = jsDataMatch[1];
-        else if (metaRefresh && metaRefresh[1]) realUrl = metaRefresh[1];
-        else if (aHrefMatch && aHrefMatch[1]) realUrl = aHrefMatch[1];
-        else if (jsMatch && jsMatch[1]) realUrl = jsMatch[1];
-
-        // 2. Akses Website Asli (Detik, Kompas, dll) & Bypass Paging
-        if (realUrl !== targetUrl) {
-            realUrl = realUrl.replace(/&amp;/g, '&');
-            try {
-                const urlObj = new URL(realUrl);
-                if (urlObj.hostname.includes('detik.com') && !urlObj.search.includes('single')) urlObj.searchParams.set('single', '1');
-                if (urlObj.hostname.includes('kompas.com') && !urlObj.search.includes('page=')) urlObj.searchParams.set('page', 'all');
-                if (urlObj.hostname.includes('tribunnews.com') && !urlObj.search.includes('page=')) urlObj.searchParams.set('page', 'all');
-                realUrl = urlObj.toString();
-            } catch(e) {}
-
-            res = await fetchWithTimeout(realUrl, 4000);
-            if (!res) return NextResponse.json({ success: false, text: "Timeout web asli" });
-            html = await res.text();
-        }
-
-        // 3. Ekstrak Paragraf Penuh
-        const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-        let paragraphs = [];
-        let match;
-        
-        while ((match = pRegex.exec(html)) !== null) {
-          let text = match[1]
-            .replace(/<[^>]+>/g, '') 
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/\s+/g, ' ')
-            .trim();
-            
-          if (text.length > 50 && !text.toLowerCase().includes('baca juga') && !text.toLowerCase().includes('halaman selanjutnya')) { 
-            paragraphs.push(text);
-          }
-        }
-
-        let articleText = paragraphs.join('\n\n');
-
-        // 4. Fallback Cerdas: Jika Video/Foto Gallery (Tidak ada paragraf), Ambil Meta Deskripsi Asli
-        if (!articleText || paragraphs.length < 2) {
-            const descMatch = html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]+)"/i) || html.match(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i);
-            if (descMatch && descMatch[1] && !descMatch[1].includes("Google News")) {
-                articleText = descMatch[1];
-            } else {
-                return NextResponse.json({ success: false, text: "Konten dikunci atau berupa Video tanpa teks." });
-            }
-        }
-
-        return NextResponse.json({ success: true, text: articleText.substring(0, 15000) });
-        
-    } catch (fetchError) {
-        return NextResponse.json({ success: false, text: "Koneksi Timeout saat mengambil artikel penuh." });
+    } else if (fetchUrl.includes('detik.com')) {
+      if (!fetchUrl.includes('single=1')) {
+        fetchUrl += fetchUrl.includes('?') ? '&single=1' : '?single=1';
+      }
     }
+
+    // Fetch ulang dengan URL final (Sudah di-bypass page-nya)
+    response = await fetch(fetchUrl, { method: 'GET', headers });
+    html = await response.text();
+
+    // Deteksi Cloudflare / Proteksi[cite: 1]
+    if (html.includes("Just a moment...") || html.includes("Cloudflare") || html.includes("Attention Required!")) {
+        return NextResponse.json({ success: false, text: "Website ini memblokir akses bot sepenuhnya dari IP Datacenter." });
+    }
+
+    // 4. Ekstraksi dengan Cheerio[cite: 1]
+    const $ = cheerio.load(html);
+
+    let articleContent = '';
+    const articleSelectors = [
+        'article', 
+        '.detail__body-text', 
+        '.read__content', 
+        '.entry-content', 
+        '.article-content', 
+        '.detail-text'
+    ];
+    
+    for (const selector of articleSelectors) {
+        if ($(selector).length > 0) {
+            $(selector).find('p').each((i, el) => {
+                const text = $(el).text().trim();
+                // Filter tambahan agar teks "Baca juga" tidak ikut masuk
+                if (text.length > 30 && !text.toLowerCase().includes('baca juga')) { 
+                    articleContent += text + '\n\n';
+                }
+            });
+            break;
+        }
+    }
+    
+    if (!articleContent.trim()) {
+        $('p').each((i, el) => {
+            const text = $(el).text().trim();
+            if (text.length > 50 && !text.toLowerCase().includes('baca juga')) { 
+                articleContent += text + '\n\n';
+            }
+        });
+    }
+
+    const fallbackDesc = $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content') || '';
+    const finalDescription = articleContent.trim() ? articleContent.trim() : fallbackDesc;
+
+    if (!finalDescription) {
+       return NextResponse.json({ success: false, text: "Gagal menyedot isi berita. Kemungkinan Paywall atau format Video." });
+    }
+
+    // Output disesuaikan dengan kebutuhan frontend (success & text)
+    return NextResponse.json({
+      success: true,
+      text: finalDescription.substring(0, 15000)
+    });
+
   } catch (error) {
-    return NextResponse.json({ success: false, text: "Error server." });
+    console.error("Error scraping:", error.message);
+    return NextResponse.json({ success: false, text: "Koneksi Timeout. Gagal menyedot artikel penuh." });
   }
 }
