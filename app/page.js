@@ -123,7 +123,7 @@ export default function SocialMediaMonitoring() {
     return `https://www.google.com/search?q=${query}`;
   };
 
-  // Fungsi Copy Prompt
+  // FUNGSI COPY PROMPT DENGAN FORMAT SATIR/SARKAS
   const generatePromptText = (isu) => {
     return `Tolong identifikasi isu, paparkan fakta penting, berikan 10 perspektif 5 opini Pro dan 5 Opini Kontra, Jika kontra boleh gunakan Bahasa satir, sarkas, tajam\n\nJudul Berita:\n${isu.articleTitle || isu.topik}\n\nDeskripsi Berita:\n${isu.articleDesc || "Tidak ada deskripsi rinci."}`;
   };
@@ -196,7 +196,7 @@ export default function SocialMediaMonitoring() {
               <div className="w-full flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-10 w-10 border-b-2 ${ytFetchMode === 'kol' ? 'border-blue-500' : 'border-red-500'}`}></div></div>
             ) : sortedYtVideos.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP YOUTUBE */}
+                {/* TAMPILAN DESKTOP */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -235,7 +235,7 @@ export default function SocialMediaMonitoring() {
                   </table>
                 </div>
 
-                {/* TAMPILAN MOBILE YOUTUBE */}
+                {/* TAMPILAN MOBILE */}
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">
                   {sortedYtVideos.map((vid, idx) => (
                     <div key={vid.id} className="bg-[#0d1117]/50 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
@@ -356,34 +356,40 @@ export default function SocialMediaMonitoring() {
 
   // --- HALAMAN DAFTAR MONITORING ---
   return (
-    <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center">
+    <main className="min-h-screen p-4 md:p-8 bg-[#0d1117] text-gray-200 font-sans flex flex-col items-center relative">
       
-      {/* MODAL PROMPT ANALISIS (OVERLAY) */}
+      {/* ======================================================================= */}
+      {/* MODAL PROMPT ANALISIS (TAMPILAN POP-UP PREMIUM DENGAN BACKGROUND TERANG) */}
+      {/* ======================================================================= */}
       {promptModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
           <div className="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-[#30363d] bg-[#0d1117]/50">
+            
+            <div className="flex justify-between items-center p-5 border-b border-[#30363d] bg-[#1c2128]">
               <h3 className="text-white font-bold flex items-center gap-2">
-                <Megaphone size={18} className="text-blue-400" /> Analisis Isu
+                <Megaphone size={18} className="text-blue-400" /> Copy Prompt Analisis AI
               </h3>
-              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1">
+              <button onClick={() => setPromptModalData(null)} className="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg">
                 <X size={20} />
               </button>
             </div>
             
-            <div className="p-5 md:p-6 bg-[#0d1117] text-sm text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto selection:bg-blue-500/30">
-              {generatePromptText(promptModalData)}
+            <div className="p-5 md:p-6 bg-[#0d1117] flex-1">
+              <div className="bg-[#1c2128] border border-[#30363d] rounded-xl p-5 text-sm text-gray-200 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono shadow-inner selection:bg-blue-500/30">
+                {generatePromptText(promptModalData)}
+              </div>
             </div>
             
-            <div className="p-4 border-t border-[#30363d] flex justify-end bg-[#161b22]">
+            <div className="p-4 border-t border-[#30363d] flex justify-end bg-[#1c2128]">
               <button 
                 onClick={() => handleCopyPrompt(generatePromptText(promptModalData))}
-                className={`flex items-center gap-2 px-5 py-2 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 text-white shadow-lg shadow-green-900/20' : 'bg-gray-700 hover:bg-gray-600 text-white shadow-md'}`}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isCopied ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md'}`}
               >
                 {isCopied ? <Check size={16} /> : <Copy size={16} />}
                 {isCopied ? "Prompt Tersalin!" : "Copy Prompt"}
               </button>
             </div>
+
           </div>
         </div>
       )}
@@ -446,7 +452,7 @@ export default function SocialMediaMonitoring() {
 
             {tableData.length > 0 ? (
               <>
-                {/* TAMPILAN DESKTOP (Tabel Bersih, Tidak Berubah Strukturnya) */}
+                {/* TAMPILAN DESKTOP */}
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left">
                     <thead>
@@ -479,28 +485,30 @@ export default function SocialMediaMonitoring() {
                             <td className="py-4 px-4">
                               <div className="flex items-start justify-between w-full">
                                 
-                                {/* Pembungkus Judul & Icon Megaphone (Inline) */}
-                                <div className="flex-1 max-w-[85%] pr-6 flex items-start gap-2">
-                                  <span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
-                                    {isu.topik}
-                                  </span>
+                                <span className="flex-1 max-w-[85%] pr-6 text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">
+                                  {isu.topik}
+                                </span>
+                                
+                                {/* CONTAINER KANAN: Megaphone berdampingan dengan TOP */}
+                                <div className="shrink-0 flex justify-end items-center gap-2 mt-0.5 min-w-[80px]">
+                                  
+                                  {/* ICON MEGAPHONE DI KIRI TOP */}
                                   <button 
                                     onClick={() => setPromptModalData(isu)} 
                                     title="Generate Prompt Analisis" 
-                                    className="shrink-0 mt-1 text-gray-500 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/10 p-1.5 rounded-md"
+                                    className="text-gray-400 hover:text-blue-400 transition-colors bg-white/5 hover:bg-blue-500/20 p-1.5 rounded-md flex items-center justify-center h-[26px]"
                                   >
                                     <Megaphone size={14} />
                                   </button>
-                                </div>
 
-                                <div className="shrink-0 w-[60px] flex justify-end items-start mt-0.5">
                                   {isu.isTrending && (
-                                    <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center gap-1" title="Top News (Trending)">
+                                    <div className="bg-orange-500/10 px-1.5 py-0.5 rounded flex items-center justify-center gap-1 h-[26px]" title="Top News (Trending)">
                                       <Flame size={12} className="text-orange-500" />
                                       <span className="text-[9px] font-bold text-orange-500 uppercase">Top</span>
                                     </div>
                                   )}
                                 </div>
+
                               </div>
                             </td>
                             <td className="py-4 px-4 text-center">
@@ -549,6 +557,7 @@ export default function SocialMediaMonitoring() {
                           </h3>
                           <button 
                             onClick={() => setPromptModalData(isu)} 
+                            title="Generate Prompt Analisis" 
                             className="shrink-0 mt-0.5 text-gray-400 hover:text-blue-400 bg-white/5 p-2 rounded-lg transition-colors"
                           >
                             <Megaphone size={14} />
