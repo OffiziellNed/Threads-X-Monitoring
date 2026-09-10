@@ -471,6 +471,7 @@ export default function SocialMediaMonitoring() {
     tableData = tableData.filter(d => d.isTrending).sort((a,b) => (b.volume||0) - (a.volume||0)); 
   }
 
+  // === EXTRACT & FULL SCRAPE - Mengubah news.google/rss jadi link asli + scraping full multi-halaman ===
   const handleOpenEditorFromMegaphone = async (isu) => {
     const newsLink = getCleanLink(isu);
     const judulBerita = isu.articleTitle || isu.topik || isu.title || "Tanpa Judul";
@@ -480,44 +481,86 @@ export default function SocialMediaMonitoring() {
         else if (newsLink !== "#") sumberText = "Sumber Berita: " + new URL(newsLink).hostname;
     } catch(e) {}
     setPreviousPage(currentPage); 
-    setUrlBerita(newsLink);
+    setUrlBerita(newsLink); // simpan google link dulu, nanti di-extract jadi real
     setSumberBerita(sumberText);
     setJudulHtml(judulBerita);
-    setPromptTeks("Menyedot isi berita penuh (anti Cloudflare 522)...\nMohon tunggu sebentar...");
+    setPromptTeks(`Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif "AgoraVada", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).
+
+Judul Berita:
+${judulBerita}
+
+Isi Berita:
+Mengekstrak link asli dari Google News...
+Mengubah ${newsLink.substring(0,80)}...
+Mohon tunggu sebentar, sistem sedang menyedot full artikel (termasuk halaman 2-3 jika ada)...`);
     setCurrentPage("agora-editor");
     setEditorSubPage(2); 
+    
     let preambleFull = getPreamble(judulBerita);
     if (newsLink && newsLink !== "#") {
       try {
         let reqUrl = ["", "api", "tarik-berita"].join("/");
         const controller = new AbortController();
-        const tId = setTimeout(() => controller.abort(), 12000);
+        const tId = setTimeout(() => controller.abort(), 25000); // 25 detik untuk multi-halaman
         const res = await fetch(reqUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }), signal: controller.signal });
         clearTimeout(tId);
         const data = await res.json();
         if (data && data.status === "success") {
           let isiBerita = data.description || data.text || "";
-          // Fix tribratanews: kalau isi == judul, anggap gagal
           if (!isiBerita || isErrorPage(isiBerita) || isiBerita.trim() === judulBerita.trim() || isiBerita.length < 100) {
-            isiBerita = isu.articleDesc || isu.description || "Gagal ekstrak isi, pakai ringkasan RSS. Situs tribratanews polri struktur HTML nya berbeda.";
+            isiBerita = isu.articleDesc || isu.description || "Gagal ekstrak isi, pakai ringkasan RSS.";
           }
-          setPromptTeks(preambleFull + isiBerita); 
+          // Tampilkan info extract
+          const extractInfo = data.real_url !== data.original_url ? `[Link asli berhasil di-extract]\nOriginal: ${data.original_url}\nReal: ${data.real_url}\nHalaman ter-scrape: ${data.pages_scraped || 1} | Panjang: ${data.content_length || isiBerita.length} karakter\n\n` : "";
+          setPromptTeks(preambleFull + extractInfo + isiBerita); 
           if(data.sumber) setSumberBerita(data.sumber);
-          if(data.real_url) { try { setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname); } catch {} }
+          if(data.real_url) { 
+            setUrlBerita(data.real_url); // update input jadi link asli
+            try { setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname); } catch {} 
+          }
           if(data.gambar_url) setImageUrl(data.gambar_url);
         } else {
-          setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita: " + (data.message || "")));
+          setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita: " + (data.message || "")) + `\n\n[Debug] Real URL attempt: ${data.real_url || 'tidak ada'}`);
         }
       } catch(err) {
         if (err.name === 'AbortError') {
-          setPromptTeks(preambleFull + (isu.articleDesc || "Timeout 12 detik - server berita lambat / diblokir Cloudflare 522. Pakai ringkasan RSS saja, atau klik Baca Artikel."));
+          setPromptTeks(preambleFull + (isu.articleDesc || "Timeout 25 detik - server berita lambat. Coba klik tombol Extract lagi di editor."));
         } else {
-          setPromptTeks(preambleFull + (isu.articleDesc || "Koneksi ke API terputus."));
+          setPromptTeks(preambleFull + (isu.articleDesc || "Koneksi ke API terputus: " + err.message));
         }
       }
     } else {
       setPromptTeks(preambleFull + (isu.articleDesc || "URL tidak tersedia."));
     }
+  };
+
+  // Handler untuk tombol Extract di dalam editor (manual)
+  const handleExtractLink = async () => {
+    if (!urlBerita) return alert("Masukkan link dulu!");
+    setPromptTeks(`Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif "AgoraVada", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).
+
+Mengekstrak link asli dari: ${urlBerita}
+Mohon tunggu...`);
+    try {
+      let tUrl = ["", "api", "tarik-berita"].join("/");
+      const res = await fetch(tUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) });
+      const data = await res.json();
+      if(data && data.status === "success") {
+        let jdInput = data.title || "Tanpa Judul";
+        let preambuleTop = getPreamble(jdInput);
+        let isi = data.description || data.text || "";
+        if (isErrorPage(isi)) isi = "Gagal bypass Cloudflare.";
+        const extractInfo = `[Link asli berhasil di-extract - ${data.pages_scraped || 1} halaman]\nReal URL: ${data.real_url}\n\n`;
+        setPromptTeks(preambuleTop + extractInfo + isi); 
+        setJudulHtml(jdInput);
+        setUrlBerita(data.real_url || urlBerita); // ganti jadi link asli
+        let hm = "";
+        try { hm = new URL(data.real_url || urlBerita).hostname; } catch(e){}
+        setSumberBerita(data.sumber || (hm ? "Sumber Berita: " + hm : ""));
+        if(data.gambar_url) setImageUrl(data.gambar_url);
+        setEditorSubPage(2);
+      } else { alert("Gagal extract: " + (data.error || data.message) + "\nReal URL: " + (data.real_url || '-')); }
+    } catch(err) { alert("API error: " + err.message); }
   };
 
   if (currentPage === "agora-editor") {
@@ -531,9 +574,16 @@ export default function SocialMediaMonitoring() {
           {editorSubPage === 1 && (
             <div>
               <h2 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px", color: "#c9d1d9", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>1. Masukkan Link Berita</h2>
-              <input type="text" placeholder="https://news.com/..." style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#ffffff", padding: "12px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", marginBottom: "16px", boxSizing: "border-box" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button style={{ width: "50%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "12px", borderRadius: "10px", fontWeight: "600", fontSize: "13px", border: "1px solid #30363d", cursor: "pointer" }} onClick={async () => {
+              <p style={{ fontSize: "11px", color: "#8b949e", marginBottom: "8px" }}>Bisa paste link Google News (news.google.com/rss) atau link asli. Sistem akan otomatis extract ke link asli + scraping full multi-halaman.</p>
+              <input type="text" placeholder="https://news.google.com/rss/articles/... atau https://detik.com/..." style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#ffffff", padding: "12px 14px", borderRadius: "10px", fontSize: "13px", outline: "none", marginBottom: "12px", boxSizing: "border-box" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
+              {urlBerita && urlBerita.includes('google.com') && (
+                <div style={{ backgroundColor: "#1c2128", border: "1px dashed #30363d", padding: "8px 12px", borderRadius: "8px", marginBottom: "12px", fontSize: "11px", color: "#fbbf24" }}>
+                  ⚠️ Terdeteksi Google News link. Klik "Extract Link Asli" untuk ubah jadi link sebenarnya (detik.com, kompas.com, dll) + auto scraping full.
+                </div>
+              )}
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button style={{ flex: "1 1 120px", backgroundColor: "#1f6feb", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "12px", border: "none", cursor: "pointer" }} onClick={handleExtractLink}>🔗 Extract Link Asli + Full Scrape</button>
+                <button style={{ width: "100%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "10px", borderRadius: "10px", fontWeight: "600", fontSize: "12px", border: "1px solid #30363d", cursor: "pointer", marginTop: "4px" }} onClick={async () => {
                     if (!urlBerita) return alert("Masukkan link dulu!");
                     setPromptTeks("Menyedot data dari web, tunggu sebentar...");
                     try {
@@ -545,17 +595,19 @@ export default function SocialMediaMonitoring() {
                         let preambuleTop = getPreamble(jdInput);
                         let isi = data.description || data.text || "";
                         if (isErrorPage(isi)) isi = "Gagal bypass Cloudflare.";
-                        setPromptTeks(preambuleTop + isi); 
+                        const info = `[${data.pages_scraped || 1} halaman ter-scrape]\n`;
+                        setPromptTeks(preambuleTop + info + isi); 
                         setJudulHtml(jdInput);
+                        setUrlBerita(data.real_url || urlBerita);
                         let hm = "";
                         try { hm = new URL(data.real_url || urlBerita).hostname; } catch(e){}
                         setSumberBerita(data.sumber || (hm ? "Sumber Berita: " + hm : ""));
                         if(data.gambar_url) setImageUrl(data.gambar_url);
                         setEditorSubPage(2);
                       } else { alert("Gagal menyedot: " + (data.error || data.message)); }
-                    } catch(err) { alert("API Vercel error."); }
-                  }}>Tarik Data 🔄</button>
-                <button style={{ width: "50%", backgroundColor: "#238636", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "13px", border: "none", cursor: "pointer" }} onClick={() => { if(urlBerita) { try { setSumberBerita("Sumber Berita: " + new URL(urlBerita).hostname); } catch(e) {} } setEditorSubPage(3); }}>Ke Visual Editor ➔</button>
+                    } catch(err) { alert("API error: " + err.message); }
+                  }}>Tarik Data Cepat 🔄</button>
+                <button style={{ width: "100%", backgroundColor: "#238636", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "13px", border: "none", cursor: "pointer", marginTop: "4px" }} onClick={() => { if(urlBerita) { try { setSumberBerita("Sumber Berita: " + new URL(urlBerita).hostname); } catch(e) {} } setEditorSubPage(3); }}>Ke Visual Editor ➔</button>
               </div>
             </div>
           )}
