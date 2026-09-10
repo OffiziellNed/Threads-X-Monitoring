@@ -2,11 +2,8 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat'];
+const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat', 'adalah', 'ada', 'juga', 'sudah', 'saya', 'kita', 'mereka', 'dia', 'ke', 'di', 'ini', 'itu'];
 
-// =========================================================================
-// FUNGSI PEMBERSIH URL & FORMAT TANGGAL
-// =========================================================================
 const cleanUrl = (rawUrl) => {
   if (!rawUrl) return "#";
   try {
@@ -37,26 +34,100 @@ const formatPubDate = (pubDateStr) => {
   }
 };
 
-function getRealVolume(title, allTitles) {
-  const words = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-  const coreWords = words.filter(w => w.length > 3 && !STOP_WORDS.includes(w));
-  if (coreWords.length === 0) return Math.floor(Math.random() * 5) + 30;
+// ================== TOKENIZER + TF-IDF + CLUSTERING (OPSI B) ==================
+function tokenize(text) {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.includes(w));
+}
 
-  let count = 0;
-  allTitles.forEach(t => {
-    const tLower = t.toLowerCase();
-    if (coreWords.some(cw => new RegExp(`\\b${cw}\\b`).test(tLower))) count++;
+function buildTfIdfVectors(docsTokens) {
+  const N = docsTokens.length;
+  const df = {};
+  docsTokens.forEach(tokens => {
+    const uniq = [...new Set(tokens)];
+    uniq.forEach(t => df[t] = (df[t]||0)+1);
   });
-  return (count * 4) + coreWords.length + 25;
+  const idf = {};
+  Object.keys(df).forEach(term => {
+    idf[term] = Math.log((N + 1) / (df[term] + 0.5)) + 1;
+  });
+  const vectors = docsTokens.map(tokens => {
+    const tf = {};
+    tokens.forEach(t => tf[t] = (tf[t]||0)+1);
+    const len = tokens.length || 1;
+    const vec = {};
+    Object.keys(tf).forEach(t => {
+      vec[t] = (tf[t]/len) * (idf[t]||1);
+    });
+    return vec;
+  });
+  return vectors;
+}
+
+function cosineSim(a,b) {
+  let dot=0, normA=0, normB=0;
+  for (const k in a) {
+    normA += a[k]*a[k];
+    if (b[k]) dot += a[k]*b[k];
+  }
+  for (const k in b) normB += b[k]*b[k];
+  if (normA===0 || normB===0) return 0;
+  return dot / (Math.sqrt(normA)*Math.sqrt(normB));
+}
+
+function clusterByEmbedding(items, threshold = 0.32) {
+  // items sudah filtered by hours
+  if (items.length === 0) return [];
+  const docsTokens = items.map(it => tokenize((it.topik + " " + it.articleDesc).toLowerCase()));
+  const vectors = buildTfIdfVectors(docsTokens);
+
+  const clusters = [];
+  vectors.forEach((vec, idx) => {
+    let bestCluster = -1;
+    let bestSim = -1;
+    clusters.forEach((cl, cIdx) => {
+      const sim = cosineSim(vec, cl.centroid);
+      if (sim > bestSim) { bestSim = sim; bestCluster = cIdx; }
+    });
+    if (bestSim > threshold) {
+      clusters[bestCluster].items.push(items[idx]);
+      clusters[bestCluster].vectors.push(vec);
+      // update centroid as mean
+      const allTerms = new Set();
+      clusters[bestCluster].vectors.forEach(v => Object.keys(v).forEach(k => allTerms.add(k)));
+      const newCentroid = {};
+      allTerms.forEach(term => {
+        let sum = 0;
+        clusters[bestCluster].vectors.forEach(v => sum += (v[term]||0));
+        newCentroid[term] = sum / clusters[bestCluster].vectors.length;
+      });
+      clusters[bestCluster].centroid = newCentroid;
+      // keep latest timestamp in cluster
+      if (items[idx].timestamp > clusters[bestCluster].latestTimestamp) {
+        clusters[bestCluster].latestTimestamp = items[idx].timestamp;
+        clusters[bestCluster].latestItem = items[idx];
+      }
+    } else {
+      clusters.push({
+        items: [items[idx]],
+        vectors: [vec],
+        centroid: vec,
+        latestTimestamp: items[idx].timestamp,
+        latestItem: items[idx]
+      });
+    }
+  });
+  return clusters;
 }
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const hours = parseInt(searchParams.get('hours') || '12', 10);
+    const hours = parseInt(searchParams.get('hours') || '12', 10); // now dynamic 6/12/24/48
     const mode = searchParams.get('mode') || 'volume'; 
     
-    // Berita Nasional Real-time dari Google News Indonesia
     const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
 
     const response = await fetch(rssUrl, { cache: 'no-store' });
@@ -64,7 +135,6 @@ export async function GET(request) {
     const items = xmlText.split("<item>");
     
     let rawItems = [];
-    let allTitles = [];
     const now = new Date();
 
     for (let i = 1; i < items.length; i++) {
@@ -79,7 +149,6 @@ export async function GET(request) {
         
         let rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
         const cleanTitle = rawTitle.split(" - ")[0];
-        allTitles.push(cleanTitle);
         
         let pureDesc = "Tidak ada deskripsi rinci.";
         if (descMatch) {
@@ -101,38 +170,32 @@ export async function GET(request) {
         
         let kategori = "Sosial"; 
 
-        // =========================================================================
-        // HIERARKI KATEGORI DIPERBAIKI - KRIMINAL DITAMBAHKAN (Prioritas Tertinggi)
-        // =========================================================================
-        if (textToAnalyze.match(/\b(kriminal|narkotika|narkoba|sabu|ganja|ekstasi|pil koplo|tembakau gorila|pembunuhan|bunuh|dibunuh|mayat|mutilasi|penculikan|culik|diculik|sandera|penyanderaan|pelecehan|pelecehan seksual|perkosaan|rudapaksa|cabul|asusila|pemerkosaan|kekerasan seksual|lgbt|perampokan|rampok|perampok|begal|dibegal|pembegalan|pemukulan|dipukul|pengeroyokan|dikeroyok|aniaya|penganiayaan|penembakan|ditembak|bacok|pembacokan|ditikam|penikaman|penusukan|tawuran|maling|pencurian|curi|curanmor|curat|curnak|jambret|kdrt|carok|penodongan|pembunuhan|pemerkosa|pemalakan|preman|premanisme|begal|pembacokan)\b/)) { 
+        // KRIMINAL PRIORITAS TERTINGGI
+        if (textToAnalyze.match(/\b(kriminal|narkotika|narkoba|sabu|ganja|ekstasi|pil koplo|pembunuhan|bunuh|dibunuh|mayat|mutilasi|penculikan|culik|diculik|sandera|penyanderaan|pelecehan|pelecehan seksual|perkosaan|rudapaksa|cabul|asusila|pemerkosaan|kekerasan seksual|lgbt|perampokan|rampok|perampok|begal|dibegal|pembegalan|pemukulan|dipukul|pengeroyokan|dikeroyok|aniaya|penganiayaan|penembakan|ditembak|bacok|pembacokan|ditikam|penikaman|penusukan|tawuran|maling|pencurian|curi|curanmor|curat|curnak|jambret|kdrt|carok|penodongan|pemalakan|preman)\b/)) { 
             kategori = "Kriminal"; 
         }
         else if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) { 
             kategori = "Bencana"; 
         }
-        // OLAHRAGA DIPINDAH KE ATAS: Cegah "Presiden Klub" masuk Pemerintahan
-        else if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|skor|klasemen|olimpiade|medali|pssi|premier league|pertandingan|turnamen|klub|pemain|pelatih|fifa|uefa|madrid|barca|milan|inter|arsenal|chelsea|manchester)\b/)) { 
+        else if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|skor|klasemen|olimpiade|medali|pssi|premier league|pertandingan|turnamen|klub|pemain|pelatih|fifa|uefa)\b/)) { 
             kategori = "Olahraga"; 
         }
-        // ENTERTAINMENT: Cegah "Presiden Direktur MD Entertainment" masuk Pemerintahan
-        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { 
+        else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { 
             kategori = "Entertainment"; 
         }
-        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi|kominfo)\b/)) { 
+        else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|ai|kecerdasan buatan|aplikasi|kominfo)\b/)) { 
             kategori = "Teknologi"; 
         }
-        // FINANSIAL: Cegah "Presiden Direktur Bank" masuk Pemerintahan
-        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) { 
+        else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|rupiah|kripto|investasi|bank indonesia|ojk|perbankan|bank|bursa|bisnis)\b/)) { 
             kategori = "Finansial"; 
         }
-        else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan|kejagung)\b/)) { 
+        else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|bareskrim|polri|kejaksaan)\b/)) { 
             kategori = "Hukum"; 
         }
-        // PEMERINTAHAN DITARUH DI BAWAH: Baru dieksekusi kalau murni bukan soal bola, saham, atau artis
-        else if (textToAnalyze.match(/\b(pemerintah|presiden|wapres|menteri|kabinet|istana|prabowo|gibran|jokowi|birokrasi|pelayanan publik|anggaran|program kerja|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri|ikn|bumn|pemprov|pemkot|pemkab|dinas)\b/)) { 
+        else if (textToAnalyze.match(/\b(pemerintah|presiden|wapres|menteri|kabinet|istana|prabowo|gibran|jokowi|birokrasi|anggaran|infrastruktur|pajak|kementerian|pemda|apbn|negara|kebijakan)\b/)) { 
             kategori = "Pemerintahan"; 
         }
-        else if (textToAnalyze.match(/\b(politik|partai|pdip|gerindra|golkar|pks|pkb|nasdem|demokrat|kekuasaan|ideologi|elit|survei|elektabilitas|manuver|deklarasi|pemilu|pilkada|dpr|dprd|mpr|koalisi|oposisi|kampanye|kpu|bawaslu|demokrasi|parlemen|caleg|cagub|cabup|cawalkot)\b/)) { 
+        else if (textToAnalyze.match(/\b(politik|partai|pdip|gerindra|golkar|pks|pkb|nasdem|demokrat|pemilu|pilkada|dpr|koalisi|oposisi|kpu|bawaslu|demokrasi|parlemen)\b/)) { 
             kategori = "Politik"; 
         }
 
@@ -151,42 +214,82 @@ export async function GET(request) {
       }
     }
 
+    // Filter by selected hours (6/12/24/48)
     let filteredItems = rawItems.filter(item => item.diffHours <= hours);
     
     if (filteredItems.length === 0 && mode !== 'terkini') {
         filteredItems = rawItems.sort((a, b) => a.diffHours - b.diffHours).slice(0, 50);
     }
 
-    let dynamicIssues = [];
-    let seenTopics = new Set();
+    // ============= OPSI B: CLUSTERING EMBEDDING SEMANTIK =============
+    const clusters = clusterByEmbedding(filteredItems, 0.32);
 
+    let dynamicIssues = [];
     if (mode === 'terkini') {
-        filteredItems.sort((a, b) => b.timestamp - a.timestamp);
-        filteredItems.forEach((item, index) => {
-          const mainKeyword = item.topik.substring(0, 20).toLowerCase();
-          if (!seenTopics.has(mainKeyword)) {
-            seenTopics.add(mainKeyword);
-            dynamicIssues.push({ id: index, ...item, volume: 0 });
-          }
+        // Untuk mode terkini: urut cluster by latest timestamp, volume = ukuran cluster
+        clusters.sort((a,b) => b.latestTimestamp - a.latestTimestamp);
+        clusters.forEach((cl, idx) => {
+          const rep = cl.latestItem;
+          const allSources = [];
+          const seenSrc = new Set();
+          cl.items.forEach(it => {
+            if (!seenSrc.has(it.source)) {
+              seenSrc.add(it.source);
+              allSources.push({ name: `${it.source}`, url: it.link });
+            }
+          });
+          dynamicIssues.push({
+            id: idx,
+            ...rep,
+            volume: cl.items.length, // volume = berapa media bahas isu sama
+            clusterSize: cl.items.length,
+            clusterCount: cl.items.length,
+            sourcesList: allSources.length > 0 ? allSources : rep.sourcesList,
+            sourcesCount: allSources.length
+          });
         });
     } else {
-        filteredItems.forEach((item, index) => {
-          const volumeData = getRealVolume(item.topik, allTitles);
-          const mainKeyword = item.topik.substring(0, 15).toLowerCase();
-          if (!seenTopics.has(mainKeyword)) {
-            seenTopics.add(mainKeyword);
-            dynamicIssues.push({ id: index, ...item, volume: volumeData });
-          }
+        // Mode volume / top: volume = ukuran cluster + bonus recency
+        clusters.sort((a,b) => {
+          // primary sort by cluster size, secondary by recency
+          if (b.items.length !== a.items.length) return b.items.length - a.items.length;
+          return b.latestTimestamp - a.latestTimestamp;
         });
-        dynamicIssues.sort((a, b) => b.volume - a.volume);
+        clusters.forEach((cl, idx) => {
+          const rep = cl.latestItem; // pakai yang terbaru sebagai representatif
+          const allSources = [];
+          const seenSrc = new Set();
+          cl.items.forEach(it => {
+            if (!seenSrc.has(it.source)) {
+              seenSrc.add(it.source);
+              allSources.push({ name: `${it.source}`, url: it.link });
+            }
+          });
+          // volume formula baru: clusterSize * 20 + bonus jam
+          const hoursSinceLatest = (now.getTime() - cl.latestTimestamp) / (1000*60*60);
+          const recencyBonus = hoursSinceLatest < 6 ? 15 : hoursSinceLatest < 12 ? 8 : 0;
+          const volume = (cl.items.length * 20) + recencyBonus + 5;
+
+          dynamicIssues.push({
+            id: idx,
+            ...rep,
+            volume: volume,
+            clusterSize: cl.items.length,
+            clusterCount: cl.items.length,
+            sourcesList: allSources,
+            sourcesCount: allSources.length
+          });
+        });
     }
 
     if (dynamicIssues.length === 0) {
-        dynamicIssues.push({ id: "empty", topik: `Tidak ada berita dalam ${hours} jam terakhir.`, kategori: "Sistem", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ada pemberitaan.", link: "#", sourcesList: [] });
+        dynamicIssues.push({ id: "empty", topik: `Tidak ada berita dalam ${hours} jam terakhir.`, kategori: "Sistem", volume: 0, clusterSize: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ada pemberitaan.", link: "#", sourcesList: [] });
     }
 
-    return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 50) });
+    // Kembalikan 50 teratas
+    return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 50), meta: { hours, totalRaw: rawItems.length, totalFiltered: filteredItems.length, clusters: clusters.length } });
   } catch (error) {
-    return NextResponse.json({ success: false, data: [] });
+    console.error(error);
+    return NextResponse.json({ success: false, data: [], error: String(error) });
   }
 }
