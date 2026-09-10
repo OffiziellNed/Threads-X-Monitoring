@@ -24,23 +24,20 @@ function decodeCBMiUrl(googleUrl) {
       }
       if (urls.length > 0) {
         urls.sort((a,b)=>b.length-a.length);
-        return urls[0];
+        // Clean trailing junk like \x01 etc and extra chars
+        let real = urls[0].replace(/[^\x20-\x7E]+.*$/, '').replace(/[^A-Za-z0-9\/:._?=&%#+-]+$/, '');
+        return real;
       }
     } catch {}
   } catch {}
   return null;
 }
 
-function findRealUrlInHtml(html, baseUrl) {
-  // 1. Look for data-n-a, data-n-au, data-n-href
+function findRealUrlInHtml(html) {
   const patterns = [
     /data-n-a=["'](https?:\/\/[^"']+)["']/i,
     /data-n-au=["'](https?:\/\/[^"']+)["']/i,
-    /data-n-href=["'](https?:\/\/[^"']+)["']/i,
-    /class=["'][^"']*DY5T1d[^"']*["'][^>]*href=["'](https?:\/\/[^"']+)["']/i,
-    /<a[^>]+class="[^"]*WwrzSb[^"]*"[^>]*href=["'](https?:\/\/[^"']+)["']/i,
     /"url"\s*:\s*"(https?:\/\/[^"]+)"/i,
-    /"Url"\s*:\s*"(https?:\/\/[^"]+)"/i,
     /window\.location(?:\.href)?\s*=\s*["'](https?:\/\/[^"']+)["']/i,
     /<meta[^>]*http-equiv=["']refresh["'][^>]*url=(https?:\/\/[^"'>]+)/i,
   ];
@@ -50,13 +47,11 @@ function findRealUrlInHtml(html, baseUrl) {
       try { new URL(m[1]); return m[1].replace(/&amp;/g, '&'); } catch {}
     }
   }
-  // 2. Find all https:// links that look like news articles
-  const allHrefs = [...html.matchAll(/href=["'](https?:\/\/(?!.*google\.com|.*gstatic\.com|.*doubleclick\.net|.*googleapis\.com)[^"']+)["']/gi)];
+  const allHrefs = [...html.matchAll(/href=["'](https?:\/\/(?!.*google\.com|.*gstatic\.com|.*doubleclick\.net)[^"']+)["']/gi)];
   for (const match of allHrefs) {
     const href = match[1].replace(/&amp;/g, '&');
     if (href.length > 25 && (href.includes('.com') || href.includes('.co.id') || href.includes('.id/') || href.includes('.go.id'))) {
-      // Skip google, youtube, etc
-      if (!href.includes('accounts.google') && !href.includes('support.google') && !href.includes('policies.google')) {
+      if (!href.includes('accounts.google') && !href.includes('support.google')) {
         try { new URL(href); return href; } catch {}
       }
     }
@@ -64,30 +59,74 @@ function findRealUrlInHtml(html, baseUrl) {
   return null;
 }
 
-async function extractRealUrl(googleUrl) {
+async function searchViaDuckDuckGo(title, source) {
+  try {
+    const query = `${title} ${source || ''}`.trim();
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    console.log('[search] DuckDuckGo:', searchUrl);
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html'
+      },
+      cache: 'no-store'
+    });
+    const html = await res.text();
+    // DuckDuckGo result links are in <a class="result__url" href="/l/?...&uddg=https%3A%2F%2F...">
+    const matches = [...html.matchAll(/uddg=([^&"]+)/gi)];
+    for (const m of matches) {
+      try {
+        const decoded = decodeURIComponent(m[1]);
+        if (decoded.startsWith('http') && !decoded.includes('duckduckgo.com') && !decoded.includes('google.com')) {
+          console.log('[search] Found via uddg:', decoded);
+          return decoded;
+        }
+      } catch {}
+    }
+    // Fallback: result__a href
+    const aMatches = [...html.matchAll(/class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"/gi)];
+    for (const m of aMatches) {
+      let href = m[1];
+      if (href.startsWith('/l/?')) {
+        try {
+          const u = new URL(href, 'https://duckduckgo.com');
+          const uddg = u.searchParams.get('uddg');
+          if (uddg) {
+            const decoded = decodeURIComponent(uddg);
+            if (decoded.startsWith('http')) return decoded;
+          }
+        } catch {}
+      } else if (href.startsWith('http') && !href.includes('duckduckgo.com')) {
+        return href;
+      }
+    }
+  } catch (e) {
+    console.log('[search] DuckDuckGo failed', e.message);
+  }
+  return null;
+}
+
+async function extractRealUrl(googleUrl, title, source) {
   const original = googleUrl.trim();
-  console.log('[extract] Input:', original.slice(0,100));
+  console.log('[extract] Input:', original.slice(0,120), 'title:', title?.slice(0,50));
 
   if (!original.includes('news.google.com') && !original.includes('google.com/url')) {
     return { realUrl: original, method: 'already_real' };
   }
 
-  // Method 1: base64 decode CBMi
+  // 1. Base64 decode
   const decoded = decodeCBMiUrl(original);
   if (decoded) {
-    console.log('[extract] Decoded base64:', decoded);
+    console.log('[extract] Base64 decoded:', decoded);
     return { realUrl: decoded, method: 'base64_decode' };
   }
 
-  // Method 2: /__i/rss/rd/articles/ endpoint - manual redirect
+  // 2. RD endpoint manual redirect
   try {
     const rdUrl = original.replace('/rss/articles/', '/__i/rss/rd/articles/').replace('/articles/', '/__i/rss/rd/articles/');
     const res = await fetch(rdUrl, {
       redirect: 'manual',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+379;'
-      }
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+379;' }
     });
     const loc = res.headers.get('location');
     if (loc && !loc.includes('google.com') && loc.startsWith('http')) {
@@ -95,43 +134,49 @@ async function extractRealUrl(googleUrl) {
       return { realUrl: loc, method: 'rd_redirect' };
     }
     const text = await res.text().catch(()=> '');
-    const found = findRealUrlInHtml(text, rdUrl);
+    const found = findRealUrlInHtml(text);
     if (found) return { realUrl: found, method: 'rd_html' };
   } catch (e) { console.log('[extract] RD failed', e.message); }
 
-  // Method 3: Fetch original with follow
+  // 3. Follow redirect
   try {
     const res = await fetch(original, {
       redirect: 'follow',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
         'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
         'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+379;'
       }
     });
-    console.log('[extract] Follow final url:', res.url);
+    console.log('[extract] Follow final:', res.url);
     if (res.url && !res.url.includes('news.google.com') && res.url !== original) {
       return { realUrl: res.url, method: 'follow_redirect' };
     }
     const html = await res.text();
-    const found = findRealUrlInHtml(html, original);
-    if (found) {
-      console.log('[extract] Found in follow HTML:', found);
-      return { realUrl: found, method: 'follow_html' };
-    }
+    const found = findRealUrlInHtml(html);
+    if (found) return { realUrl: found, method: 'follow_html' };
   } catch (e) { console.log('[extract] Follow failed', e.message); }
 
-  // Method 4: Proxy via allorigins
+  // 4. Proxy
   try {
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(original)}`;
     const res = await fetch(proxyUrl, { cache: 'no-store' });
     const html = await res.text();
-    const found = findRealUrlInHtml(html, original);
+    const found = findRealUrlInHtml(html);
     if (found) return { realUrl: found, method: 'proxy' };
   } catch (e) { console.log('[extract] Proxy failed', e.message); }
 
-  // Method 5: Try url param
+  // 5. Search by title (fallback paling ampuh untuk CBMisAFB...)
+  if (title) {
+    const searched = await searchViaDuckDuckGo(title, source);
+    if (searched) {
+      console.log('[extract] Found via search:', searched);
+      return { realUrl: searched, method: 'search_duckduckgo' };
+    }
+  }
+
+  // 6. URL param
   try {
     const u = new URL(original);
     const q = u.searchParams.get('url') || u.searchParams.get('q');
@@ -145,19 +190,20 @@ async function extractRealUrl(googleUrl) {
 
 export async function POST(request) {
   try {
-    const { url } = await request.json();
+    const { url, title, source } = await request.json();
     if (!url) return NextResponse.json({ status: 'error', message: 'URL kosong' }, { status: 400 });
 
-    const result = await extractRealUrl(url);
+    const result = await extractRealUrl(url, title, source);
     
     if (result.failed || result.realUrl.includes('news.google.com/rss/articles')) {
       return NextResponse.json({
         status: 'error',
-        message: 'Gagal extract link asli. Google News memblokir. Silakan buka tombol Baca, copy link asli dari portal (detik.com, kompas.com, tvri.go.id) dan paste manual.',
+        message: `Gagal extract otomatis untuk format baru Google News (CBMisAFB...).\\n\\nCoba cara manual:\\n1. Klik tombol "Buka Link Baca" di bawah\\n2. Di halaman Google News yang terbuka, klik judul berita untuk buka portal asli (detik.com, tvri.go.id, dll)\\n3. Copy URL asli dari address bar browser\\n4. Paste di kolom "Link Asli" lalu klik Scrape`,
         original_url: url,
         real_url: result.realUrl,
         method: result.method,
-        need_manual: true
+        need_manual: true,
+        title: title || ''
       });
     }
 
