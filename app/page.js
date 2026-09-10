@@ -520,7 +520,24 @@ Mohon tunggu sebentar, sistem sedang menyedot full artikel (termasuk halaman 2-3
           }
           if(data.gambar_url) setImageUrl(data.gambar_url);
         } else {
-          setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita: " + (data.message || "")) + `\n\n[Debug] Real URL attempt: ${data.real_url || 'tidak ada'}`);
+          if (data.need_manual) {
+            setPromptTeks(preambleFull + `GAGAL EXTRACT OTOMATIS DARI GOOGLE NEWS
+
+${data.message}
+
+SOLUSI:
+1. Klik tombol "Baca" di tabel untuk buka Google News
+2. Di halaman Google News, klik judul berita untuk buka portal asli (detik.com, kompas.com, TVRI, dll)
+3. Copy URL asli dari address bar browser
+4. Paste URL asli di editor ini (kolom Link Berita) lalu klik "Extract Link Asli + Full Scrape"
+
+Link Google yang gagal: ${data.original_url}
+
+Ringkasan RSS sebagai fallback:
+${isu.articleDesc || ""}`);
+          } else {
+            setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita: " + (data.message || "")) + `\n\nLink asli: ${data.real_url || ''}`);
+          }
         }
       } catch(err) {
         if (err.name === 'AbortError') {
@@ -559,7 +576,14 @@ Mohon tunggu...`);
         setSumberBerita(data.sumber || (hm ? "Sumber Berita: " + hm : ""));
         if(data.gambar_url) setImageUrl(data.gambar_url);
         setEditorSubPage(2);
-      } else { alert("Gagal extract: " + (data.error || data.message) + "\nReal URL: " + (data.real_url || '-')); }
+      } else { 
+        if (data.need_manual) {
+          alert("Gagal extract otomatis Google News.\n\n" + data.message + "\n\nSilakan buka Baca -> copy link asli portal, paste di sini.");
+          setPromptTeks(getPreamble(urlBerita) + "\n\n" + data.message);
+        } else {
+          alert("Gagal extract: " + (data.error || data.message) + "\nReal URL: " + (data.real_url || '-')); 
+        }
+      }
     } catch(err) { alert("API error: " + err.message); }
   };
 
