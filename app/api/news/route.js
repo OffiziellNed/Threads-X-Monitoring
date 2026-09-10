@@ -51,7 +51,7 @@ function cosineSim(a,b){
   if(!nA||!nB) return 0;
   return dot/(Math.sqrt(nA)*Math.sqrt(nB));
 }
-function clusterByEmbedding(items, threshold=0.30){
+function clusterByEmbedding(items, threshold=0.28){
   if(!items.length) return [];
   const docsTokens = items.map(it=> tokenize((it.topik+" "+it.articleDesc).toLowerCase()));
   const vectors = buildTfIdfVectors(docsTokens);
@@ -65,22 +65,39 @@ function clusterByEmbedding(items, threshold=0.30){
       const newCent={}; allTerms.forEach(term=>{ let sum=0; clusters[best].vectors.forEach(v=> sum+=(v[term]||0)); newCent[term]=sum/clusters[best].vectors.length; });
       clusters[best].centroid=newCent;
       if(items[idx].timestamp>clusters[best].latestTimestamp){ clusters[best].latestTimestamp=items[idx].timestamp; clusters[best].latestItem=items[idx]; }
-      // update kategori dominan - prioritaskan kriminal
-      const hasKriminal = clusters[best].items.some(it=> it.kategori==="Kriminal");
-      if(hasKriminal) clusters[best].dominantKategori="Kriminal";
     } else {
-      clusters.push({items:[items[idx]], vectors:[vec], centroid:vec, latestTimestamp:items[idx].timestamp, latestItem:items[idx], dominantKategori:items[idx].kategori});
+      clusters.push({items:[items[idx]], vectors:[vec], centroid:vec, latestTimestamp:items[idx].timestamp, latestItem:items[idx]});
     }
   });
   return clusters;
 }
 
-// === DETEKSI KRIMINAL YANG LEBIH PERMISSIVE ===
-const KRIMINAL_KEYWORDS = ["kriminal","narkotika","narkoba","sabu","ganja","ekstasi","pil koplo","pembunuhan","bunuh","mayat","mutilasi","penculikan","culik","sandera","pelecehan","perkosaan","rudapaksa","cabul","asusila","pemerkosaan","kekerasan seksual","lgbt","perampokan","rampok","begal","pemukulan","pengeroyokan","aniaya","penganiayaan","penembakan","bacok","tikam","tusuk","tawuran","maling","pencurian","curi","curanmor","jambret","kdrt","carok","penodongan","pemalakan","preman","korban tewas","diamankan","ditangkap","tersangka","dibacok","ditikam","ditusuk","dibunuh","dibegal","dirampok","korban jiwa","pembacokan","penusukan","pembegalan","pengedar","bandar","kurir","sabu-sabu","korupsi","koruptor"];
-
-function isKriminal(text) {
-  const lower = text.toLowerCase();
-  return KRIMINAL_KEYWORDS.some(kw => lower.includes(kw));
+// === KRIMINAL - STRICT, sesuai request user, TIDAK OVERMATCH ===
+function detectKategori(textToAnalyze) {
+  const t = textToAnalyze.toLowerCase();
+  
+  // EXCLUSION: kalau ada KKB/OPM/teroris -> jangan kriminal, masuk Hukum
+  if (t.match(/\b(kkb|opm|teroris|terorisme)\b/)) {
+    return "Hukum";
+  }
+  
+  // KRIMINAL STRICT - hanya kata yang jelas kriminal sesuai list user
+  const kriminalRegex = /\b(narkotika|narkoba|sabu|ganja|ekstasi|pil koplo|pembunuhan|dibunuh|penculikan|diculik|culik|pelecehan seksual|pelecehan|perkosaan|pemerkosaan|rudapaksa|cabul|asusila|kekerasan seksual|lgbt|perampokan|dirampok|rampok|begal|dibegal|pembegalan|pemukulan|pengeroyokan|dikeroyok|penganiayaan|aniaya|penembakan|ditembak|pembacokan|dibacok|penusukan|penikaman|ditikam|ditusuk|tawuran|pencurian|maling|curanmor|jambret|kdrt|carok|penodongan|pemalakan|premanisme|bandar narkoba|pengedar narkoba)\b/;
+  
+  if (kriminalRegex.test(t)) {
+    return "Kriminal";
+  }
+  
+  if (t.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas|penyelamatan|erupsi|anak krakatau)\b/)) return "Bencana";
+  if (t.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|skor|klasemen|olimpiade|medali|pssi|pertandingan|turnamen|klub|pemain|pelatih)\b/)) return "Olahraga";
+  if (t.match(/\b(entertainment|artis|selebritas|konser|film|drama|musik|bioskop|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) return "Entertainment";
+  if (t.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|ai|kecerdasan buatan|aplikasi)\b/)) return "Teknologi";
+  if (t.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|rupiah|kripto|investasi|perbankan|bank|bursa|bisnis|apbn|bansos|saldo|rekening|krl|perjalanan|bobot|digital)\b/)) return "Finansial";
+  if (t.match(/\b(hukum|korupsi|polisi|kpk|pidana|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|bareskrim|polri|kejaksaan|kkb|opm)\b/)) return "Hukum";
+  if (t.match(/\b(pemerintah|presiden|wapres|menteri|kabinet|istana|prabowo|gibran|jokowi|anggaran|kementerian|pemda|apbn|negara|kebijakan|pemkab|jayawijaya)\b/)) return "Pemerintahan";
+  if (t.match(/\b(politik|partai|pdip|gerindra|golkar|pemilu|pilkada|dpr|koalisi|oposisi|kpu|bawaslu|demokrasi)\b/)) return "Politik";
+  
+  return "Sosial";
 }
 
 export async function GET(request) {
@@ -117,27 +134,8 @@ export async function GET(request) {
         const linkAsli=linkMatch?cleanUrl(linkMatch[1]):"#";
         const pubDateRapi=formatPubDate(dateMatch[1]);
         const textToAnalyze=(cleanTitle+" "+pureDesc).toLowerCase();
-        let kategori="Sosial";
-        // Prioritas: Kriminal dulu - permissive includes
-        if(isKriminal(textToAnalyze)){
-          kategori="Kriminal";
-        } else if(textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)){
-          kategori="Bencana";
-        } else if(textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|skor|klasemen|olimpiade|medali|pssi|pertandingan|turnamen|klub|pemain|pelatih)\b/)){
-          kategori="Olahraga";
-        } else if(textToAnalyze.match(/\b(entertainment|artis|selebritas|konser|film|drama|musik|bioskop|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)){
-          kategori="Entertainment";
-        } else if(textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|ai|kecerdasan buatan|aplikasi)\b/)){
-          kategori="Teknologi";
-        } else if(textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|rupiah|kripto|investasi|perbankan|bank|bursa|bisnis)\b/)){
-          kategori="Finansial";
-        } else if(textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|bareskrim|polri|kejaksaan)\b/)){
-          kategori="Hukum";
-        } else if(textToAnalyze.match(/\b(pemerintah|presiden|wapres|menteri|kabinet|istana|prabowo|gibran|jokowi|anggaran|kementerian|pemda|apbn|negara|kebijakan)\b/)){
-          kategori="Pemerintahan";
-        } else if(textToAnalyze.match(/\b(politik|partai|pdip|gerindra|golkar|pemilu|pilkada|dpr|koalisi|oposisi|kpu|bawaslu|demokrasi)\b/)){
-          kategori="Politik";
-        }
+        
+        const kategori = detectKategori(textToAnalyze);
 
         rawItems.push({
           topik:cleanTitle, kategori, source:cleanSource, pubDate:pubDateRapi,
@@ -152,8 +150,19 @@ export async function GET(request) {
       filteredItems=rawItems.sort((a,b)=> a.diffHours-b.diffHours).slice(0,100);
     }
 
-    const clusters=clusterByEmbedding(filteredItems, 0.30);
+    const clusters=clusterByEmbedding(filteredItems, 0.28);
     let dynamicIssues=[];
+    
+    // Tentukan kategori dominan cluster dengan majority vote, BUKAN any
+    const getDominantKategori = (clusterItems) => {
+      const counts = {};
+      clusterItems.forEach(it => { counts[it.kategori] = (counts[it.kategori]||0)+1; });
+      let maxCat = clusterItems[0]?.kategori || "Sosial";
+      let maxCount = 0;
+      Object.entries(counts).forEach(([cat,cnt])=>{ if(cnt>maxCount){ maxCount=cnt; maxCat=cat; } });
+      return maxCat;
+    };
+
     if(mode==='terkini'){
       clusters.sort((a,b)=> b.latestTimestamp-a.latestTimestamp);
       clusters.forEach((cl,idx)=>{
@@ -162,7 +171,7 @@ export async function GET(request) {
         cl.items.forEach(it=>{ if(!seen.has(it.source)){ seen.add(it.source); allSources.push({name:`${it.source}`, url:it.link}); }});
         dynamicIssues.push({
           id:idx, ...rep,
-          kategori: cl.dominantKategori || rep.kategori, // pakai kategori dominan cluster
+          kategori: getDominantKategori(cl.items),
           volume: cl.items.length,
           clusterSize: cl.items.length, clusterCount:cl.items.length,
           sourcesList: allSources.length?allSources:rep.sourcesList, sourcesCount: allSources.length
@@ -182,7 +191,7 @@ export async function GET(request) {
         const volume=(cl.items.length*20)+recencyBonus+5;
         dynamicIssues.push({
           id:idx, ...rep,
-          kategori: cl.dominantKategori || rep.kategori,
+          kategori: getDominantKategori(cl.items),
           volume, clusterSize:cl.items.length, clusterCount:cl.items.length,
           sourcesList: allSources, sourcesCount: allSources.length
         });
