@@ -123,15 +123,28 @@ export default function SocialMediaMonitoring() {
     finally { setIsLoadingYt(false); }
   };
 
+  // Reset kategori hanya pas ganti halaman, BUKAN pas ganti jam
   useEffect(() => {
     if (currentPage === "puan-yt-analysis") {
         fetchYoutubeData();
     } else if (currentPage !== "main" && currentPage !== "agora-editor") {
         fetchLiveTrends();
-        setSelectedCategory("Semua"); 
+    }
+  }, [currentPage, ytFetchMode]);
+
+  useEffect(() => {
+    if (currentPage !== "main" && currentPage !== "agora-editor" && currentPage !== "puan-yt-analysis") {
+        setSelectedCategory("Semua");
         setIsTopNewsFilter(false);
     }
-  }, [currentPage, ytFetchMode, selectedHours]);
+  }, [currentPage]);
+
+  // Fetch ulang pas ganti jam TANPA reset filter kategori
+  useEffect(() => {
+    if (currentPage !== "main" && currentPage !== "agora-editor" && currentPage !== "puan-yt-analysis") {
+        fetchLiveTrends();
+    }
+  }, [selectedHours]);
 
   useEffect(() => {
     if (currentPage !== "agora-editor") return;
@@ -444,10 +457,29 @@ export default function SocialMediaMonitoring() {
   const isRedCurr = currentPage.indexOf("pdip") !== -1 || currentPage.indexOf("puan") !== -1 || currentPage.indexOf("megawati") !== -1;
   const isRedTheme = isRedCurr || isRedPrev;
 
-  const topNewsTitles = topNewsData.map(d => d.topik);
-  let tableData = terkiniData.map(d => ({ ...d, isTrending: topNewsTitles.indexOf(d.topik) !== -1 }));
+  // === LOGIKA TOP NEWS YANG BENER (OPSI B++) ===
+  // Top = cluster yang dibahas banyak media (>=3 media) ATAU volume tinggi (>=60) ATAU masuk top 25% volume
+  const sortedByVolume = [...terkiniData].sort((a,b) => (b.volume||0) - (a.volume||0));
+  const topCount = Math.max(5, Math.floor(sortedByVolume.length * 0.25)); // top 25%, minimal 5
+  const volumeThreshold = sortedByVolume[topCount-1]?.volume || 60;
+  
+  let tableData = terkiniData.map(d => {
+    const vol = d.volume || 0;
+    const cSize = d.clusterSize || d.clusterCount || 1;
+    const sCount = d.sourcesCount || d.sourcesList?.length || 1;
+    // Syarat jadi Top: cluster minimal 3 berita serupa, atau 3 sumber berbeda, atau volume >= threshold dan minimal 2 sumber
+    const isTopByVolume = vol >= volumeThreshold && sCount >= 2;
+    const isTopByCluster = cSize >= 3 || sCount >= 3 || vol >= 70;
+    const isTrending = isTopByVolume || isTopByCluster;
+    return { ...d, isTrending };
+  });
+  
   if (selectedCategory !== "Semua") { tableData = tableData.filter(d => d.kategori === selectedCategory); }
   if (isTopNewsFilter) { tableData = tableData.filter(d => d.isTrending); }
+  // Urutkan: Top dulu, baru terbaru
+  if (isTopNewsFilter) {
+    tableData = tableData.sort((a,b) => (b.volume||0) - (a.volume||0));
+  }
 
   const handleOpenEditorFromMegaphone = async (isu) => {
     const newsLink = getCleanLink(isu);
@@ -711,8 +743,8 @@ export default function SocialMediaMonitoring() {
             <div className="w-full px-4 md:px-6 py-4 flex flex-wrap justify-between items-center gap-3">
               <h1 className="text-lg font-bold text-white md:hidden">Daftar Isu Terkini</h1>
               <div className="flex items-center gap-3 md:ml-auto">
-                <button onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? "bg-[#331c0b] text-orange-500" : "bg-[#1c2128] text-gray-400 hover:text-orange-400"}`}><Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News</button>
-                <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} data</span>
+                <button onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? "bg-[#331c0b] text-orange-500" : "bg-[#1c2128] text-gray-400 hover:text-orange-400"}`}><Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News {isTopNewsFilter ? `(${tableData.filter(d=>d.isTrending).length})` : `(${terkiniData.filter(d=> (d.clusterSize>=3 || d.sourcesCount>=3 || d.volume>=70)).length})`}</button>
+                <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} / {terkiniData.length} data | Top: {terkiniData.filter(d=> (d.clusterSize>=3 || d.sourcesCount>=3 || d.volume>=70)).length}</span>
               </div>
             </div>
             {tableData.length > 0 ? (<>
