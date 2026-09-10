@@ -597,41 +597,82 @@ Mohon tunggu...`);
         <div style={{ backgroundColor: "#161b22", border: "1px solid #30363d", borderRadius: "16px", padding: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
           {editorSubPage === 1 && (
             <div>
-              <h2 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px", color: "#c9d1d9", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>1. Masukkan Link Berita</h2>
-              <p style={{ fontSize: "11px", color: "#8b949e", marginBottom: "8px" }}>Bisa paste link Google News (news.google.com/rss) atau link asli. Sistem akan otomatis extract ke link asli + scraping full multi-halaman.</p>
-              <input type="text" placeholder="https://news.google.com/rss/articles/... atau https://detik.com/..." style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#ffffff", padding: "12px 14px", borderRadius: "10px", fontSize: "13px", outline: "none", marginBottom: "12px", boxSizing: "border-box" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
-              {urlBerita && urlBerita.includes('google.com') && (
-                <div style={{ backgroundColor: "#1c2128", border: "1px dashed #30363d", padding: "8px 12px", borderRadius: "8px", marginBottom: "12px", fontSize: "11px", color: "#fbbf24" }}>
-                  ⚠️ Terdeteksi Google News link. Klik "Extract Link Asli" untuk ubah jadi link sebenarnya (detik.com, kompas.com, dll) + auto scraping full.
-                </div>
-              )}
+              <h2 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px", color: "#c9d1d9", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>1. Link Berita (dari Baca)</h2>
+              
+              <label style={{ fontSize: "11px", color: "#8b949e", marginBottom: "4px", display: "block" }}>🔗 Link dari tombol Baca (Google News):</label>
+              <input type="text" placeholder="https://news.google.com/rss/articles/CBMi..." style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#fbbf24", padding: "12px 14px", borderRadius: "10px", fontSize: "12px", outline: "none", marginBottom: "10px", boxSizing: "border-box", fontFamily: "monospace" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
+              
+              <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                <button style={{ flex: 1, backgroundColor: "#1f6feb", color: "#ffffff", padding: "11px", borderRadius: "10px", fontWeight: "700", fontSize: "12px", border: "none", cursor: "pointer" }} onClick={async () => {
+                  if (!urlBerita) return alert("Masukkan link dulu!");
+                  const btn = document.getElementById('extractBtn');
+                  if(btn) btn.innerText = "⏳ Extracting...";
+                  try {
+                    let extUrl = ["", "api", "extract-real-url"].join("/");
+                    const res = await fetch(extUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) });
+                    const data = await res.json();
+                    if (data.status === "success") {
+                      // simpan link asli ke state terpisah
+                      setUrlBerita(data.real_url);
+                      // tampilkan di input bawah
+                      const realInput = document.getElementById('realUrlInput');
+                      if (realInput) realInput.value = data.real_url;
+                      setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname);
+                      alert(`✅ Link asli berhasil di-extract via ${data.method}!\n\nReal: ${data.real_url}\n\nSekarang klik "Scrape Full Artikel" untuk ambil judul + isi lengkap.`);
+                    } else {
+                      alert(`❌ ${data.message}\n\nOriginal: ${data.original_url}`);
+                    }
+                  } catch(err) { alert("Extract error: " + err.message); }
+                  finally { if(btn) btn.innerText = "🔗 Extract ke Link Asli"; }
+                }} id="extractBtn">🔗 Extract ke Link Asli</button>
+              </div>
+
+              <label style={{ fontSize: "11px", color: "#8b949e", marginBottom: "4px", display: "block" }}>✅ Link Asli (setelah di-extract):</label>
+              <input id="realUrlInput" type="text" placeholder="Link asli akan muncul di sini setelah Extract (mis: https://detik.com/...)" style={{ width: "100%", backgroundColor: "#161b22", border: "1px solid #238636", color: "#3fb950", padding: "12px 14px", borderRadius: "10px", fontSize: "12px", outline: "none", marginBottom: "12px", boxSizing: "border-box", fontFamily: "monospace" }} defaultValue={urlBerita && !urlBerita.includes('google.com') ? urlBerita : ""} />
+
+              <div style={{ backgroundColor: "#1c2128", border: "1px solid #30363d", padding: "10px 12px", borderRadius: "8px", marginBottom: "12px", fontSize: "11px", color: "#8b949e", lineHeight: "1.4" }}>
+                <strong style={{ color: "#c9d1d9" }}>Alur:</strong><br/>
+                1. Link Baca (Google News) muncul otomatis dari tabel<br/>
+                2. Klik <strong style={{ color: "#58a6ff" }}>Extract ke Link Asli</strong> → mengubah CBMi... jadi https://detik.com/...<br/>
+                3. Setelah link asli muncul, klik <strong style={{ color: "#3fb950" }}>Scrape Full Artikel</strong> → sistem sedot judul + isi lengkap (jika ada 2-3 halaman, di-scrape semua)
+              </div>
+
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button style={{ flex: "1 1 120px", backgroundColor: "#1f6feb", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "12px", border: "none", cursor: "pointer" }} onClick={handleExtractLink}>🔗 Extract Link Asli + Full Scrape</button>
-                <button style={{ width: "100%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "10px", borderRadius: "10px", fontWeight: "600", fontSize: "12px", border: "1px solid #30363d", cursor: "pointer", marginTop: "4px" }} onClick={async () => {
-                    if (!urlBerita) return alert("Masukkan link dulu!");
-                    setPromptTeks("Menyedot data dari web, tunggu sebentar...");
+                <button style={{ flex: "1 1 140px", backgroundColor: "#238636", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "12px", border: "none", cursor: "pointer" }} onClick={async () => {
+                    const realInput = document.getElementById('realUrlInput');
+                    const realUrl = realInput ? realInput.value : urlBerita;
+                    if (!realUrl || realUrl.includes('google.com/rss')) return alert("Extract dulu link aslinya! Atau paste link asli manual (detik.com, kompas.com, tvri.go.id)");
+                    setPromptTeks("Menyedot full artikel dari link asli...\n" + realUrl + "\nMohon tunggu (scraping multi-halaman jika ada)...");
                     try {
                       let tUrl = ["", "api", "tarik-berita"].join("/");
-                      const res = await fetch(tUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) });
+                      const res = await fetch(tUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: realUrl }) });
                       const data = await res.json();
                       if(data && data.status === "success") {
                         let jdInput = data.title || "Tanpa Judul";
                         let preambuleTop = getPreamble(jdInput);
                         let isi = data.description || data.text || "";
-                        if (isErrorPage(isi)) isi = "Gagal bypass Cloudflare.";
-                        const info = `[${data.pages_scraped || 1} halaman ter-scrape]\n`;
+                        if (isErrorPage(isi)) isi = "Gagal bypass Cloudflare, pakai ringkasan RSS.";
+                        const info = `[Scraped ${data.pages_scraped || 1} halaman | ${data.content_length || isi.length} karakter | Real URL: ${data.real_url}]\n\n`;
                         setPromptTeks(preambuleTop + info + isi); 
                         setJudulHtml(jdInput);
-                        setUrlBerita(data.real_url || urlBerita);
+                        setUrlBerita(data.real_url);
+                        if (realInput) realInput.value = data.real_url;
                         let hm = "";
-                        try { hm = new URL(data.real_url || urlBerita).hostname; } catch(e){}
+                        try { hm = new URL(data.real_url).hostname; } catch(e){}
                         setSumberBerita(data.sumber || (hm ? "Sumber Berita: " + hm : ""));
                         if(data.gambar_url) setImageUrl(data.gambar_url);
                         setEditorSubPage(2);
-                      } else { alert("Gagal menyedot: " + (data.error || data.message)); }
+                      } else { 
+                        alert("Gagal scraping: " + (data.message || data.error) + "\n\nReal URL: " + (data.real_url || realUrl)); 
+                      }
                     } catch(err) { alert("API error: " + err.message); }
-                  }}>Tarik Data Cepat 🔄</button>
-                <button style={{ width: "100%", backgroundColor: "#238636", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "13px", border: "none", cursor: "pointer", marginTop: "4px" }} onClick={() => { if(urlBerita) { try { setSumberBerita("Sumber Berita: " + new URL(urlBerita).hostname); } catch(e) {} } setEditorSubPage(3); }}>Ke Visual Editor ➔</button>
+                  }}>📰 Scrape Full Artikel (Multi-Halaman)</button>
+                <button style={{ width: "100%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "10px", borderRadius: "10px", fontWeight: "600", fontSize: "12px", border: "1px solid #30363d", cursor: "pointer", marginTop: "4px" }} onClick={() => { 
+                    const realInput = document.getElementById('realUrlInput');
+                    const realUrl = realInput ? realInput.value : urlBerita;
+                    if(realUrl) { try { setSumberBerita("Sumber Berita: " + new URL(realUrl).hostname); } catch(e) {} } 
+                    setEditorSubPage(3); 
+                  }}>Ke Visual Editor ➔</button>
               </div>
             </div>
           )}
