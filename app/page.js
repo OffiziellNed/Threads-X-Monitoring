@@ -22,7 +22,7 @@ export default function SocialMediaMonitoring() {
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
   const [selectedHours, setSelectedHours] = useState(12);
-  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Kriminal", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
+  const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Kriminal", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial", "Global"];
   const hoursOptions = [6, 12, 24, 48];
 
   const [promptModalData, setPromptModalData] = useState(null);
@@ -457,21 +457,13 @@ export default function SocialMediaMonitoring() {
   const isRedCurr = currentPage.indexOf("pdip") !== -1 || currentPage.indexOf("puan") !== -1 || currentPage.indexOf("megawati") !== -1;
   const isRedTheme = isRedCurr || isRedPrev;
 
-  // === LOGIKA TOP NEWS FIXED - PASTI ADA TOP ===
-  const sortedByVolume = [...terkiniData].sort((a,b) => (b.volume||0) - (a.volume||0));
-  const topCount = Math.max(3, Math.floor(sortedByVolume.length * 0.30)); // top 30% minimal 3
-  const volumeThreshold = sortedByVolume[topCount-1]?.volume ?? 25;
-  
+  // === LOGIKA TOP NEWS V3 - BACKEND SUDAH TENTUKAN isTop (hanya top 10) ===
+  // Backend cluster size*25 + recency, top 15% max 10 yang jadi isTop=true
+  // Jadi tidak semua jadi TOP, hanya yang beneran rame
   let tableData = terkiniData.map(d => {
-    const vol = d.volume || 0;
-    const cSize = d.clusterSize || d.clusterCount || 1;
-    const sCount = d.sourcesCount || d.sourcesList?.length || 1;
-    // Top jika: masuk top 30% volume ATAU cluster >=2 ATAU volume >=45
-    // Dijamin minimal ada beberapa Top, tidak 0 lagi
-    const isInTopPercentile = vol >= volumeThreshold;
-    const isTopByCluster = cSize >= 2 || sCount >= 2 || vol >= 45;
-    const isTrending = isInTopPercentile || isTopByCluster;
-    return { ...d, isTrending, _debugVol: vol };
+    // pakai flag isTop dari backend kalau ada, fallback ke logic lama
+    const isTrending = d.isTop !== undefined ? d.isTop : (d.clusterSize >=3 || d.volume >=60);
+    return { ...d, isTrending };
   });
   
   if (selectedCategory !== "Semua") { tableData = tableData.filter(d => d.kategori === selectedCategory); }
@@ -742,7 +734,7 @@ export default function SocialMediaMonitoring() {
               <h1 className="text-lg font-bold text-white md:hidden">Daftar Isu Terkini</h1>
               <div className="flex items-center gap-3 md:ml-auto">
                 <button onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? "bg-[#331c0b] text-orange-500" : "bg-[#1c2128] text-gray-400 hover:text-orange-400"}`}><Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News {isTopNewsFilter ? `(${tableData.filter(d=>d.isTrending).length})` : `(${terkiniData.filter(d=> (d.clusterSize>=3 || d.sourcesCount>=3 || d.volume>=70)).length})`}</button>
-                <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} / {terkiniData.length} data | Top: {terkiniData.filter(d=> (d.clusterSize>=3 || d.sourcesCount>=3 || d.volume>=70)).length}</span>
+                <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} / {terkiniData.length} data | Top: {terkiniData.filter(d=>d.isTop).length} | Global: {terkiniData.filter(d=>d.kategori==="Global").length} | Kriminal: {terkiniData.filter(d=>d.kategori==="Kriminal").length}</span>
               </div>
             </div>
             {tableData.length > 0 ? (<>
