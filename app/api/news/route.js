@@ -4,9 +4,6 @@ export const dynamic = 'force-dynamic';
 
 const STOP_WORDS = ['yang', 'untuk', 'pada', 'dari', 'dengan', 'dalam', 'dan', 'ini', 'itu', 'oleh', 'akan', 'bisa', 'telah', 'tidak', 'sebagai', 'karena', 'jadi', 'bagi', 'atau', 'saat'];
 
-// =========================================================================
-// FUNGSI PEMBERSIH URL & FORMAT TANGGAL
-// =========================================================================
 const cleanUrl = (rawUrl) => {
   if (!rawUrl) return "#";
   try {
@@ -56,7 +53,6 @@ export async function GET(request) {
     const hours = parseInt(searchParams.get('hours') || '12', 10);
     const mode = searchParams.get('mode') || 'volume'; 
     
-    // Berita Nasional Real-time dari Google News Indonesia
     const rssUrl = `https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id`;
 
     const response = await fetch(rssUrl, { cache: 'no-store' });
@@ -101,32 +97,28 @@ export async function GET(request) {
         
         let kategori = "Sosial"; 
 
-        // =========================================================================
-        // HIERARKI KATEGORI DIPERBAIKI (Spesifik di atas, General di bawah)
-        // =========================================================================
-        
-        if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) { 
+        // HIERARKI KATEGORI - KRIMINAL DITAMBAHKAN DI PALING ATAS (paling spesifik)
+        if (textToAnalyze.match(/\b(kriminal|narkotika|narkoba|sabu|ganja|ekstasi|pil koplo|pembunuhan|bunuh|dibunuh|mayat|mutilasi|penculikan|culik|diculik|sandera|penyanderaan|pelecehan|pelecehan seksual|perkosaan|rudapaksa|cabul|asusila|pemerkosaan|kekerasan seksual|lgbt|perampokan|rampok|perampok|begal|dibegal|pembegalan|pemukulan|dipukul|pengeroyokan|dikeroyok|aniaya|penganiayaan|penembakan|ditembak|bacok|pembacokan|ditikam|penikaman|penusukan|tawuran|maling|pencurian|curi|curanmor|curat|curnak|jambret|kdrt|carok|penodongan|pembunuhan|pemerkosa|begal|pemalakan|preman)\b/)) { 
+            kategori = "Kriminal"; 
+        }
+        else if (textToAnalyze.match(/\b(bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas|penyelamatan)\b/)) { 
             kategori = "Bencana"; 
         }
-        // OLAHRAGA DIPINDAH KE ATAS: Cegah "Presiden Klub" masuk Pemerintahan
         else if (textToAnalyze.match(/\b(olahraga|atlet|liga|bola|sepak bola|timnas|juara|badminton|motogp|f1|kompetisi|skor|klasemen|olimpiade|medali|pssi|premier league|pertandingan|turnamen|klub|pemain|pelatih|fifa|uefa|madrid|barca|milan|inter|arsenal|chelsea|manchester)\b/)) { 
             kategori = "Olahraga"; 
         }
-        // ENTERTAINMENT: Cegah "Presiden Direktur MD Entertainment" masuk Pemerintahan
         else if (textToAnalyze.match(/\b(entertainment|artis|selebritas|seleb|figur publik|konser|film|drama|musik|bioskop|pop|showbiz|karya seni|rekreasi|hiburan|gosip|sinetron|sutradara|aktor|aktris)\b/)) { 
             kategori = "Entertainment"; 
         }
         else if (textToAnalyze.match(/\b(teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|perangkat lunak|ai|artificial intelligence|kecerdasan buatan|aplikasi|kominfo)\b/)) { 
             kategori = "Teknologi"; 
         }
-        // FINANSIAL: Cegah "Presiden Direktur Bank" masuk Pemerintahan
         else if (textToAnalyze.match(/\b(finansial|keuangan|ekonomi|saham|ihsg|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kripto|crypto|laporan keuangan|startup|investasi|ekspor|impor|e-wallet|pembayaran digital|bank indonesia|ojk|otoritas jasa keuangan|ceo|investor|pialang|pengusaha|ritel|korporat|korporasi|perusahaan|perbankan|bank|bursa|bisnis|makro|mikro)\b/)) { 
             kategori = "Finansial"; 
         }
         else if (textToAnalyze.match(/\b(hukum|korupsi|polisi|kpk|pidana|perdata|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|penegakan|pelanggaran|kriminal|pemerasan|gratifikasi|bareskrim|polri|polda|polres|mahkamah|konstitusi|mk|ky|kejaksaan|kejagung)\b/)) { 
             kategori = "Hukum"; 
         }
-        // PEMERINTAHAN DITARUH DI BAWAH: Baru dieksekusi kalau murni bukan soal bola, saham, atau artis
         else if (textToAnalyze.match(/\b(pemerintah|presiden|wapres|menteri|kabinet|istana|prabowo|gibran|jokowi|birokrasi|pelayanan publik|anggaran|program kerja|infrastruktur|pajak|diplomasi|subsidi|kementerian|pemda|apbn|apbd|negara|kebijakan|diplomat|perpres|keppres|kemenkeu|kemendagri|ikn|bumn|pemprov|pemkot|pemkab|dinas)\b/)) { 
             kategori = "Pemerintahan"; 
         }
@@ -152,7 +144,8 @@ export async function GET(request) {
     let filteredItems = rawItems.filter(item => item.diffHours <= hours);
     
     if (filteredItems.length === 0 && mode !== 'terkini') {
-        filteredItems = rawItems.sort((a, b) => a.diffHours - b.diffHours).slice(0, 12);
+        // fallback sekarang 50 bukan 12
+        filteredItems = rawItems.sort((a, b) => a.diffHours - b.diffHours).slice(0, 50);
     }
 
     let dynamicIssues = [];
@@ -183,7 +176,8 @@ export async function GET(request) {
         dynamicIssues.push({ id: "empty", topik: `Tidak ada berita dalam ${hours} jam terakhir.`, kategori: "Sistem", volume: 0, source: "Sistem", pubDate: "Saat ini", articleTitle: "Radar Sepi", articleDesc: "Tidak ada pemberitaan.", link: "#", sourcesList: [] });
     }
 
-    return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 20) });
+    // UBAH DARI 20 JADI 50
+    return NextResponse.json({ success: true, data: dynamicIssues.slice(0, 50) });
   } catch (error) {
     return NextResponse.json({ success: false, data: [] });
   }
