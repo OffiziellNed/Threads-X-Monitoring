@@ -600,7 +600,10 @@ Mohon tunggu...`);
               <h2 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px", color: "#c9d1d9", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>1. Link Berita (dari Baca)</h2>
               
               <label style={{ fontSize: "11px", color: "#8b949e", marginBottom: "4px", display: "block" }}>🔗 Link dari tombol Baca (Google News):</label>
-              <input type="text" placeholder="https://news.google.com/rss/articles/CBMi..." style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#fbbf24", padding: "12px 14px", borderRadius: "10px", fontSize: "12px", outline: "none", marginBottom: "10px", boxSizing: "border-box", fontFamily: "monospace" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
+              <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
+                <input type="text" placeholder="https://news.google.com/rss/articles/CBMi..." style={{ flex: 1, backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#fbbf24", padding: "12px 14px", borderRadius: "10px", fontSize: "12px", outline: "none", boxSizing: "border-box", fontFamily: "monospace" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
+                <button style={{ backgroundColor: "#21262d", color: "#c9d1d9", padding: "0 12px", borderRadius: "10px", fontSize: "11px", border: "1px solid #30363d", cursor: "pointer", whiteSpace: "nowrap" }} onClick={() => { if(urlBerita) window.open(urlBerita, '_blank'); }}>Buka Baca ↗</button>
+              </div>
               
               <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
                 <button style={{ flex: 1, backgroundColor: "#1f6feb", color: "#ffffff", padding: "11px", borderRadius: "10px", fontWeight: "700", fontSize: "12px", border: "none", cursor: "pointer" }} onClick={async () => {
@@ -609,21 +612,27 @@ Mohon tunggu...`);
                   if(btn) btn.innerText = "⏳ Extracting...";
                   try {
                     let extUrl = ["", "api", "extract-real-url"].join("/");
-                    const res = await fetch(extUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) });
+                    const res = await fetch(extUrl, { 
+                      method: "POST", 
+                      headers: { "Content-Type": "application/json" }, 
+                      body: JSON.stringify({ url: urlBerita, title: judulHtml, source: sumberBerita }) 
+                    });
                     const data = await res.json();
                     if (data.status === "success") {
-                      // simpan link asli ke state terpisah
                       setUrlBerita(data.real_url);
-                      // tampilkan di input bawah
                       const realInput = document.getElementById('realUrlInput');
                       if (realInput) realInput.value = data.real_url;
-                      setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname);
+                      try { setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname); } catch {}
                       alert(`✅ Link asli berhasil di-extract via ${data.method}!\n\nReal: ${data.real_url}\n\nSekarang klik "Scrape Full Artikel" untuk ambil judul + isi lengkap.`);
                     } else {
-                      alert(`❌ ${data.message}\n\nOriginal: ${data.original_url}`);
+                      // Tampilkan instruksi manual + tombol buka
+                      const goManual = confirm(`❌ Gagal extract otomatis (Google format baru).\n\n${data.message}\n\nMau buka Link Baca di tab baru untuk copy manual?`);
+                      if (goManual) {
+                        window.open(urlBerita, '_blank');
+                      }
                     }
                   } catch(err) { alert("Extract error: " + err.message); }
-                  finally { if(btn) btn.innerText = "🔗 Extract ke Link Asli"; }
+                  finally { const b=document.getElementById('extractBtn'); if(b) b.innerText = "🔗 Extract ke Link Asli"; }
                 }} id="extractBtn">🔗 Extract ke Link Asli</button>
               </div>
 
