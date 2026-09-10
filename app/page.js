@@ -21,7 +21,9 @@ export default function SocialMediaMonitoring() {
   
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [isTopNewsFilter, setIsTopNewsFilter] = useState(false);
+  const [selectedHours, setSelectedHours] = useState(12);
   const categories = ["Semua", "Politik", "Pemerintahan", "Sosial", "Hukum", "Kriminal", "Bencana", "Entertainment", "Olahraga", "Teknologi", "Finansial"];
+  const hoursOptions = [6, 12, 24, 48];
 
   const [promptModalData, setPromptModalData] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
@@ -58,22 +60,23 @@ export default function SocialMediaMonitoring() {
       let epTop = "";
       let epTerkini = "";
       let nTime = String(Date.now());
+      const h = selectedHours; // dynamic hours 6/12/24/48
 
       if (currentPage === "bencana") {
-        epTop = "?t=" + nTime;
-        epTerkini = "?t=" + nTime;
+        epTop = `?hours=${h}&t=` + nTime;
+        epTerkini = `?hours=${h}&mode=terkini&t=` + nTime;
       } else if (currentPage === "pdip") {
-        epTop = "?hours=12&t=" + nTime;
-        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
+        epTop = `?hours=${h}&t=` + nTime;
+        epTerkini = `?hours=${h}&mode=terkini&t=` + nTime;
       } else if (currentPage === "megawati") {
-        epTop = "?hours=12&t=" + nTime;
-        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
+        epTop = `?hours=${h}&t=` + nTime;
+        epTerkini = `?hours=${h}&mode=terkini&t=` + nTime;
       } else if (currentPage === "puan") {
-        epTop = "?hours=12&t=" + nTime;
-        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
+        epTop = `?hours=${h}&t=` + nTime;
+        epTerkini = `?hours=${h}&mode=terkini&t=` + nTime;
       } else if (currentPage === "nasional") {
-        epTop = "?hours=12&t=" + nTime;
-        epTerkini = "?hours=24&mode=terkini&t=" + nTime;
+        epTop = `?hours=${h}&t=` + nTime;
+        epTerkini = `?hours=${h}&mode=terkini&t=` + nTime;
       }
 
       let pNews = ["api", "news"].join("/");
@@ -128,7 +131,7 @@ export default function SocialMediaMonitoring() {
         setSelectedCategory("Semua"); 
         setIsTopNewsFilter(false);
     }
-  }, [currentPage, ytFetchMode]);
+  }, [currentPage, ytFetchMode, selectedHours]);
 
   useEffect(() => {
     if (currentPage !== "agora-editor") return;
@@ -687,9 +690,20 @@ export default function SocialMediaMonitoring() {
           <h1 className="text-xl md:text-2xl font-black text-white text-center flex-1 hidden md:block">Daftar Monitor Isu</h1>
           <button onClick={fetchLiveTrends} className="flex items-center gap-2 bg-[#161b22] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1f242c] transition-colors"><RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh</button>
         </div>
-        <div className="w-full my-8 md:my-12">
+        <div className="w-full my-6 md:my-10 flex flex-col items-center gap-6">
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-8 px-2">
             {categories.map((cat) => (<button key={cat} onClick={() => setSelectedCategory(cat)} className={`text-xs md:text-sm font-bold transition-all ${selectedCategory === cat ? (isRedTheme ? "text-red-400 border-b-2 border-red-400 pb-1" : "text-blue-400 border-b-2 border-blue-400 pb-1") : "text-gray-500 hover:text-gray-300"}`}>{cat}</button>))}
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold flex items-center gap-1"><Calendar size={10}/> Rentang Waktu Berita</span>
+            <div className="flex items-center gap-1.5 bg-[#161b22] border border-[#2a313c] p-1 rounded-xl shadow-inner">
+              {hoursOptions.map((h) => (
+                <button key={h} onClick={() => setSelectedHours(h)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedHours === h ? "bg-[#3f444e] text-white shadow-md border border-[#5a5e6b]" : "text-gray-400 hover:text-white hover:bg-[#1c2128]"}`}>
+                  {h} Jam
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-gray-600">Top & Terkini mengikuti {selectedHours} jam terakhir • Clustering embedding aktif</span>
           </div>
         </div>
         {isLoading ? (<div className="flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? "border-[#dc2626]" : "border-[#2563eb]"}`}></div></div>) : (
