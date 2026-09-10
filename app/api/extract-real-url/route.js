@@ -18,40 +18,57 @@ function decodeCBMiUrl(googleUrl) {
       let m;
       while ((m = urlRegex.exec(binary)) !== null) {
         let u = m[0].replace(/[\x00-\x1F]+.*$/, '').split('"')[0].split("'")[0];
-        if (!u.includes('google.com') && !u.includes('gstatic') && u.length > 15) {
+        if (!u.includes('google.com') && !u.includes('gstatic') && !u.includes('googleapis') && u.length > 15) {
           try { new URL(u); urls.push(u); } catch {}
         }
       }
       if (urls.length > 0) {
         urls.sort((a,b)=>b.length-a.length);
-        // Clean trailing junk like \x01 etc and extra chars
         let real = urls[0].replace(/[^\x20-\x7E]+.*$/, '').replace(/[^A-Za-z0-9\/:._?=&%#+-]+$/, '');
-        return real;
+        if (!real.includes('google.com')) return real;
       }
     } catch {}
   } catch {}
   return null;
 }
 
+function isGoogleInternalUrl(url) {
+  if (!url) return true;
+  const low = url.toLowerCase();
+  // Anggap google internal kalau masih news.google.com ATAU mengandung path google internal
+  if (low.includes('news.google.com')) return true;
+  if (low.includes('google.com/__i/')) return true;
+  if (low.includes('google.com/_/')) return true;
+  if (low.includes('google.com/dots')) return true;
+  if (low.includes('google.com/rss')) return true;
+  if (low.includes('google.com/url')) return true;
+  if (low.includes('google.com/sorry')) return true;
+  if (low.includes('accounts.google.com')) return true;
+  if (low.includes('support.google.com')) return true;
+  return false;
+}
+
 function findRealUrlInHtml(html) {
   const patterns = [
     /data-n-a=["'](https?:\/\/[^"']+)["']/i,
     /data-n-au=["'](https?:\/\/[^"']+)["']/i,
-    /"url"\s*:\s*"(https?:\/\/[^"]+)"/i,
+    /"url"\s*:\s*"(https?:\/\/(?!.*google\.com)[^"]+)"/i,
     /window\.location(?:\.href)?\s*=\s*["'](https?:\/\/[^"']+)["']/i,
     /<meta[^>]*http-equiv=["']refresh["'][^>]*url=(https?:\/\/[^"'>]+)/i,
   ];
   for (const regex of patterns) {
     const m = html.match(regex);
-    if (m && m[1] && !m[1].includes('google.com') && m[1].length > 15) {
+    if (m && m[1] && !isGoogleInternalUrl(m[1]) && m[1].length > 15) {
       try { new URL(m[1]); return m[1].replace(/&amp;/g, '&'); } catch {}
     }
   }
-  const allHrefs = [...html.matchAll(/href=["'](https?:\/\/(?!.*google\.com|.*gstatic\.com|.*doubleclick\.net)[^"']+)["']/gi)];
+  // Cari semua href yang bukan google
+  const allHrefs = [...html.matchAll(/href=["'](https?:\/\/[^"']+)["']/gi)];
   for (const match of allHrefs) {
     const href = match[1].replace(/&amp;/g, '&');
+    if (isGoogleInternalUrl(href)) continue;
     if (href.length > 25 && (href.includes('.com') || href.includes('.co.id') || href.includes('.id/') || href.includes('.go.id'))) {
-      if (!href.includes('accounts.google') && !href.includes('support.google')) {
+      if (!href.includes('doubleclick.net') && !href.includes('gstatic.com')) {
         try { new URL(href); return href; } catch {}
       }
     }
@@ -61,44 +78,40 @@ function findRealUrlInHtml(html) {
 
 async function searchViaDuckDuckGo(title, source) {
   try {
-    const query = `${title} ${source || ''}`.trim();
+    // Bersihkan judul dari " - TVRI News" dll
+    let cleanTitle = title.replace(/ - .*$/, '').replace(/ \| .*$/, '').trim();
+    const query = `${cleanTitle}`.trim();
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    console.log('[search] DuckDuckGo:', searchUrl);
+    console.log('[search] DuckDuckGo:', query);
     const res = await fetch(searchUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html'
+        'Accept': 'text/html',
+        'Accept-Language': 'id-ID,id;q=0.9,en;q=0.8'
       },
       cache: 'no-store'
     });
     const html = await res.text();
-    // DuckDuckGo result links are in <a class="result__url" href="/l/?...&uddg=https%3A%2F%2F...">
+    // Cari uddg param (real URL)
     const matches = [...html.matchAll(/uddg=([^&"]+)/gi)];
     for (const m of matches) {
       try {
         const decoded = decodeURIComponent(m[1]);
-        if (decoded.startsWith('http') && !decoded.includes('duckduckgo.com') && !decoded.includes('google.com')) {
-          console.log('[search] Found via uddg:', decoded);
-          return decoded;
+        if (!isGoogleInternalUrl(decoded) && decoded.startsWith('http') && decoded.length > 20) {
+          // Filter yang relevan dengan judul
+          if (decoded.includes('.go.id') || decoded.includes('.co.id') || decoded.includes('tvri') || decoded.includes('detik') || decoded.includes('kompas') || decoded.includes('tribun') || decoded.includes('cnn') || decoded.includes('liputan6') || decoded.includes('okezone') || decoded.includes('sindonews') || decoded.includes('tempo')) {
+            console.log('[search] Found via DuckDuckGo uddg:', decoded);
+            return decoded;
+          }
         }
       } catch {}
     }
-    // Fallback: result__a href
-    const aMatches = [...html.matchAll(/class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"/gi)];
-    for (const m of aMatches) {
-      let href = m[1];
-      if (href.startsWith('/l/?')) {
-        try {
-          const u = new URL(href, 'https://duckduckgo.com');
-          const uddg = u.searchParams.get('uddg');
-          if (uddg) {
-            const decoded = decodeURIComponent(uddg);
-            if (decoded.startsWith('http')) return decoded;
-          }
-        } catch {}
-      } else if (href.startsWith('http') && !href.includes('duckduckgo.com')) {
-        return href;
-      }
+    // Fallback: cari semua https:// di html yang bukan duckduckgo
+    const urlMatches = [...html.matchAll(/https?:\/\/(?:www\.)?(?:detik|kompas|tribunnews|cnnindonesia|liputan6|okezone|sindonews|tempo|tvri|antaranews|republika|kumparan)[^"'\s<>]+/gi)];
+    if (urlMatches.length > 0) {
+      const first = urlMatches[0][0].replace(/&amp;/g, '&').replace(/["']$/, '');
+      console.log('[search] Found via domain regex:', first);
+      return first;
     }
   } catch (e) {
     console.log('[search] DuckDuckGo failed', e.message);
@@ -106,9 +119,36 @@ async function searchViaDuckDuckGo(title, source) {
   return null;
 }
 
+async function searchViaBing(title) {
+  try {
+    let cleanTitle = title.replace(/ - .*$/, '').trim();
+    const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(cleanTitle)}`;
+    console.log('[search] Bing:', cleanTitle);
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html',
+        'Accept-Language': 'id-ID,id;q=0.9,en;q=0.8'
+      },
+      cache: 'no-store'
+    });
+    const html = await res.text();
+    // Bing results: <a href="https://...">
+    const matches = [...html.matchAll(/<a[^>]+href="(https?:\/\/(?:www\.)?(?:detik|kompas|tribunnews|cnnindonesia|liputan6|okezone|sindonews|tempo|tvri|antaranews)[^"]+)"/gi)];
+    if (matches.length > 0) {
+      const url = matches[0][1].replace(/&amp;/g, '&');
+      console.log('[search] Found via Bing:', url);
+      if (!isGoogleInternalUrl(url)) return url;
+    }
+  } catch (e) {
+    console.log('[search] Bing failed', e.message);
+  }
+  return null;
+}
+
 async function extractRealUrl(googleUrl, title, source) {
   const original = googleUrl.trim();
-  console.log('[extract] Input:', original.slice(0,120), 'title:', title?.slice(0,50));
+  console.log('[extract] Input:', original.slice(0,120));
 
   if (!original.includes('news.google.com') && !original.includes('google.com/url')) {
     return { realUrl: original, method: 'already_real' };
@@ -116,12 +156,12 @@ async function extractRealUrl(googleUrl, title, source) {
 
   // 1. Base64 decode
   const decoded = decodeCBMiUrl(original);
-  if (decoded) {
+  if (decoded && !isGoogleInternalUrl(decoded)) {
     console.log('[extract] Base64 decoded:', decoded);
     return { realUrl: decoded, method: 'base64_decode' };
   }
 
-  // 2. RD endpoint manual redirect
+  // 2. RD endpoint - tapi filter google internal
   try {
     const rdUrl = original.replace('/rss/articles/', '/__i/rss/rd/articles/').replace('/articles/', '/__i/rss/rd/articles/');
     const res = await fetch(rdUrl, {
@@ -129,13 +169,13 @@ async function extractRealUrl(googleUrl, title, source) {
       headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+379;' }
     });
     const loc = res.headers.get('location');
-    if (loc && !loc.includes('google.com') && loc.startsWith('http')) {
+    if (loc && !isGoogleInternalUrl(loc) && loc.startsWith('http')) {
       console.log('[extract] RD Location:', loc);
       return { realUrl: loc, method: 'rd_redirect' };
     }
     const text = await res.text().catch(()=> '');
     const found = findRealUrlInHtml(text);
-    if (found) return { realUrl: found, method: 'rd_html' };
+    if (found && !isGoogleInternalUrl(found)) return { realUrl: found, method: 'rd_html' };
   } catch (e) { console.log('[extract] RD failed', e.message); }
 
   // 3. Follow redirect
@@ -150,40 +190,36 @@ async function extractRealUrl(googleUrl, title, source) {
       }
     });
     console.log('[extract] Follow final:', res.url);
-    if (res.url && !res.url.includes('news.google.com') && res.url !== original) {
+    if (res.url && !isGoogleInternalUrl(res.url) && res.url !== original) {
       return { realUrl: res.url, method: 'follow_redirect' };
     }
     const html = await res.text();
     const found = findRealUrlInHtml(html);
-    if (found) return { realUrl: found, method: 'follow_html' };
+    if (found && !isGoogleInternalUrl(found)) return { realUrl: found, method: 'follow_html' };
   } catch (e) { console.log('[extract] Follow failed', e.message); }
 
-  // 4. Proxy
+  // 4. Search via DuckDuckGo (paling ampuh untuk CBMisAFB...)
+  if (title) {
+    const searched = await searchViaDuckDuckGo(title, source);
+    if (searched && !isGoogleInternalUrl(searched)) {
+      console.log('[extract] Found via DuckDuckGo search:', searched);
+      return { realUrl: searched, method: 'search_duckduckgo' };
+    }
+    const bing = await searchViaBing(title);
+    if (bing && !isGoogleInternalUrl(bing)) {
+      console.log('[extract] Found via Bing search:', bing);
+      return { realUrl: bing, method: 'search_bing' };
+    }
+  }
+
+  // 5. Proxy
   try {
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(original)}`;
     const res = await fetch(proxyUrl, { cache: 'no-store' });
     const html = await res.text();
     const found = findRealUrlInHtml(html);
-    if (found) return { realUrl: found, method: 'proxy' };
+    if (found && !isGoogleInternalUrl(found)) return { realUrl: found, method: 'proxy' };
   } catch (e) { console.log('[extract] Proxy failed', e.message); }
-
-  // 5. Search by title (fallback paling ampuh untuk CBMisAFB...)
-  if (title) {
-    const searched = await searchViaDuckDuckGo(title, source);
-    if (searched) {
-      console.log('[extract] Found via search:', searched);
-      return { realUrl: searched, method: 'search_duckduckgo' };
-    }
-  }
-
-  // 6. URL param
-  try {
-    const u = new URL(original);
-    const q = u.searchParams.get('url') || u.searchParams.get('q');
-    if (q && q.startsWith('http') && !q.includes('google.com')) {
-      return { realUrl: q, method: 'url_param' };
-    }
-  } catch {}
 
   return { realUrl: original, method: 'failed', failed: true };
 }
@@ -195,10 +231,10 @@ export async function POST(request) {
 
     const result = await extractRealUrl(url, title, source);
     
-    if (result.failed || result.realUrl.includes('news.google.com/rss/articles')) {
+    if (result.failed || isGoogleInternalUrl(result.realUrl)) {
       return NextResponse.json({
         status: 'error',
-        message: `Gagal extract otomatis untuk format baru Google News (CBMisAFB...).\\n\\nCoba cara manual:\\n1. Klik tombol "Buka Link Baca" di bawah\\n2. Di halaman Google News yang terbuka, klik judul berita untuk buka portal asli (detik.com, tvri.go.id, dll)\\n3. Copy URL asli dari address bar browser\\n4. Paste di kolom "Link Asli" lalu klik Scrape`,
+        message: `Gagal extract otomatis. Format Google News baru (CBMisAFB...) memblokir decoder.\\n\\nSOLUSI CEPAT (30 detik):\\n1. Klik tombol "Buka Baca" di editor\\n2. Di tab Google News yang terbuka, KLIK JUDUL BERITA (bukan copy link Google)\\n3. Akan terbuka portal asli (detik.com / tvri.go.id / kompas.com)\\n4. COPY URL dari address bar portal asli tersebut\\n5. PASTE di kolom "Link Asli" di editor, lalu klik Scrape`,
         original_url: url,
         real_url: result.realUrl,
         method: result.method,
