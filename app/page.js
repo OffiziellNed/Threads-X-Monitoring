@@ -471,7 +471,6 @@ export default function SocialMediaMonitoring() {
     tableData = tableData.filter(d => d.isTrending).sort((a,b) => (b.volume||0) - (a.volume||0)); 
   }
 
-  // === EXTRACT & FULL SCRAPE - Mengubah news.google/rss jadi link asli + scraping full multi-halaman ===
   const handleOpenEditorFromMegaphone = async (isu) => {
     const newsLink = getCleanLink(isu);
     const judulBerita = isu.articleTitle || isu.topik || isu.title || "Tanpa Judul";
@@ -481,110 +480,44 @@ export default function SocialMediaMonitoring() {
         else if (newsLink !== "#") sumberText = "Sumber Berita: " + new URL(newsLink).hostname;
     } catch(e) {}
     setPreviousPage(currentPage); 
-    setUrlBerita(newsLink); // simpan google link dulu, nanti di-extract jadi real
+    setUrlBerita(newsLink);
     setSumberBerita(sumberText);
     setJudulHtml(judulBerita);
-    setPromptTeks(`Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif "AgoraVada", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).
-
-Judul Berita:
-${judulBerita}
-
-Isi Berita:
-Mengekstrak link asli dari Google News...
-Mengubah ${newsLink.substring(0,80)}...
-Mohon tunggu sebentar, sistem sedang menyedot full artikel (termasuk halaman 2-3 jika ada)...`);
+    setPromptTeks("Menyedot isi berita penuh (anti Cloudflare 522)...\nMohon tunggu sebentar...");
     setCurrentPage("agora-editor");
     setEditorSubPage(2); 
-    
     let preambleFull = getPreamble(judulBerita);
     if (newsLink && newsLink !== "#") {
       try {
         let reqUrl = ["", "api", "tarik-berita"].join("/");
         const controller = new AbortController();
-        const tId = setTimeout(() => controller.abort(), 25000); // 25 detik untuk multi-halaman
+        const tId = setTimeout(() => controller.abort(), 12000);
         const res = await fetch(reqUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: newsLink }), signal: controller.signal });
         clearTimeout(tId);
         const data = await res.json();
         if (data && data.status === "success") {
           let isiBerita = data.description || data.text || "";
+          // Fix tribratanews: kalau isi == judul, anggap gagal
           if (!isiBerita || isErrorPage(isiBerita) || isiBerita.trim() === judulBerita.trim() || isiBerita.length < 100) {
-            isiBerita = isu.articleDesc || isu.description || "Gagal ekstrak isi, pakai ringkasan RSS.";
+            isiBerita = isu.articleDesc || isu.description || "Gagal ekstrak isi, pakai ringkasan RSS. Situs tribratanews polri struktur HTML nya berbeda.";
           }
-          // Tampilkan info extract
-          const extractInfo = data.real_url !== data.original_url ? `[Link asli berhasil di-extract]\nOriginal: ${data.original_url}\nReal: ${data.real_url}\nHalaman ter-scrape: ${data.pages_scraped || 1} | Panjang: ${data.content_length || isiBerita.length} karakter\n\n` : "";
-          setPromptTeks(preambleFull + extractInfo + isiBerita); 
+          setPromptTeks(preambleFull + isiBerita); 
           if(data.sumber) setSumberBerita(data.sumber);
-          if(data.real_url) { 
-            setUrlBerita(data.real_url); // update input jadi link asli
-            try { setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname); } catch {} 
-          }
+          if(data.real_url) { try { setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname); } catch {} }
           if(data.gambar_url) setImageUrl(data.gambar_url);
         } else {
-          if (data.need_manual) {
-            setPromptTeks(preambleFull + `GAGAL EXTRACT OTOMATIS DARI GOOGLE NEWS
-
-${data.message}
-
-SOLUSI:
-1. Klik tombol "Baca" di tabel untuk buka Google News
-2. Di halaman Google News, klik judul berita untuk buka portal asli (detik.com, kompas.com, TVRI, dll)
-3. Copy URL asli dari address bar browser
-4. Paste URL asli di editor ini (kolom Link Berita) lalu klik "Extract Link Asli + Full Scrape"
-
-Link Google yang gagal: ${data.original_url}
-
-Ringkasan RSS sebagai fallback:
-${isu.articleDesc || ""}`);
-          } else {
-            setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita: " + (data.message || "")) + `\n\nLink asli: ${data.real_url || ''}`);
-          }
+          setPromptTeks(preambleFull + (isu.articleDesc || "Gagal menyedot isi berita: " + (data.message || "")));
         }
       } catch(err) {
         if (err.name === 'AbortError') {
-          setPromptTeks(preambleFull + (isu.articleDesc || "Timeout 25 detik - server berita lambat. Coba klik tombol Extract lagi di editor."));
+          setPromptTeks(preambleFull + (isu.articleDesc || "Timeout 12 detik - server berita lambat / diblokir Cloudflare 522. Pakai ringkasan RSS saja, atau klik Baca Artikel."));
         } else {
-          setPromptTeks(preambleFull + (isu.articleDesc || "Koneksi ke API terputus: " + err.message));
+          setPromptTeks(preambleFull + (isu.articleDesc || "Koneksi ke API terputus."));
         }
       }
     } else {
       setPromptTeks(preambleFull + (isu.articleDesc || "URL tidak tersedia."));
     }
-  };
-
-  // Handler untuk tombol Extract di dalam editor (manual)
-  const handleExtractLink = async () => {
-    if (!urlBerita) return alert("Masukkan link dulu!");
-    setPromptTeks(`Tolong buat 10 judul berita menggunakan hook dan copywriter handal untuk media alternatif "AgoraVada", serta buatkan caption untuk instagram, normatif saja dan informatif. Pastikan diakhiri oleh sumber berita dan 3 hastag (wajib ada #AgoraVada sisanya disesuaikan dengan kata kunci subjek dan topik yang dibahas).
-
-Mengekstrak link asli dari: ${urlBerita}
-Mohon tunggu...`);
-    try {
-      let tUrl = ["", "api", "tarik-berita"].join("/");
-      const res = await fetch(tUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) });
-      const data = await res.json();
-      if(data && data.status === "success") {
-        let jdInput = data.title || "Tanpa Judul";
-        let preambuleTop = getPreamble(jdInput);
-        let isi = data.description || data.text || "";
-        if (isErrorPage(isi)) isi = "Gagal bypass Cloudflare.";
-        const extractInfo = `[Link asli berhasil di-extract - ${data.pages_scraped || 1} halaman]\nReal URL: ${data.real_url}\n\n`;
-        setPromptTeks(preambuleTop + extractInfo + isi); 
-        setJudulHtml(jdInput);
-        setUrlBerita(data.real_url || urlBerita); // ganti jadi link asli
-        let hm = "";
-        try { hm = new URL(data.real_url || urlBerita).hostname; } catch(e){}
-        setSumberBerita(data.sumber || (hm ? "Sumber Berita: " + hm : ""));
-        if(data.gambar_url) setImageUrl(data.gambar_url);
-        setEditorSubPage(2);
-      } else { 
-        if (data.need_manual) {
-          alert("Gagal extract otomatis Google News.\n\n" + data.message + "\n\nSilakan buka Baca -> copy link asli portal, paste di sini.");
-          setPromptTeks(getPreamble(urlBerita) + "\n\n" + data.message);
-        } else {
-          alert("Gagal extract: " + (data.error || data.message) + "\nReal URL: " + (data.real_url || '-')); 
-        }
-      }
-    } catch(err) { alert("API error: " + err.message); }
   };
 
   if (currentPage === "agora-editor") {
@@ -597,91 +530,32 @@ Mohon tunggu...`);
         <div style={{ backgroundColor: "#161b22", border: "1px solid #30363d", borderRadius: "16px", padding: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
           {editorSubPage === 1 && (
             <div>
-              <h2 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px", color: "#c9d1d9", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>1. Link Berita (dari Baca)</h2>
-              
-              <label style={{ fontSize: "11px", color: "#8b949e", marginBottom: "4px", display: "block" }}>🔗 Link dari tombol Baca (Google News):</label>
-              <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
-                <input type="text" placeholder="https://news.google.com/rss/articles/CBMi..." style={{ flex: 1, backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#fbbf24", padding: "12px 14px", borderRadius: "10px", fontSize: "12px", outline: "none", boxSizing: "border-box", fontFamily: "monospace" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
-                <button style={{ backgroundColor: "#21262d", color: "#c9d1d9", padding: "0 12px", borderRadius: "10px", fontSize: "11px", border: "1px solid #30363d", cursor: "pointer", whiteSpace: "nowrap" }} onClick={() => { if(urlBerita) window.open(urlBerita, '_blank'); }}>Buka Baca ↗</button>
-              </div>
-              
-              <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                <button style={{ flex: 1, backgroundColor: "#1f6feb", color: "#ffffff", padding: "11px", borderRadius: "10px", fontWeight: "700", fontSize: "12px", border: "none", cursor: "pointer" }} onClick={async () => {
-                  if (!urlBerita) return alert("Masukkan link dulu!");
-                  const btn = document.getElementById('extractBtn');
-                  if(btn) btn.innerText = "⏳ Extracting...";
-                  try {
-                    let extUrl = ["", "api", "extract-real-url"].join("/");
-                    const res = await fetch(extUrl, { 
-                      method: "POST", 
-                      headers: { "Content-Type": "application/json" }, 
-                      body: JSON.stringify({ url: urlBerita, title: judulHtml, source: sumberBerita }) 
-                    });
-                    const data = await res.json();
-                    if (data.status === "success") {
-                      setUrlBerita(data.real_url);
-                      const realInput = document.getElementById('realUrlInput');
-                      if (realInput) realInput.value = data.real_url;
-                      try { setSumberBerita("Sumber Berita: " + new URL(data.real_url).hostname); } catch {}
-                      alert(`✅ Link asli berhasil di-extract via ${data.method}!\n\nReal: ${data.real_url}\n\nSekarang klik "Scrape Full Artikel" untuk ambil judul + isi lengkap.`);
-                    } else {
-                      // Tampilkan instruksi manual + tombol buka
-                      const goManual = confirm(`❌ Gagal extract otomatis (Google format baru).\n\n${data.message}\n\nMau buka Link Baca di tab baru untuk copy manual?`);
-                      if (goManual) {
-                        window.open(urlBerita, '_blank');
-                      }
-                    }
-                  } catch(err) { alert("Extract error: " + err.message); }
-                  finally { const b=document.getElementById('extractBtn'); if(b) b.innerText = "🔗 Extract ke Link Asli"; }
-                }} id="extractBtn">🔗 Extract ke Link Asli</button>
-              </div>
-
-              <label style={{ fontSize: "11px", color: "#8b949e", marginBottom: "4px", display: "block" }}>✅ Link Asli (setelah di-extract):</label>
-              <input id="realUrlInput" type="text" placeholder="Link asli akan muncul di sini setelah Extract (mis: https://detik.com/...)" style={{ width: "100%", backgroundColor: "#161b22", border: "1px solid #238636", color: "#3fb950", padding: "12px 14px", borderRadius: "10px", fontSize: "12px", outline: "none", marginBottom: "12px", boxSizing: "border-box", fontFamily: "monospace" }} defaultValue={urlBerita && !urlBerita.includes('google.com') ? urlBerita : ""} />
-
-              <div style={{ backgroundColor: "#1c2128", border: "1px solid #30363d", padding: "10px 12px", borderRadius: "8px", marginBottom: "12px", fontSize: "11px", color: "#8b949e", lineHeight: "1.4" }}>
-                <strong style={{ color: "#c9d1d9" }}>Alur:</strong><br/>
-                1. Link Baca (Google News) muncul otomatis dari tabel<br/>
-                2. Klik <strong style={{ color: "#58a6ff" }}>Extract ke Link Asli</strong> → mengubah CBMi... jadi https://detik.com/...<br/>
-                3. Setelah link asli muncul, klik <strong style={{ color: "#3fb950" }}>Scrape Full Artikel</strong> → sistem sedot judul + isi lengkap (jika ada 2-3 halaman, di-scrape semua)
-              </div>
-
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <button style={{ flex: "1 1 140px", backgroundColor: "#238636", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "12px", border: "none", cursor: "pointer" }} onClick={async () => {
-                    const realInput = document.getElementById('realUrlInput');
-                    const realUrl = realInput ? realInput.value : urlBerita;
-                    if (!realUrl || realUrl.includes('google.com/rss')) return alert("Extract dulu link aslinya! Atau paste link asli manual (detik.com, kompas.com, tvri.go.id)");
-                    setPromptTeks("Menyedot full artikel dari link asli...\n" + realUrl + "\nMohon tunggu (scraping multi-halaman jika ada)...");
+              <h2 style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px", color: "#c9d1d9", borderBottom: "1px solid #30363d", paddingBottom: "8px" }}>1. Masukkan Link Berita</h2>
+              <input type="text" placeholder="https://news.com/..." style={{ width: "100%", backgroundColor: "#0d1117", border: "1px solid #30363d", color: "#ffffff", padding: "12px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", marginBottom: "16px", boxSizing: "border-box" }} value={urlBerita} onChange={(e) => setUrlBerita(e.target.value)} />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button style={{ width: "50%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "12px", borderRadius: "10px", fontWeight: "600", fontSize: "13px", border: "1px solid #30363d", cursor: "pointer" }} onClick={async () => {
+                    if (!urlBerita) return alert("Masukkan link dulu!");
+                    setPromptTeks("Menyedot data dari web, tunggu sebentar...");
                     try {
                       let tUrl = ["", "api", "tarik-berita"].join("/");
-                      const res = await fetch(tUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: realUrl }) });
+                      const res = await fetch(tUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlBerita }) });
                       const data = await res.json();
                       if(data && data.status === "success") {
                         let jdInput = data.title || "Tanpa Judul";
                         let preambuleTop = getPreamble(jdInput);
                         let isi = data.description || data.text || "";
-                        if (isErrorPage(isi)) isi = "Gagal bypass Cloudflare, pakai ringkasan RSS.";
-                        const info = `[Scraped ${data.pages_scraped || 1} halaman | ${data.content_length || isi.length} karakter | Real URL: ${data.real_url}]\n\n`;
-                        setPromptTeks(preambuleTop + info + isi); 
+                        if (isErrorPage(isi)) isi = "Gagal bypass Cloudflare.";
+                        setPromptTeks(preambuleTop + isi); 
                         setJudulHtml(jdInput);
-                        setUrlBerita(data.real_url);
-                        if (realInput) realInput.value = data.real_url;
                         let hm = "";
-                        try { hm = new URL(data.real_url).hostname; } catch(e){}
+                        try { hm = new URL(data.real_url || urlBerita).hostname; } catch(e){}
                         setSumberBerita(data.sumber || (hm ? "Sumber Berita: " + hm : ""));
                         if(data.gambar_url) setImageUrl(data.gambar_url);
                         setEditorSubPage(2);
-                      } else { 
-                        alert("Gagal scraping: " + (data.message || data.error) + "\n\nReal URL: " + (data.real_url || realUrl)); 
-                      }
-                    } catch(err) { alert("API error: " + err.message); }
-                  }}>📰 Scrape Full Artikel (Multi-Halaman)</button>
-                <button style={{ width: "100%", backgroundColor: "#21262d", color: "#c9d1d9", padding: "10px", borderRadius: "10px", fontWeight: "600", fontSize: "12px", border: "1px solid #30363d", cursor: "pointer", marginTop: "4px" }} onClick={() => { 
-                    const realInput = document.getElementById('realUrlInput');
-                    const realUrl = realInput ? realInput.value : urlBerita;
-                    if(realUrl) { try { setSumberBerita("Sumber Berita: " + new URL(realUrl).hostname); } catch(e) {} } 
-                    setEditorSubPage(3); 
-                  }}>Ke Visual Editor ➔</button>
+                      } else { alert("Gagal menyedot: " + (data.error || data.message)); }
+                    } catch(err) { alert("API Vercel error."); }
+                  }}>Tarik Data 🔄</button>
+                <button style={{ width: "50%", backgroundColor: "#238636", color: "#ffffff", padding: "12px", borderRadius: "10px", fontWeight: "700", fontSize: "13px", border: "none", cursor: "pointer" }} onClick={() => { if(urlBerita) { try { setSumberBerita("Sumber Berita: " + new URL(urlBerita).hostname); } catch(e) {} } setEditorSubPage(3); }}>Ke Visual Editor ➔</button>
               </div>
             </div>
           )}
@@ -866,18 +740,18 @@ Mohon tunggu...`);
             {tableData.length > 0 ? (<>
                 <div className="hidden md:block w-full overflow-x-auto mt-2">
                   <table className="w-full border-collapse text-xs md:text-sm text-left border-none">
-                    <thead className="border-none"><tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none"><th className="py-5 px-4 w-12 text-center border-none">No</th><th className="py-5 px-4 w-32 whitespace-nowrap border-none">Tanggal</th><th className="py-5 px-4 w-20 whitespace-nowrap text-center border-none">Waktu</th><th className="py-5 px-4 w-32 whitespace-nowrap border-none">Sumber</th><th className="py-5 px-4 w-28 border-none">Kategori</th><th className="py-5 px-4 w-[40%] border-none">Judul Konten</th><th className="py-5 px-4 w-16 text-center border-none">Top</th><th className="py-5 px-4 w-16 text-center border-none">Editor</th><th className="py-5 px-4 w-24 text-center border-none">Aksi</th></tr></thead>
+                    <thead className="border-none"><tr className="text-gray-500 uppercase tracking-wider font-semibold text-[10px] md:text-[11px] border-none"><th className="py-5 px-4 w-12 text-center border-none">No</th><th className="py-5 px-4 w-32 whitespace-nowrap border-none">Tanggal</th><th className="py-5 px-4 w-20 whitespace-nowrap text-center border-none">Waktu</th><th className="py-5 px-4 w-32 whitespace-nowrap border-none">Sumber</th><th className="py-5 px-4 w-28 border-none">Kategori</th><th className="py-5 px-4 w-[40%] border-none">Judul Konten</th><th className="py-5 px-4 w-16 text-center border-none">Top</th><th className="py-5 px-4 w-24 text-center border-none">Aksi</th></tr></thead>
                     <tbody className="border-none">{tableData.map((isu, idx) => {
                         const { date, time } = formatDateTime(isu.pubDate);
                         const newsLink = getCleanLink(isu);
-                        return (<tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none"><td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td><td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || "-"}</td><td className="py-4 px-4 border-none"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span></td><td className="py-4 px-4 border-none"><span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span></td><td className="py-4 px-4 text-center border-none">{isu.isTrending ? (<div className="bg-[#332211] px-2 py-1 rounded flex items-center justify-center gap-1 mx-auto w-fit" title="Top News (Trending)"><Flame size={12} className="text-orange-500" /><span className="text-[9px] font-bold text-orange-500 uppercase">Top</span></div>) : (<span className="text-gray-600 text-[10px]">-</span>)}</td><td className="py-4 px-4 text-center border-none"><button onClick={() => handleOpenEditorFromMegaphone(isu)} title="Buka di Agora Editor - Setelah TOP" className="text-gray-300 hover:text-blue-400 transition-colors bg-[#2a313c] hover:bg-[#1e3a5f] p-2 rounded-md flex items-center justify-center mx-auto border border-[#30363d]"><Megaphone size={14} /></button></td><td className="py-4 px-4 text-center border-none">{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</td></tr>);
+                        return (<tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none"><td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td><td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || "-"}</td><td className="py-4 px-4 border-none"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span></td><td className="py-4 px-4 border-none"><span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span></td><td className="py-4 px-4 text-center border-none">{isu.isTrending ? (<div className="bg-[#332211] px-2 py-1 rounded flex items-center justify-center gap-1 mx-auto w-fit" title="Top News (Trending)"><Flame size={12} className="text-orange-500" /><span className="text-[9px] font-bold text-orange-500 uppercase">Top</span></div>) : (<span className="text-gray-600 text-[10px]">-</span>)}</td><td className="py-4 px-4 text-center border-none">{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</td></tr>);
                       })}</tbody>
                   </table>
                 </div>
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">{tableData.map((isu, idx) => {
                     const { date, time } = formatDateTime(isu.pubDate);
                     const newsLink = getCleanLink(isu);
-                    return (<div key={idx} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg"><div className="flex justify-between items-start gap-2"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span><div className="flex items-center gap-2"><span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span></div></div><div className="flex items-start justify-between gap-3"><h3 className="text-gray-200 font-medium text-sm leading-snug">{isu.topik}</h3></div><div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500"><span>{date}</span><span>•</span><span>{time}</span><span>•</span><span className="text-gray-400 font-medium">{isu.source || "-"}</span></div><div className="pt-3 mt-1 border-t border-[#30363d] flex items-center justify-between gap-2"><div className="flex items-center gap-2">{isu.isTrending && (<div className="bg-[#332211] px-2 py-1 rounded flex items-center gap-1"><Flame size={10} className="text-orange-500" /><span className="text-[9px] font-bold text-orange-500 uppercase">Top</span></div>)}<button onClick={() => handleOpenEditorFromMegaphone(isu)} className="px-3 py-2 rounded-lg text-xs font-bold text-gray-300 bg-[#1c2128] hover:bg-[#2d333b] flex items-center justify-center gap-1.5 border border-[#30363d]"><Megaphone size={14} /> Editor</button></div>{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca Artikel</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</div></div>);
+                    return (<div key={idx} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg"><div className="flex justify-between items-start gap-2"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span><div className="flex items-center gap-2"><span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span></div></div><div className="flex items-start justify-between gap-3"><h3 className="text-gray-200 font-medium text-sm leading-snug">{isu.topik}</h3></div><div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500"><span>{date}</span><span>•</span><span>{time}</span><span>•</span><span className="text-gray-400 font-medium">{isu.source || "-"}</span></div><div className="pt-3 mt-1 border-t border-[#30363d] flex items-center justify-between gap-2"><div className="flex items-center gap-2">{isu.isTrending && (<div className="bg-[#332211] px-2 py-1 rounded flex items-center gap-1"><Flame size={10} className="text-orange-500" /><span className="text-[9px] font-bold text-orange-500 uppercase">Top</span></div>)}</div>{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca Artikel</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</div></div>);
                   })}</div>
               </>) : (<div className="flex flex-col items-center justify-center py-16 px-4"><Search size={40} className="text-gray-600 mb-4" /><p className="text-gray-400 text-lg font-medium text-center">Tidak ada data yang ditemukan.</p><p className="text-gray-500 text-sm text-center mt-1">Coba ubah filter kategori atau matikan filter Top News.</p></div>)}
           </div>
