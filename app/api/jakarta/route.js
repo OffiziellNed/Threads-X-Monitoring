@@ -30,7 +30,7 @@ const formatPubDate = (pubDateStr) => {
 };
 
 function tokenize(text) {
-  return text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>2 &&!STOP_WORDS.includes(w));
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>2 && !STOP_WORDS.includes(w));
 }
 function buildTfIdfVectors(docsTokens) {
   const N = docsTokens.length;
@@ -79,7 +79,7 @@ function detectKategori(textToAnalyze) {
   if (/indonesia.*(china|tiongkok|amerika|usa|rusia|jepang|korea|india|australia|malaysia|singapura|arab|inggris|prancis|jerman|eropa|israel|palestina|ukraina|iran|irak)/i.test(t)) return "Global";
   if (/hubungan bilateral|kerjasama bilateral|hubungan diplomatik|hubungan antar negara|antar negara|kunjungan kenegaraan|diplomasi global|hubungan internasional|luar negeri/i.test(t)) return "Global";
   if (/amerika serikat|tiongkok|perang dunia|world war|white house|gedung putih|pentagon|kremlin|biden|trump|putin|xi jinping|netanyahu|zelensky/i.test(t)) {
-    if (!t.includes("dpr ri") &&!t.includes("dpd ri")) return "Global";
+    if (!t.includes("dpr ri") && !t.includes("dpd ri")) return "Global";
   }
   if (/narkotika|narkoba|sabu|ganja|ekstasi|pembunuhan|dibunuh|penculikan|diculik|pelecehan seksual|perkosaan|perampokan|begal|pembegalan|pemukulan|pengeroyokan|penganiayaan|penembakan|pembacokan|penusukan|tawuran|pencurian|maling|curanmor|jambret|kdrt|bandar narkoba/i.test(t)) return "Kriminal";
   if (/dpd ri|dpr ri|dpr-ri|dpd-ri|mpr ri|komisi.*dpr|anggota dewan|parlemen|menteri|kabinet|kementerian|istana|presiden prabowo|wapres gibran|pemerintah|pemda|kemenkeu|kemendagri|apbn|apbd|birokrasi|perpres|keppres|gubernur|wagub|balai kota|dprd dki|dprd jakarta/i.test(t)) return "Pemerintahan";
@@ -106,6 +106,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const hours = parseInt(searchParams.get('hours') || '12', 10);
     const mode = searchParams.get('mode') || 'volume';
+    // Query khusus Jakarta
     const jakartaQuery = encodeURIComponent(`(DKI Jakarta OR Jakarta OR "Ibukota Jakarta" OR "Pemprov DKI" OR "Gubernur DKI" OR "Balai Kota DKI") when:${hours}h`);
     const rssUrls = [
       `https://news.google.com/rss/search?q=${jakartaQuery}&hl=id&gl=ID&ceid=ID:id`,
@@ -130,9 +131,11 @@ export async function GET(request) {
           if (diffHours > hours) continue;
           let rawTitle=titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g,'$1').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
           const cleanTitle=rawTitle.split(" - ")[0];
-          if (!cleanTitle.toLowerCase().includes("jakarta") &&!cleanTitle.toLowerCase().includes("dki") &&!cleanTitle.toLowerCase().includes("ibukota")) {
-            const descLower = descMatch? descMatch[1].toLowerCase() : "";
-            if (!descLower.includes("jakarta") &&!descLower.includes("dki")) continue;
+          // Filter harus mengandung Jakarta
+          if (!cleanTitle.toLowerCase().includes("jakarta") && !cleanTitle.toLowerCase().includes("dki") && !cleanTitle.toLowerCase().includes("ibukota")) {
+            // tetap cek deskripsi, kalau tidak ada jakarta skip
+            const descLower = descMatch ? descMatch[1].toLowerCase() : "";
+            if (!descLower.includes("jakarta") && !descLower.includes("dki")) continue;
           }
           let pureDesc="Tidak ada deskripsi rinci.";
           if(descMatch){
@@ -160,7 +163,7 @@ export async function GET(request) {
       const hoursSinceLatest = (now.getTime() - cl.latestTimestamp) / (1000*60*60);
       return hoursSinceLatest <= hours;
     });
-    let clustersToUse = filteredClusters.length > 0? filteredClusters : allClusters.sort((a,b)=> b.latestTimestamp - a.latestTimestamp).slice(0, 50);
+    let clustersToUse = filteredClusters.length > 0 ? filteredClusters : allClusters.sort((a,b)=> b.latestTimestamp - a.latestTimestamp).slice(0, 50);
     const getDominantKategori = (clusterItems) => {
       const counts = {};
       clusterItems.forEach(it => { counts[it.kategori] = (counts[it.kategori]||0)+1; });
@@ -187,7 +190,15 @@ export async function GET(request) {
       cl.items.forEach(it=>{ if(!seen.has(it.source)){ seen.add(it.source); allSources.push({name:`${it.source}`, url:it.link}); }});
       const isTop = topClusterIds.has(cl);
       dynamicIssues.push({
-        id: idx,...rep, kategori: getDominantKategori(cl.items), volume, clusterSize: cl.items.length, clusterCount: cl.items.length, sourcesList: allSources, sourcesCount: allSources.length, isTop
+        id: idx,
+        ...rep,
+        kategori: getDominantKategori(cl.items),
+        volume,
+        clusterSize: cl.items.length,
+        clusterCount: cl.items.length,
+        sourcesList: allSources,
+        sourcesCount: allSources.length,
+        isTop
       });
     });
     if(mode==='terkini') dynamicIssues.sort((a,b)=> b.timestamp - a.timestamp);
@@ -196,8 +207,18 @@ export async function GET(request) {
       dynamicIssues.push({ id:"empty", topik:`Tidak ada berita Jakarta dalam ${hours} jam terakhir.`, kategori:"Sosial", volume:0, clusterSize:0, source:"Sistem", pubDate:"Saat ini", articleTitle:"Radar Sepi", articleDesc:"Tidak ada pemberitaan Jakarta.", link:"#", sourcesList:[], isTop:false });
     }
     return NextResponse.json({
-      success:true, data: dynamicIssues.slice(0,100),
-      meta:{ hours, totalRaw:rawItems.length, totalFiltered: filteredClusters.length, totalClusters: allClusters.length, clustersInRange: clustersToUse.length, kriminalCount: dynamicIssues.filter(d=>d.kategori==="Kriminal").length, globalCount: dynamicIssues.filter(d=>d.kategori==="Global").length, topCount: dynamicIssues.filter(d=>d.isTop).length }
+      success:true,
+      data: dynamicIssues.slice(0,100),
+      meta:{
+        hours,
+        totalRaw:rawItems.length,
+        totalFiltered: filteredClusters.length,
+        totalClusters: allClusters.length,
+        clustersInRange: clustersToUse.length,
+        kriminalCount: dynamicIssues.filter(d=>d.kategori==="Kriminal").length,
+        globalCount: dynamicIssues.filter(d=>d.kategori==="Global").length,
+        topCount: dynamicIssues.filter(d=>d.isTop).length
+      }
     });
   } catch(error){
     console.error(error);
