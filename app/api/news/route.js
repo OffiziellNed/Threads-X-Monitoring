@@ -84,4 +84,118 @@ function detectKategori(textToAnalyze) {
   if (/narkotika|narkoba|sabu|ganja|ekstasi|pembunuhan|dibunuh|penculikan|diculik|pelecehan seksual|perkosaan|perampokan|begal|pembegalan|pemukulan|pengeroyokan|penganiayaan|penembakan|pembacokan|penusukan|tawuran|pencurian|maling|curanmor|jambret|kdrt|bandar narkoba/i.test(t)) return "Kriminal";
   if (/dpd ri|dpr ri|dpr-ri|dpd-ri|mpr ri|komisi.*dpr|anggota dewan|parlemen|menteri|kabinet|kementerian|istana|presiden prabowo|wapres gibran|pemerintah|pemda|kemenkeu|kemendagri|apbn|apbd|birokrasi|perpres|keppres/i.test(t)) return "Pemerintahan";
   if (/harga emas|harga perak|harga minyak|emas naik|emas turun|logam mulia|antam|ihsg|saham|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kurs|dollar|kripto|ojk|bursa efek|investasi|ekonomi|keuangan/i.test(t)) return "Finansial";
-  if (/taekwondo|sepak bola|bola voli|voli|basket|bulu tangkis|badminton|tenis|atlet|olimpiade|sea games|pon|piala dunia|liga 1|persija|persib|timnas|gulat|karate|judo|p
+  if (/taekwondo|sepak bola|bola voli|voli|basket|bulu tangkis|badminton|tenis|atlet|olimpiade|sea games|pon|piala dunia|liga 1|persija|persib|timnas|gulat|karate|judo|pencak silat|renang|marathon|balap|motogp|f1|juara|medali|pssi|pertandingan|turnamen|klub|pelatih|skor|klasemen/i.test(t)) return "Olahraga";
+  if (/bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas/i.test(t)) return "Bencana";
+  if (/entertainment|artis|selebritas|konser|film|drama|musik|bioskop|hiburan|gosip|sinetron|sutradara|aktor|aktris/i.test(t)) return "Entertainment";
+  if (/teknologi|inovasi|gadget|smartphone|software|internet|digital|sains|siber|ai|kecerdasan buatan|aplikasi|startup/i.test(t)) return "Teknologi";
+  if (/hukum|korupsi|polisi|kpk|pidana|tersangka|peradilan|sidang|hakim|jaksa|vonis|penjara|bareskrim|polri|kejaksaan/i.test(t)) return "Hukum";
+  if (/politik|partai|pdip|gerindra|golkar|nasdem|pemilu|pilkada|koalisi|oposisi|kpu|bawaslu|demokrasi/i.test(t)) return "Politik";
+  return "Sosial";
+}
+
+async function fetchRss(url) {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    const txt = await res.text();
+    return txt.split("<item>");
+  } catch { return []; }
+}
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const hours = parseInt(searchParams.get('hours') || '12', 10);
+    const mode = searchParams.get('mode') || 'volume';
+    const rssUrls = [
+      `https://news.google.com/rss/search?q=Indonesia&hl=id&gl=ID&ceid=ID:id`,
+      `https://news.google.com/rss/headlines/section/topic/NATION?hl=id&gl=ID&ceid=ID:id`,
+      `https://news.google.com/rss/headlines/section/topic/WORLD?hl=id&gl=ID&ceid=ID:id`
+    ];
+    const results = await Promise.all(rssUrls.map(u => fetchRss(u)));
+    let rawItems=[]; const now=new Date(); const seenLinks=new Set();
+    results.forEach(items => {
+      if(!items || items.length<2) return;
+      for(let i=1;i<items.length;i++){
+        const item=items[i];
+        const titleMatch=item.match(/<title>([\s\S]*?)<\/title>/);
+        const descMatch=item.match(/<description>([\s\S]*?)<\/description>/);
+        const dateMatch=item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+        if(titleMatch && dateMatch){
+          const linkMatch=item.match(/<link>([\s\S]*?)<\/link>/);
+          const linkRaw=linkMatch?cleanUrl(linkMatch[1]):"";
+          if(seenLinks.has(linkRaw)) continue;
+          seenLinks.add(linkRaw);
+          const articleDate=new Date(dateMatch[1]);
+          let rawTitle=titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g,'$1').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+          const cleanTitle=rawTitle.split(" - ")[0];
+          let pureDesc="Tidak ada deskripsi rinci.";
+          if(descMatch){
+            let rawDesc=descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1');
+            rawDesc=rawDesc.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
+            pureDesc=rawDesc.replace(/<[^>]*>?/gm,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+          }
+          const sourceMatch=item.match(/<source.*?>([\s\S]*?)<\/source>/);
+          let rawSource=sourceMatch?sourceMatch[1]:"Media Nasional";
+          let cleanSource=rawSource.split(" - ")[0].split(",")[0].split("|")[0].trim();
+          const linkAsli=linkRaw||"#";
+          const pubDateRapi=formatPubDate(dateMatch[1]);
+          const textToAnalyze=(cleanTitle+" "+pureDesc).toLowerCase();
+          const kategori = detectKategori(textToAnalyze);
+          rawItems.push({
+            topik:cleanTitle, kategori, source:cleanSource, pubDate:pubDateRapi,
+            timestamp:articleDate.getTime(), articleTitle:rawTitle, articleDesc:pureDesc,
+            link:linkAsli, sourcesList:[{name:`${cleanSource} (Artikel Utama)`, url:linkAsli}], diffHours: (now-articleDate)/(1000*60*60)
+          });
+        }
+      }
+    });
+    const allClusters = clusterByEmbedding(rawItems, 0.28);
+    const filteredClusters = allClusters.filter(cl => {
+      const hoursSinceLatest = (now.getTime() - cl.latestTimestamp) / (1000*60*60);
+      return hoursSinceLatest <= hours;
+    });
+    let clustersToUse = filteredClusters.length > 0? filteredClusters : allClusters.sort((a,b)=> b.latestTimestamp - a.latestTimestamp).slice(0, 50);
+    const getDominantKategori = (clusterItems) => {
+      const counts = {};
+      clusterItems.forEach(it => { counts[it.kategori] = (counts[it.kategori]||0)+1; });
+      let maxCat = clusterItems[0]?.kategori || "Sosial";
+      let maxCount = 0;
+      Object.entries(counts).forEach(([cat,cnt])=>{ if(cnt>maxCount){ maxCount=cnt; maxCat=cat; } });
+      return maxCat;
+    };
+    let dynamicIssues=[];
+    const clustersWithVolume = clustersToUse.map(cl => {
+      const hoursSinceLatest=(now.getTime()-cl.latestTimestamp)/(1000*60*60);
+      const recencyBonus=hoursSinceLatest<6?15: hoursSinceLatest<12?8: hoursSinceLatest<24?3:0;
+      const volume=(cl.items.length*25)+recencyBonus+ (cl.items.length>1?10:0);
+      return { cl, volume, hoursSinceLatest };
+    }).sort((a,b)=> b.volume - a.volume);
+    const topN = Math.min(10, Math.max(5, Math.floor(clustersWithVolume.length * 0.15)));
+    const topClusterIds = new Set();
+    clustersWithVolume.slice(0, topN).forEach(({cl, volume})=>{
+      if(cl.items.length>=2 || volume>=50) topClusterIds.add(cl);
+    });
+    clustersWithVolume.forEach(({cl, volume}, idx)=>{
+      const rep=cl.latestItem;
+      const allSources=[]; const seen=new Set();
+      cl.items.forEach(it=>{ if(!seen.has(it.source)){ seen.add(it.source); allSources.push({name:`${it.source}`, url:it.link}); }});
+      const isTop = topClusterIds.has(cl);
+      dynamicIssues.push({
+        id: idx,...rep, kategori: getDominantKategori(cl.items), volume, clusterSize: cl.items.length, clusterCount: cl.items.length, sourcesList: allSources, sourcesCount: allSources.length, isTop
+      });
+    });
+    if(mode==='terkini') dynamicIssues.sort((a,b)=> b.timestamp - a.timestamp);
+    else dynamicIssues.sort((a,b)=> b.volume - a.volume);
+    if(dynamicIssues.length===0){
+      dynamicIssues.push({ id:"empty", topik:`Tidak ada berita dalam ${hours} jam terakhir.`, kategori:"Sistem", volume:0, clusterSize:0, source:"Sistem", pubDate:"Saat ini", articleTitle:"Radar Sepi", articleDesc:"Tidak ada pemberitaan.", link:"#", sourcesList:[], isTop:false });
+    }
+    return NextResponse.json({
+      success:true,
+      data: dynamicIssues.slice(0,100),
+      meta:{ hours, totalRaw:rawItems.length, totalFiltered: filteredClusters.length, totalClusters: allClusters.length, clustersInRange: clustersToUse.length, kriminalCount: dynamicIssues.filter(d=>d.kategori==="Kriminal").length, globalCount: dynamicIssues.filter(d=>d.kategori==="Global").length, topCount: dynamicIssues.filter(d=>d.isTop).length }
+    });
+  } catch(error){
+    console.error(error);
+    return NextResponse.json({ success:false, data:[], error:String(error) });
+  }
+}
