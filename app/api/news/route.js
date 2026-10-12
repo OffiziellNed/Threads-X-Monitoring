@@ -30,7 +30,7 @@ const formatPubDate = (pubDateStr) => {
 };
 
 function tokenize(text) {
-  return text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>2 &&!STOP_WORDS.includes(w));
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>2 && !STOP_WORDS.includes(w));
 }
 function buildTfIdfVectors(docsTokens) {
   const N = docsTokens.length;
@@ -74,16 +74,21 @@ function clusterByEmbedding(items, threshold=0.28){
 
 function detectKategori(textToAnalyze) {
   const t = textToAnalyze.toLowerCase();
+  // 1. GLOBAL - sesuai 6 aturan baru
   if (/ekspor|impor|neraca perdagangan/i.test(t)) return "Global";
   if (/perang|peperangan|perang dagang|trade war|invasi|agresi militer|konflik bersenjata|rudal|nuklir/i.test(t)) return "Global";
   if (/indonesia.*(china|tiongkok|amerika|usa|rusia|jepang|korea|india|australia|malaysia|singapura|arab|inggris|prancis|jerman|eropa|israel|palestina|ukraina|iran|irak)/i.test(t)) return "Global";
   if (/hubungan bilateral|kerjasama bilateral|hubungan diplomatik|hubungan antar negara|antar negara|kunjungan kenegaraan|diplomasi global|hubungan internasional|luar negeri/i.test(t)) return "Global";
   if (/amerika serikat|tiongkok|perang dunia|world war|white house|gedung putih|pentagon|kremlin|biden|trump|putin|xi jinping|netanyahu|zelensky/i.test(t)) {
-    if (!t.includes("dpr ri") &&!t.includes("dpd ri")) return "Global";
+    if (!t.includes("dpr ri") && !t.includes("dpd ri")) return "Global";
   }
+  // 2. KRIMINAL
   if (/narkotika|narkoba|sabu|ganja|ekstasi|pembunuhan|dibunuh|penculikan|diculik|pelecehan seksual|perkosaan|perampokan|begal|pembegalan|pemukulan|pengeroyokan|penganiayaan|penembakan|pembacokan|penusukan|tawuran|pencurian|maling|curanmor|jambret|kdrt|bandar narkoba/i.test(t)) return "Kriminal";
+  // 3. PEMERINTAHAN - DPD RI, DPR RI
   if (/dpd ri|dpr ri|dpr-ri|dpd-ri|mpr ri|komisi.*dpr|anggota dewan|parlemen|menteri|kabinet|kementerian|istana|presiden prabowo|wapres gibran|pemerintah|pemda|kemenkeu|kemendagri|apbn|apbd|birokrasi|perpres|keppres/i.test(t)) return "Pemerintahan";
+  // 4. FINANSIAL - Harga Emas
   if (/harga emas|harga perak|harga minyak|emas naik|emas turun|logam mulia|antam|ihsg|saham|inflasi|suku bunga|bi rate|nilai tukar|rupiah|kurs|dollar|kripto|ojk|bursa efek|investasi|ekonomi|keuangan/i.test(t)) return "Finansial";
+  // 5. OLAHRAGA - Taekwondo
   if (/taekwondo|sepak bola|bola voli|voli|basket|bulu tangkis|badminton|tenis|atlet|olimpiade|sea games|pon|piala dunia|liga 1|persija|persib|timnas|gulat|karate|judo|pencak silat|renang|marathon|balap|motogp|f1|juara|medali|pssi|pertandingan|turnamen|klub|pelatih|skor|klasemen/i.test(t)) return "Olahraga";
   if (/bencana|gempa|banjir|tsunami|longsor|kebakaran|karhutla|erupsi|meletus|kecelakaan|evakuasi|tim sar|bnpb|bpbd|darurat|cuaca ekstrem|badai|topan|basarnas/i.test(t)) return "Bencana";
   if (/entertainment|artis|selebritas|konser|film|drama|musik|bioskop|hiburan|gosip|sinetron|sutradara|aktor|aktris/i.test(t)) return "Entertainment";
@@ -92,6 +97,56 @@ function detectKategori(textToAnalyze) {
   if (/politik|partai|pdip|gerindra|golkar|nasdem|pemilu|pilkada|koalisi|oposisi|kpu|bawaslu|demokrasi/i.test(t)) return "Politik";
   return "Sosial";
 }
+function getSourceTier(link, sourceName) {
+  const text = ((link||"") + " " + (sourceName||"")).toLowerCase();
+  const tier1 = ["kompas.com","detik.com","cnnindonesia.com","antaranews.com","tempo.co","liputan6.com","kompas.tv","cnbcindonesia.com","republika.co.id","beritasatu.com","kumparan.com"];
+  const tier2 = ["tribunnews.com","okezone.com","sindonews.com","merdeka.com","idntimes.com","suara.com","viva.co.id","pikiran-rakyat.com","jpnn.com","tvonenews.com","metrotvnews.com"];
+  for (const d of tier1) if (text.includes(d)) return { tier: 1, weight: 3, name: d };
+  for (const d of tier2) if (text.includes(d)) return { tier: 2, weight: 2, name: d };
+  return { tier: 3, weight: 1, name: "tier3" };
+}
+function computeClusterScore(cl) {
+  const latest = cl.latestTimestamp;
+  let velocity = 0;
+  cl.items.forEach(it => {
+    const diffMs = latest - it.timestamp;
+    if (diffMs <= 3600000) velocity++;
+  });
+  const seen = new Set();
+  let sourceWeightScore = 0;
+  let tier1Count = 0;
+  let tier2Count = 0;
+  const distinctSources = [];
+  cl.items.forEach(it => {
+    if (!seen.has(it.source)) {
+      seen.add(it.source);
+      const tierInfo = getSourceTier(it.link, it.source);
+      sourceWeightScore += tierInfo.weight;
+      distinctSources.push({ source: it.source, tier: tierInfo.tier, weight: tierInfo.weight });
+      if (tierInfo.tier === 1) tier1Count++;
+      if (tierInfo.tier === 2) tier2Count++;
+    }
+  });
+  const hoursSinceLatest = (Date.now() - latest) / (1000*60*60);
+  const recencyBonus = hoursSinceLatest < 1 ? 20 : hoursSinceLatest < 3 ? 15 : hoursSinceLatest < 6 ? 10 : hoursSinceLatest < 12 ? 5 : 0;
+  const crossPlatform = !!cl.crossPlatform;
+  const crossPlatformBonus = crossPlatform ? 30 : 0;
+  const volumeBase = cl.items.length * 25;
+  const compositeScore = volumeBase + (velocity * 18) + (sourceWeightScore * 12) + recencyBonus + crossPlatformBonus;
+  let topLevel = 0;
+  let topLabel = "-";
+  if (compositeScore >= 140 || (velocity >= 3 && sourceWeightScore >= 7) || (tier1Count >= 2 && velocity >= 2) || (crossPlatform && sourceWeightScore >= 5)) {
+    topLevel = 1;
+    topLabel = "TOP 1 - Darurat";
+  } else if (compositeScore >= 75 || velocity >= 2 || sourceWeightScore >= 4 || tier1Count >= 1) {
+    topLevel = 2;
+    topLabel = "TOP 2 - Naik";
+  }
+  return { velocity, sourceWeightScore, tier1Count, tier2Count, distinctSources, recencyBonus, crossPlatform, crossPlatformBonus, compositeScore, topLevel, topLabel, isTop: topLevel > 0 };
+}
+
+
+
 
 async function fetchRss(url) {
   try {
@@ -154,7 +209,7 @@ export async function GET(request) {
       const hoursSinceLatest = (now.getTime() - cl.latestTimestamp) / (1000*60*60);
       return hoursSinceLatest <= hours;
     });
-    let clustersToUse = filteredClusters.length > 0? filteredClusters : allClusters.sort((a,b)=> b.latestTimestamp - a.latestTimestamp).slice(0, 50);
+    let clustersToUse = filteredClusters.length > 0 ? filteredClusters : allClusters.sort((a,b)=> b.latestTimestamp - a.latestTimestamp).slice(0, 50);
     const getDominantKategori = (clusterItems) => {
       const counts = {};
       clusterItems.forEach(it => { counts[it.kategori] = (counts[it.kategori]||0)+1; });
@@ -164,35 +219,58 @@ export async function GET(request) {
       return maxCat;
     };
     let dynamicIssues=[];
-    const clustersWithVolume = clustersToUse.map(cl => {
-      const hoursSinceLatest=(now.getTime()-cl.latestTimestamp)/(1000*60*60);
-      const recencyBonus=hoursSinceLatest<6?15: hoursSinceLatest<12?8: hoursSinceLatest<24?3:0;
-      const volume=(cl.items.length*25)+recencyBonus+ (cl.items.length>1?10:0);
-      return { cl, volume, hoursSinceLatest };
-    }).sort((a,b)=> b.volume - a.volume);
-    const topN = Math.min(10, Math.max(5, Math.floor(clustersWithVolume.length * 0.15)));
-    const topClusterIds = new Set();
-    clustersWithVolume.slice(0, topN).forEach(({cl, volume})=>{
-      if(cl.items.length>=2 || volume>=50) topClusterIds.add(cl);
-    });
-    clustersWithVolume.forEach(({cl, volume}, idx)=>{
+    const clustersWithScore = clustersToUse.map(cl => {
+      const score = computeClusterScore(cl);
+      return { cl, score, compositeScore: score.compositeScore };
+    }).sort((a,b)=> b.compositeScore - a.compositeScore);
+    clustersWithScore.forEach(({cl, score}, idx)=>{
       const rep=cl.latestItem;
       const allSources=[]; const seen=new Set();
       cl.items.forEach(it=>{ if(!seen.has(it.source)){ seen.add(it.source); allSources.push({name:`${it.source}`, url:it.link}); }});
-      const isTop = topClusterIds.has(cl);
       dynamicIssues.push({
-        id: idx,...rep, kategori: getDominantKategori(cl.items), volume, clusterSize: cl.items.length, clusterCount: cl.items.length, sourcesList: allSources, sourcesCount: allSources.length, isTop
+        id: idx,
+        ...rep,
+        kategori: getDominantKategori(cl.items),
+        volume: score.compositeScore,
+        compositeScore: score.compositeScore,
+        velocity: score.velocity,
+        sourceWeightScore: score.sourceWeightScore,
+        tier1Count: score.tier1Count,
+        tier2Count: score.tier2Count,
+        distinctSources: score.distinctSources,
+        recencyBonus: score.recencyBonus,
+        crossPlatform: score.crossPlatform,
+        topLevel: score.topLevel,
+        topLabel: score.topLabel,
+        isTop: score.isTop,
+        isTrending: score.isTop,
+        clusterSize: cl.items.length,
+        clusterCount: cl.items.length,
+        sourcesList: allSources,
+        sourcesCount: allSources.length
       });
     });
-    if(mode==='terkini') dynamicIssues.sort((a,b)=> b.timestamp - a.timestamp);
-    else dynamicIssues.sort((a,b)=> b.volume - a.volume);
+    if(mode==='terkini'){
+      dynamicIssues.sort((a,b)=> b.timestamp - a.timestamp);
+    } else {
+      dynamicIssues.sort((a,b)=> b.volume - a.volume);
+    }
     if(dynamicIssues.length===0){
       dynamicIssues.push({ id:"empty", topik:`Tidak ada berita dalam ${hours} jam terakhir.`, kategori:"Sistem", volume:0, clusterSize:0, source:"Sistem", pubDate:"Saat ini", articleTitle:"Radar Sepi", articleDesc:"Tidak ada pemberitaan.", link:"#", sourcesList:[], isTop:false });
     }
-    return NextResponse.json({
-      success:true,
-      data: dynamicIssues.slice(0,100),
-      meta:{ hours, totalRaw:rawItems.length, totalFiltered: filteredClusters.length, totalClusters: allClusters.length, clustersInRange: clustersToUse.length, kriminalCount: dynamicIssues.filter(d=>d.kategori==="Kriminal").length, globalCount: dynamicIssues.filter(d=>d.kategori==="Global").length, topCount: dynamicIssues.filter(d=>d.isTop).length }
+    return NextResponse.json({ 
+      success:true, 
+      data: dynamicIssues.slice(0,100), 
+      meta:{
+        hours, 
+        totalRaw:rawItems.length, 
+        totalFiltered: filteredClusters.length, 
+        totalClusters: allClusters.length,
+        clustersInRange: clustersToUse.length,
+        kriminalCount: dynamicIssues.filter(d=>d.kategori==="Kriminal").length,
+        globalCount: dynamicIssues.filter(d=>d.kategori==="Global").length,
+        topCount: dynamicIssues.filter(d=>d.isTop).length
+      } 
     });
   } catch(error){
     console.error(error);
