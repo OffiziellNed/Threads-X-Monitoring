@@ -805,9 +805,37 @@ export default function SocialMediaMonitoring() {
                 </button>
               ))}
             </div>
-            <span className="text-[10px] text-gray-600">Top & Terkini mengikuti {selectedHours} jam terakhir • Clustering embedding aktif</span>
+            <span className="text-[10px] text-gray-600">Top & Terkini mengikuti {selectedHours} jam terakhir • Velocity 2 jam • Clustering embedding aktif</span>
           </div>
         </div>
+
+          {/* PANDUAN TIER & SKOR - DIBAWAH RENTANG WAKTU */}
+          <div className="w-full max-w-3xl bg-[#161b22] border border-[#21262d] rounded-xl p-3 mt-1 text-[10px] leading-relaxed">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] font-black text-white uppercase tracking-wider">Panduan Skor TOP Hidup</span>
+              <span className="text-[9px] bg-[#1f6feb] text-white px-2 py-0.5 rounded font-bold">Velocity 2 Jam - Nominal</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[10px]">
+              <div className="bg-[#0d1117] rounded-lg p-2 border border-[#21262d]">
+                <span className="text-green-400 font-bold">Tier 1 (bobot 3):</span><br/>
+                kompas.com, detik.com, cnnindonesia.com, antaranews.com, tempo.co, liputan6.com, kompas.tv, cnbcindonesia.com, republika.co.id, beritasatu.com, kumparan.com
+              </div>
+              <div className="bg-[#0d1117] rounded-lg p-2 border border-[#21262d]">
+                <span className="text-yellow-400 font-bold">Tier 2 (bobot 2):</span><br/>
+                tribunnews.com, okezone.com, sindonews.com, merdeka.com, idntimes.com, suara.com, viva.co.id, pikiran-rakyat.com, jpnn.com, tvonenews.com, metrotvnews.com
+              </div>
+              <div className="bg-[#0d1117] rounded-lg p-2 border border-[#21262d]">
+                <span className="text-gray-400 font-bold">Tier 3 (bobot 1):</span><br/>situs lainnya<br/><br/>
+                <span className="text-white font-bold">Velocity:</span> jumlah berita yang angkat isu sama dalam 2 jam terakhir (nominal)<br/>
+                <span className="text-white font-bold">SourceWeight:</span> total bobot tier distinct source<br/>
+                <span className="text-white font-bold">Contoh:</span> SourceWeight 8 = Kompas(3)+Detik(3)+Tribun(2)
+              </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-[#21262d] text-[9px] text-gray-500">
+              Skor: 259 = Cluster 5 berita (5×25=125) + Velocity 1 berita/2jam (1) + SourceWeight 8 (8×12=96) + Recency 20 + CrossPlatform 0. Tier:1 = ada 1 media Tier 1. Berita diambil dari site yang tertera di kolom Sumber tabel dibawah.
+            </div>
+          </div>
+
         {isLoading ? (<div className="flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? "border-[#dc2626]" : "border-[#2563eb]"}`}></div></div>) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
             <div className="w-full px-4 md:px-6 py-4 flex flex-wrap justify-between items-center gap-3">
@@ -826,12 +854,12 @@ export default function SocialMediaMonitoring() {
                         const newsLink = getCleanLink(isu);
                         return (<tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none"><td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td><td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || "-"}</td><td className="py-4 px-4 border-none"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span></td><td className="py-4 px-4 border-none"><span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span></td><td className="py-4 px-4 text-center border-none">
   {isu.topLevel === 1 ? (
-    <div className="bg-red-900/60 border border-red-600 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`Skor: ${isu.compositeScore || isu.volume} | Velocity: ${isu.velocity || 0}/jam | SourceWeight: ${isu.sourceWeightScore || 0} | Tier1: ${isu.tier1Count || 0}`}>
+    <div className="bg-red-900/60 border border-red-600 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`Skor: ${isu.compositeScore || isu.volume} | Velocity: ${isu.velocity || 0} berita/2jam | SourceWeight: ${isu.sourceWeightScore || 0} | Tier1: ${isu.tier1Count || 0}`}>
       <div className="flex items-center gap-1"><Flame size={12} className="text-red-400" /><span className="text-[9px] font-black text-red-300 uppercase">TOP 1</span></div>
       <span className="text-[8px] font-bold text-red-200 uppercase">Darurat</span>
     </div>
   ) : isu.topLevel === 2 ? (
-    <div className="bg-orange-900/50 border border-orange-500/50 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`Skor: ${isu.compositeScore || isu.volume} | Velocity: ${isu.velocity || 0}/jam | SourceWeight: ${isu.sourceWeightScore || 0} | Tier1: ${isu.tier1Count || 0}`}>
+    <div className="bg-orange-900/50 border border-orange-500/50 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`Skor: ${isu.compositeScore || isu.volume} | Velocity: ${isu.velocity || 0} berita/2jam | SourceWeight: ${isu.sourceWeightScore || 0} | Tier1: ${isu.tier1Count || 0}`}>
       <div className="flex items-center gap-1"><Zap size={10} className="text-orange-400" /><span className="text-[9px] font-bold text-orange-300 uppercase">TOP 2</span></div>
       <span className="text-[8px] font-bold text-orange-200 uppercase">Naik</span>
     </div>
