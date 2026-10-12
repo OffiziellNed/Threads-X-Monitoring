@@ -92,6 +92,56 @@ function detectKategori(textToAnalyze) {
   if (/politik|partai|pdip|gerindra|golkar|nasdem|pemilu|pilkada|koalisi|oposisi|kpu|bawaslu|demokrasi/i.test(t)) return "Politik";
   return "Sosial";
 }
+function getSourceTier(link, sourceName) {
+  const text = ((link||"") + " " + (sourceName||"")).toLowerCase();
+  const tier1 = ["kompas.com","detik.com","cnnindonesia.com","antaranews.com","tempo.co","liputan6.com","kompas.tv","cnbcindonesia.com","republika.co.id","beritasatu.com","kumparan.com"];
+  const tier2 = ["tribunnews.com","okezone.com","sindonews.com","merdeka.com","idntimes.com","suara.com","viva.co.id","pikiran-rakyat.com","jpnn.com","tvonenews.com","metrotvnews.com"];
+  for (const d of tier1) if (text.includes(d)) return { tier: 1, weight: 3, name: d };
+  for (const d of tier2) if (text.includes(d)) return { tier: 2, weight: 2, name: d };
+  return { tier: 3, weight: 1, name: "tier3" };
+}
+function computeClusterScore(cl) {
+  const latest = cl.latestTimestamp;
+  let velocity = 0;
+  cl.items.forEach(it => {
+    const diffMs = latest - it.timestamp;
+    if (diffMs <= 3600000) velocity++;
+  });
+  const seen = new Set();
+  let sourceWeightScore = 0;
+  let tier1Count = 0;
+  let tier2Count = 0;
+  const distinctSources = [];
+  cl.items.forEach(it => {
+    if (!seen.has(it.source)) {
+      seen.add(it.source);
+      const tierInfo = getSourceTier(it.link, it.source);
+      sourceWeightScore += tierInfo.weight;
+      distinctSources.push({ source: it.source, tier: tierInfo.tier, weight: tierInfo.weight });
+      if (tierInfo.tier === 1) tier1Count++;
+      if (tierInfo.tier === 2) tier2Count++;
+    }
+  });
+  const hoursSinceLatest = (Date.now() - latest) / (1000*60*60);
+  const recencyBonus = hoursSinceLatest < 1 ? 20 : hoursSinceLatest < 3 ? 15 : hoursSinceLatest < 6 ? 10 : hoursSinceLatest < 12 ? 5 : 0;
+  const crossPlatform = !!cl.crossPlatform;
+  const crossPlatformBonus = crossPlatform ? 30 : 0;
+  const volumeBase = cl.items.length * 25;
+  const compositeScore = volumeBase + (velocity * 18) + (sourceWeightScore * 12) + recencyBonus + crossPlatformBonus;
+  let topLevel = 0;
+  let topLabel = "-";
+  if (compositeScore >= 140 || (velocity >= 3 && sourceWeightScore >= 7) || (tier1Count >= 2 && velocity >= 2) || (crossPlatform && sourceWeightScore >= 5)) {
+    topLevel = 1;
+    topLabel = "TOP 1 - Darurat";
+  } else if (compositeScore >= 75 || velocity >= 2 || sourceWeightScore >= 4 || tier1Count >= 1) {
+    topLevel = 2;
+    topLabel = "TOP 2 - Naik";
+  }
+  return { velocity, sourceWeightScore, tier1Count, tier2Count, distinctSources, recencyBonus, crossPlatform, crossPlatformBonus, compositeScore, topLevel, topLabel, isTop: topLevel > 0 };
+}
+
+
+
 
 async function fetchRss(url) {
   try {
@@ -173,32 +223,35 @@ export async function GET(request) {
       return maxCat;
     };
     let dynamicIssues=[];
-    const clustersWithVolume = clustersToUse.map(cl => {
-      const hoursSinceLatest=(now.getTime()-cl.latestTimestamp)/(1000*60*60);
-      const recencyBonus=hoursSinceLatest<6?15: hoursSinceLatest<12?8: hoursSinceLatest<24?3:0;
-      const volume=(cl.items.length*25)+recencyBonus+ (cl.items.length>1?10:0);
-      return { cl, volume, hoursSinceLatest };
-    }).sort((a,b)=> b.volume - a.volume);
-    const topN = Math.min(10, Math.max(5, Math.floor(clustersWithVolume.length * 0.15)));
-    const topClusterIds = new Set();
-    clustersWithVolume.slice(0, topN).forEach(({cl, volume})=>{
-      if(cl.items.length>=2 || volume>=50) topClusterIds.add(cl);
-    });
-    clustersWithVolume.forEach(({cl, volume}, idx)=>{
+    const clustersWithScore = clustersToUse.map(cl => {
+      const score = computeClusterScore(cl);
+      return { cl, score, compositeScore: score.compositeScore };
+    }).sort((a,b)=> b.compositeScore - a.compositeScore);
+    clustersWithScore.forEach(({cl, score}, idx)=>{
       const rep=cl.latestItem;
       const allSources=[]; const seen=new Set();
       cl.items.forEach(it=>{ if(!seen.has(it.source)){ seen.add(it.source); allSources.push({name:`${it.source}`, url:it.link}); }});
-      const isTop = topClusterIds.has(cl);
       dynamicIssues.push({
         id: idx,
         ...rep,
         kategori: getDominantKategori(cl.items),
-        volume,
+        volume: score.compositeScore,
+        compositeScore: score.compositeScore,
+        velocity: score.velocity,
+        sourceWeightScore: score.sourceWeightScore,
+        tier1Count: score.tier1Count,
+        tier2Count: score.tier2Count,
+        distinctSources: score.distinctSources,
+        recencyBonus: score.recencyBonus,
+        crossPlatform: score.crossPlatform,
+        topLevel: score.topLevel,
+        topLabel: score.topLabel,
+        isTop: score.isTop,
+        isTrending: score.isTop,
         clusterSize: cl.items.length,
         clusterCount: cl.items.length,
         sourcesList: allSources,
-        sourcesCount: allSources.length,
-        isTop
+        sourcesCount: allSources.length
       });
     });
     if(mode==='terkini') dynamicIssues.sort((a,b)=> b.timestamp - a.timestamp);
