@@ -102,10 +102,10 @@ function getSourceTier(link, sourceName) {
 }
 function computeClusterScore(cl) {
   const latest = cl.latestTimestamp;
-  let velocity = 0;
+  let velocity = 0; // nominal: jumlah berita dalam 2 jam terakhir
   cl.items.forEach(it => {
     const diffMs = latest - it.timestamp;
-    if (diffMs <= 3600000) velocity++;
+    if (diffMs <= 7200000) velocity++;
   });
   const seen = new Set();
   let sourceWeightScore = 0;
@@ -127,7 +127,7 @@ function computeClusterScore(cl) {
   const crossPlatform = !!cl.crossPlatform;
   const crossPlatformBonus = crossPlatform ? 30 : 0;
   const volumeBase = cl.items.length * 25;
-  const compositeScore = volumeBase + (velocity * 18) + (sourceWeightScore * 12) + recencyBonus + crossPlatformBonus;
+  const compositeScore = volumeBase + velocity + (sourceWeightScore * 12) + recencyBonus + crossPlatformBonus;
   let topLevel = 0;
   let topLabel = "-";
   if (compositeScore >= 140 || (velocity >= 3 && sourceWeightScore >= 7) || (tier1Count >= 2 && velocity >= 2) || (crossPlatform && sourceWeightScore >= 5)) {
