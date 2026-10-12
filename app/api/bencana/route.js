@@ -137,7 +137,7 @@ function computeClusterScore(cl) {
   let topLabel = "-";
   if (compositeScore >= 140 || (velocity >= 3 && sourceWeightScore >= 7) || (tier1Count >= 2 && velocity >= 2) || (crossPlatform && sourceWeightScore >= 5)) {
     topLevel = 1;
-    topLabel = "TOP 1 - Darurat";
+    topLabel = "HOT News";
   } else if (compositeScore >= 75 || velocity >= 2 || sourceWeightScore >= 4 || tier1Count >= 1) {
     topLevel = 2;
     topLabel = "TOP 2 - Naik";
