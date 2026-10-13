@@ -767,10 +767,10 @@ export default function SocialMediaMonitoring() {
             {categories.map((cat) => (<button key={cat} onClick={() => setSelectedCategory(cat)} className={`text-xs md:text-sm font-bold transition-all ${selectedCategory === cat ? (isRedTheme ? "text-red-400 border-b-2 border-red-400 pb-1" : "text-blue-400 border-b-2 border-blue-400 pb-1") : "text-gray-500 hover:text-gray-300"}`}>{cat}</button>))}
           </div>
 
-          {/* PANDUAN + RENTANG WAKTU SEBARIS - KIRI RENTANG, KANAN PANDUAN - HEMAT TEMPAT */}
-          <div className="w-full flex flex-col md:flex-row justify-between items-center md:items-start gap-6 px-2">
-            {/* KIRI - RENTANG WAKTU BERITA */}
-            <div className="flex flex-col items-center md:items-start gap-2">
+          {/* PANDUAN + RENTANG WAKTU SEBARIS - CENTER RAPI - GAK POJOKAN */}
+          <div className="w-full flex flex-col md:flex-row justify-center items-center md:items-start gap-8 md:gap-20 px-2">
+            {/* KIRI - RENTANG WAKTU BERITA - CENTER */}
+            <div className="flex flex-col items-center gap-2">
               <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold flex items-center gap-1"><Calendar size={10}/> Rentang Waktu Berita</span>
               <div className="flex items-center gap-1.5 bg-[#161b22] border border-[#2a313c] p-1 rounded-xl shadow-inner">
                 {hoursOptions.map((h) => (
@@ -781,11 +781,11 @@ export default function SocialMediaMonitoring() {
               </div>
             </div>
 
-            {/* KANAN - PANDUAN TIER SOURCE */}
-            <div className="flex flex-col items-center md:items-end gap-1">
-              <div className="text-[13px] font-black text-white uppercase tracking-wider text-center md:text-right">PANDUAN TIER SOURCE</div>
-              <div className="text-[10px] text-gray-500 text-center md:text-right">Data dalam 2 jam | 8 point = Hot News</div>
-              <div className="flex items-center justify-center md:justify-end gap-2 mt-1 text-[12px] font-bold">
+            {/* KANAN - PANDUAN TIER SOURCE - CENTER */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="text-[13px] font-black text-white uppercase tracking-wider text-center">PANDUAN TIER SOURCE</div>
+              <div className="text-[10px] text-gray-500 text-center">Data dalam 2 jam | 8 point = Hot News</div>
+              <div className="flex items-center justify-center gap-2 mt-1 text-[12px] font-bold">
                 <button onClick={() => setSelectedTierInfo(selectedTierInfo === 1 ? 0 : 1)} className={`transition-all ${selectedTierInfo === 1 ? "text-green-400" : "text-gray-400 hover:text-white"}`}>Tier 1</button>
                 <span className="text-gray-600 font-normal">|</span>
                 <button onClick={() => setSelectedTierInfo(selectedTierInfo === 2 ? 0 : 2)} className={`transition-all ${selectedTierInfo === 2 ? "text-yellow-400" : "text-gray-400 hover:text-white"}`}>Tier 2</button>
@@ -793,7 +793,7 @@ export default function SocialMediaMonitoring() {
                 <button onClick={() => setSelectedTierInfo(selectedTierInfo === 3 ? 0 : 3)} className={`transition-all ${selectedTierInfo === 3 ? "text-gray-300" : "text-gray-400 hover:text-white"}`}>Tier 3</button>
               </div>
               {selectedTierInfo !== 0 && (
-                <div className="mt-2 w-full max-w-md text-[11px] leading-relaxed text-center md:text-right text-gray-300">
+                <div className="mt-2 w-full max-w-md text-[11px] leading-relaxed text-center text-gray-300">
                   {selectedTierInfo === 1 && (
                     <div>
                       <div className="text-green-400 font-black">3 Point</div>
