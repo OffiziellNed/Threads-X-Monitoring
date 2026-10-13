@@ -116,7 +116,7 @@ function computeClusterScore(cl) {
     topLabel = "HOT News";
   } else if (compositeScore >= 75 || velocity >= 2 || sourceWeightScore >= 4 || tier1Count >= 1) {
     topLevel = 2;
-    topLabel = "TOP 2 - Naik";
+    topLabel = "Tier 2";
   }
   return { velocity, sourceWeightScore, tier1Count, tier2Count, distinctSources, recencyBonus, crossPlatform, crossPlatformBonus, compositeScore, topLevel, topLabel, isTop: topLevel > 0 };
 }
@@ -244,8 +244,8 @@ export async function GET(request) {
           const recencyBonus = recencyH < 1 ? 20 : recencyH < 3 ? 15 : recencyH < 6 ? 10 : recencyH < 12 ? 5 : 0;
           const compositeScore = (volumeData * 25) + (tierInfo.weight * 12) + recencyBonus;
           let topLevel = 0; let topLabel = "-";
-          if (compositeScore >= 100 || tierInfo.tier === 1) { topLevel = compositeScore >= 140 ? 1 : 2; topLabel = topLevel===1 ? "HOT News" : "TOP 2 - Naik"; }
-          else if (compositeScore >= 60) { topLevel = 2; topLabel = "TOP 2 - Naik"; }
+          if (compositeScore >= 100 || tierInfo.tier === 1) { topLevel = compositeScore >= 140 ? 1 : 2; topLabel = topLevel===1 ? "HOT News" : "Tier 2"; }
+          else if (compositeScore >= 60) { topLevel = 2; topLabel = "Tier 2"; }
           const mainKeyword = item.topik.substring(0, 15).toLowerCase();
           if (!seenTopics.has(mainKeyword)) {
             seenTopics.add(mainKeyword);
