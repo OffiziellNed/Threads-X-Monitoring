@@ -766,6 +766,42 @@ export default function SocialMediaMonitoring() {
           <div className="flex flex-wrap items-center justify-center gap-3 md:gap-8 px-2">
             {categories.map((cat) => (<button key={cat} onClick={() => setSelectedCategory(cat)} className={`text-xs md:text-sm font-bold transition-all ${selectedCategory === cat ? (isRedTheme ? "text-red-400 border-b-2 border-red-400 pb-1" : "text-blue-400 border-b-2 border-blue-400 pb-1") : "text-gray-500 hover:text-gray-300"}`}>{cat}</button>))}
           </div>
+
+          {/* PANDUAN TIER SOURCE - PINDAH DI ATAS RENTANG WAKTU - FORMAT Tier 1 | Tier 2 | Tier 3 */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-[13px] font-black text-white uppercase tracking-wider text-center">PANDUAN TIER SOURCE</div>
+            <div className="text-[10px] text-gray-500">Data dalam 2 jam</div>
+            <div className="flex items-center justify-center gap-2 mt-2 text-[12px] font-bold">
+              <button onClick={() => setSelectedTierInfo(selectedTierInfo === 1 ? 0 : 1)} className={`transition-all ${selectedTierInfo === 1 ? "text-green-400" : "text-gray-400 hover:text-white"}`}>Tier 1</button>
+              <span className="text-gray-600 font-normal">|</span>
+              <button onClick={() => setSelectedTierInfo(selectedTierInfo === 2 ? 0 : 2)} className={`transition-all ${selectedTierInfo === 2 ? "text-yellow-400" : "text-gray-400 hover:text-white"}`}>Tier 2</button>
+              <span className="text-gray-600 font-normal">|</span>
+              <button onClick={() => setSelectedTierInfo(selectedTierInfo === 3 ? 0 : 3)} className={`transition-all ${selectedTierInfo === 3 ? "text-gray-300" : "text-gray-400 hover:text-white"}`}>Tier 3</button>
+            </div>
+            {selectedTierInfo !== 0 && (
+              <div className="mt-3 w-full max-w-2xl text-[11px] leading-relaxed text-center text-gray-300">
+                {selectedTierInfo === 1 && (
+                  <div>
+                    <div className="text-green-400 font-black">3 Point</div>
+                    <div className="mt-1">Kompas.com | detik.com | cnnindonesia.com | antaranews.com | tempo.co | liputan6.com | Kompas.tv | cnbcindonesia | republika.co.id | beritasatu.com | kumparan.com | kontan.co.id</div>
+                  </div>
+                )}
+                {selectedTierInfo === 2 && (
+                  <div>
+                    <div className="text-yellow-400 font-black">2 Point</div>
+                    <div className="mt-1">tribunnews.com | okezone.com | sindonews.com | merdeka.com | idntimes.com | suara.com | viva.co.id | pikiran-rakyat.com | jpnn.com | tvonenews.com | metrotvnews.com</div>
+                  </div>
+                )}
+                {selectedTierInfo === 3 && (
+                  <div>
+                    <div className="text-gray-300 font-black">1 Point</div>
+                    <div className="mt-1 text-gray-400">blog | portal daerah | media lokal | RRI.co.id</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col items-center gap-2">
             <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold flex items-center gap-1"><Calendar size={10}/> Rentang Waktu Berita</span>
             <div className="flex items-center gap-1.5 bg-[#161b22] border border-[#2a313c] p-1 rounded-xl shadow-inner">
@@ -775,20 +811,8 @@ export default function SocialMediaMonitoring() {
                 </button>
               ))}
             </div>
-            <span className="text-[10px] text-gray-600">Top & Terkini mengikuti {selectedHours} jam terakhir • Data dalam 2 jam • Clustering embedding aktif</span>
           </div>
         </div>
-
-          {/* PANDUAN TIER SOURCE - SIMPLE CENTER NO BOARD */}
-          <div className="flex flex-col items-center gap-1 mt-4 mb-2">
-            <div className="text-[13px] font-black text-white uppercase tracking-wider text-center">PANDUAN TIER SOURCE</div>
-            <div className="text-[10px] text-gray-500">Data dalam 2 jam</div>
-            <div className="flex items-center justify-center gap-6 mt-2">
-              <span className="text-[12px] font-bold text-green-400">Tier 1</span>
-              <span className="text-[12px] font-bold text-yellow-400">Tier 2</span>
-              <span className="text-[12px] font-bold text-gray-400">Tier 3</span>
-            </div>
-          </div>
 
         {isLoading ? (<div className="flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? "border-[#dc2626]" : "border-[#2563eb]"}`}></div></div>) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
@@ -796,7 +820,7 @@ export default function SocialMediaMonitoring() {
               <h1 className="text-lg font-bold text-white md:hidden">Daftar Isu Terkini</h1>
               <div className="flex items-center gap-3 md:ml-auto">
                 <button onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? "bg-[#331c0b] text-orange-500" : "bg-[#1c2128] text-gray-400 hover:text-orange-400"}`}><Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News {isTopNewsFilter ? `(${tableData.filter(d=>d.isTrending).length})` : `(${terkiniData.filter(d=> (d.clusterSize>=3 || d.sourcesCount>=3 || d.volume>=70)).length})`}</button>
-                <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} / {terkiniData.length} | HOT: {terkiniData.filter(d=>d.topLevel===1).length} | Tier 2: {terkiniData.filter(d=>d.topLevel===2).length} | Global: {terkiniData.filter(d=>d.kategori==="Global").length} | Skor Tertinggi: {terkiniData[0]?.compositeScore || 0}</span>
+                <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} / {terkiniData.length} | HOT: {terkiniData.filter(d=>d.topLevel===1).length} | Potential: {terkiniData.filter(d=>d.topLevel===2).length} | Global: {terkiniData.filter(d=>d.kategori==="Global").length} | Skor Tertinggi: {terkiniData[0]?.compositeScore || 0}</span>
               </div>
             </div>
             {tableData.length > 0 ? (<>
@@ -806,14 +830,14 @@ export default function SocialMediaMonitoring() {
                     <tbody className="border-none">{tableData.map((isu, idx) => {
                         const { date, time } = formatDateTime(isu.pubDate);
                         const newsLink = getCleanLink(isu);
-                        return (<tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none"><td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td><td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || "-"}</td><td className="py-4 px-4 border-none"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span></td><td className="py-4 px-4 border-none"><span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span></td><td className="py-4 px-4 text-center border-none">{isu.topLevel === 1 ? (<div className="bg-red-900/60 border border-red-600 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`Skor: ${isu.compositeScore || isu.volume} | Velocity: ${isu.velocity || 0} berita/2jam | SourceWeight: ${isu.sourceWeightScore || 0} | Tier1: ${isu.tier1Count || 0}`}><div className="flex items-center gap-1"><Flame size={12} className="text-red-400" /><span className="text-[9px] font-black text-red-300 uppercase">HOT NEWS</span></div></div>) : isu.topLevel === 2 ? (<div className="bg-gray-800 border border-gray-600 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`Skor: ${isu.compositeScore || isu.volume} | Velocity: ${isu.velocity || 0} berita/2jam | SourceWeight: ${isu.sourceWeightScore || 0}`}><div className="flex items-center gap-1"><span className="text-[9px] font-bold text-gray-300 uppercase">Tier 2</span></div></div>) : (<span className="text-gray-600 text-[10px]">-</span>)}</td><td className="py-4 px-4 text-center border-none">{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</td></tr>);
+                        return (<tr key={idx} className="group transition-colors odd:bg-transparent even:bg-[#1a1f26] hover:bg-[#252b36] border-none"><td className="py-4 px-4 text-center text-gray-500 font-medium border-none">{idx + 1}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap border-none">{date}</td><td className="py-4 px-4 text-gray-400 whitespace-nowrap text-center border-none">{time}</td><td className="py-4 px-4 text-gray-300 font-medium truncate max-w-[128px] border-none">{isu.source || "-"}</td><td className="py-4 px-4 border-none"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span></td><td className="py-4 px-4 border-none"><span className="text-gray-200 font-medium leading-relaxed group-hover:text-white transition-colors">{isu.topik}</span></td><td className="py-4 px-4 text-center border-none">{isu.topLevel === 1 ? (<div className="bg-red-900/60 border border-red-600 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`HOT NEWS | Tier1: ${isu.tier1Count||0}×3=${(isu.tier1Count||0)*3} | Tier2: ${isu.tier2Count||0}×2=${(isu.tier2Count||0)*2} | Tier3: ${isu.tier3Count||0}×1=${(isu.tier3Count||0)*1} | Vel: ${isu.velocity||0} | Total: ${(isu.tier1Count||0)*3 + (isu.tier2Count||0)*2 + (isu.tier3Count||0)*1 + (isu.velocity||0)} ≥8 → HOT`}><div className="flex items-center gap-1"><Flame size={12} className="text-red-400" /><span className="text-[9px] font-black text-red-300 uppercase">HOT NEWS</span></div></div>) : isu.topLevel === 2 ? (<div className="bg-gray-800 border border-gray-600 px-2 py-1 rounded flex flex-col items-center justify-center gap-0.5 mx-auto w-fit" title={`Potential | Tier1: ${isu.tier1Count||0}×3=${(isu.tier1Count||0)*3} | Tier2: ${isu.tier2Count||0}×2=${(isu.tier2Count||0)*2} | Tier3: ${isu.tier3Count||0}×1=${(isu.tier3Count||0)*1} | Vel: ${isu.velocity||0} | Total: ${(isu.tier1Count||0)*3 + (isu.tier2Count||0)*2 + (isu.tier3Count||0)*1 + (isu.velocity||0)} ≥4 → Potential`}><div className="flex items-center gap-1"><span className="text-[9px] font-bold text-gray-300 uppercase">Potential</span></div></div>) : (<span className="text-gray-600 text-[10px]">-</span>)}</td><td className="py-4 px-4 text-center border-none">{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 mx-auto max-w-[90px] bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</td></tr>);
                       })}</tbody>
                   </table>
                 </div>
                 <div className="flex flex-col gap-3 md:hidden px-3 mt-2">{tableData.map((isu, idx) => {
                     const { date, time } = formatDateTime(isu.pubDate);
                     const newsLink = getCleanLink(isu);
-                    return (<div key={idx} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg"><div className="flex justify-between items-start gap-2"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span><div className="flex items-center gap-2"><span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span></div></div><div className="flex items-start justify-between gap-3"><h3 className="text-gray-200 font-medium text-sm leading-snug">{isu.topik}</h3></div><div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500"><span>{date}</span><span>•</span><span>{time}</span><span>•</span><span className="text-gray-400 font-medium">{isu.source || "-"}</span></div><div className="pt-3 mt-1 border-t border-[#30363d] flex items-center justify-between gap-2"><div className="flex items-center gap-2">{isu.topLevel === 1 ? (<div className="bg-red-900/60 border border-red-600 px-2 py-1 rounded flex items-center gap-1"><Flame size={10} className="text-red-400" /><span className="text-[9px] font-black text-red-300 uppercase">HOT NEWS</span></div>) : isu.topLevel === 2 ? (<div className="bg-gray-800 border border-gray-600 px-2 py-1 rounded flex items-center gap-1"><span className="text-[9px] font-bold text-gray-300 uppercase">Tier 2</span></div>) : null}</div>{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca Artikel</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</div></div>);
+                    return (<div key={idx} className="bg-[#0d1117] border border-[#30363d] rounded-xl p-4 flex flex-col gap-3 mx-auto w-full max-w-md shadow-lg"><div className="flex justify-between items-start gap-2"><span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isRedTheme ? "bg-[#450a0a] text-red-400" : "bg-[#172033] text-blue-400"}`}>{isu.kategori}</span><div className="flex items-center gap-2"><span className="text-[10px] text-gray-500 font-medium px-2 py-0.5 bg-[#1c2128] rounded">#{idx + 1}</span></div></div><div className="flex items-start justify-between gap-3"><h3 className="text-gray-200 font-medium text-sm leading-snug">{isu.topik}</h3></div><div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500"><span>{date}</span><span>•</span><span>{time}</span><span>•</span><span className="text-gray-400 font-medium">{isu.source || "-"}</span></div><div className="pt-3 mt-1 border-t border-[#30363d] flex items-center justify-between gap-2"><div className="flex items-center gap-2">{isu.topLevel === 1 ? (<div className="bg-red-900/60 border border-red-600 px-2 py-1 rounded flex items-center gap-1" title={`HOT NEWS | T1:${isu.tier1Count||0}×3 T2:${isu.tier2Count||0}×2 T3:${isu.tier3Count||0}×1 Vel:${isu.velocity||0} Total:${(isu.tier1Count||0)*3 + (isu.tier2Count||0)*2 + (isu.tier3Count||0)*1 + (isu.velocity||0)}`}><Flame size={10} className="text-red-400" /><span className="text-[9px] font-black text-red-300 uppercase">HOT NEWS</span></div>) : isu.topLevel === 2 ? (<div className="bg-gray-800 border border-gray-600 px-2 py-1 rounded flex items-center gap-1"><span className="text-[9px] font-bold text-gray-300 uppercase">Potential</span></div>) : null}</div>{newsLink !== "#" ? (<a href={newsLink} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-[#374151] hover:bg-[#4b5563] shadow-md"><ExternalLink size={14} /> Baca Artikel</a>) : (<span className="text-gray-600 text-xs font-medium italic">No Link</span>)}</div></div>);
                   })}</div>
               </>) : (<div className="flex flex-col items-center justify-center py-16 px-4"><Search size={40} className="text-gray-600 mb-4" /><p className="text-gray-400 text-lg font-medium text-center">Tidak ada data yang ditemukan.</p><p className="text-gray-500 text-sm text-center mt-1">Coba ubah filter kategori atau matikan filter Top News.</p></div>)}
           </div>
