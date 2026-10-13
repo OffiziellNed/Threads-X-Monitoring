@@ -767,61 +767,57 @@ export default function SocialMediaMonitoring() {
             {categories.map((cat) => (<button key={cat} onClick={() => setSelectedCategory(cat)} className={`text-xs md:text-sm font-bold transition-all ${selectedCategory === cat ? (isRedTheme ? "text-red-400 border-b-2 border-red-400 pb-1" : "text-blue-400 border-b-2 border-blue-400 pb-1") : "text-gray-500 hover:text-gray-300"}`}>{cat}</button>))}
           </div>
 
-          {/* PANDUAN + RENTANG WAKTU SEBARIS - CENTER RAPI - GAK POJOKAN */}
-          <div className="w-full flex flex-col md:flex-row justify-center items-center md:items-start gap-8 md:gap-20 px-2">
-            {/* KIRI - RENTANG WAKTU BERITA - CENTER */}
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold flex items-center gap-1"><Calendar size={10}/> Rentang Waktu Berita</span>
-              <div className="flex items-center gap-1.5 bg-[#161b22] border border-[#2a313c] p-1 rounded-xl shadow-inner">
-                {hoursOptions.map((h) => (
-                  <button key={h} onClick={() => setSelectedHours(h)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedHours === h ? "bg-[#3f444e] text-white shadow-md border border-[#5a5e6b]" : "text-gray-400 hover:text-white hover:bg-[#1c2128]"}`}>
-                    {h} Jam
-                  </button>
-                ))}
-              </div>
+          {/* PANDUAN TIER SOURCE - KEMBALI KE TENGAH */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-[13px] font-black text-white uppercase tracking-wider text-center">PANDUAN TIER SOURCE</div>
+            <div className="text-[10px] text-gray-500 text-center">Data dalam 2 jam | 8 point = Hot News</div>
+            <div className="flex items-center justify-center gap-2 mt-1 text-[12px] font-bold">
+              <button onClick={() => setSelectedTierInfo(selectedTierInfo === 1 ? 0 : 1)} className={`transition-all ${selectedTierInfo === 1 ? "text-green-400" : "text-gray-400 hover:text-white"}`}>Tier 1</button>
+              <span className="text-gray-600 font-normal">|</span>
+              <button onClick={() => setSelectedTierInfo(selectedTierInfo === 2 ? 0 : 2)} className={`transition-all ${selectedTierInfo === 2 ? "text-yellow-400" : "text-gray-400 hover:text-white"}`}>Tier 2</button>
+              <span className="text-gray-600 font-normal">|</span>
+              <button onClick={() => setSelectedTierInfo(selectedTierInfo === 3 ? 0 : 3)} className={`transition-all ${selectedTierInfo === 3 ? "text-gray-300" : "text-gray-400 hover:text-white"}`}>Tier 3</button>
             </div>
-
-            {/* KANAN - PANDUAN TIER SOURCE - CENTER */}
-            <div className="flex flex-col items-center gap-1">
-              <div className="text-[13px] font-black text-white uppercase tracking-wider text-center">PANDUAN TIER SOURCE</div>
-              <div className="text-[10px] text-gray-500 text-center">Data dalam 2 jam | 8 point = Hot News</div>
-              <div className="flex items-center justify-center gap-2 mt-1 text-[12px] font-bold">
-                <button onClick={() => setSelectedTierInfo(selectedTierInfo === 1 ? 0 : 1)} className={`transition-all ${selectedTierInfo === 1 ? "text-green-400" : "text-gray-400 hover:text-white"}`}>Tier 1</button>
-                <span className="text-gray-600 font-normal">|</span>
-                <button onClick={() => setSelectedTierInfo(selectedTierInfo === 2 ? 0 : 2)} className={`transition-all ${selectedTierInfo === 2 ? "text-yellow-400" : "text-gray-400 hover:text-white"}`}>Tier 2</button>
-                <span className="text-gray-600 font-normal">|</span>
-                <button onClick={() => setSelectedTierInfo(selectedTierInfo === 3 ? 0 : 3)} className={`transition-all ${selectedTierInfo === 3 ? "text-gray-300" : "text-gray-400 hover:text-white"}`}>Tier 3</button>
+            {selectedTierInfo !== 0 && (
+              <div className="mt-2 w-full max-w-md text-[11px] leading-relaxed text-center text-gray-300">
+                {selectedTierInfo === 1 && (
+                  <div>
+                    <div className="text-green-400 font-black">3 Point</div>
+                    <div className="mt-1">Kompas.com | detik.com | cnnindonesia.com | antaranews.com | tempo.co | liputan6.com | Kompas.tv | cnbcindonesia | republika.co.id | beritasatu.com | kumparan.com | kontan.co.id</div>
+                  </div>
+                )}
+                {selectedTierInfo === 2 && (
+                  <div>
+                    <div className="text-yellow-400 font-black">2 Point</div>
+                    <div className="mt-1">tribunnews.com | okezone.com | sindonews.com | merdeka.com | idntimes.com | suara.com | viva.co.id | pikiran-rakyat.com | jpnn.com | tvonenews.com | metrotvnews.com</div>
+                  </div>
+                )}
+                {selectedTierInfo === 3 && (
+                  <div>
+                    <div className="text-gray-300 font-black">1 Point</div>
+                    <div className="mt-1 text-gray-400">blog | portal daerah | media lokal | RRI.co.id</div>
+                  </div>
+                )}
               </div>
-              {selectedTierInfo !== 0 && (
-                <div className="mt-2 w-full max-w-md text-[11px] leading-relaxed text-center text-gray-300">
-                  {selectedTierInfo === 1 && (
-                    <div>
-                      <div className="text-green-400 font-black">3 Point</div>
-                      <div className="mt-1">Kompas.com | detik.com | cnnindonesia.com | antaranews.com | tempo.co | liputan6.com | Kompas.tv | cnbcindonesia | republika.co.id | beritasatu.com | kumparan.com | kontan.co.id</div>
-                    </div>
-                  )}
-                  {selectedTierInfo === 2 && (
-                    <div>
-                      <div className="text-yellow-400 font-black">2 Point</div>
-                      <div className="mt-1">tribunnews.com | okezone.com | sindonews.com | merdeka.com | idntimes.com | suara.com | viva.co.id | pikiran-rakyat.com | jpnn.com | tvonenews.com | metrotvnews.com</div>
-                    </div>
-                  )}
-                  {selectedTierInfo === 3 && (
-                    <div>
-                      <div className="text-gray-300 font-black">1 Point</div>
-                      <div className="mt-1 text-gray-400">blog | portal daerah | media lokal | RRI.co.id</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
         {isLoading ? (<div className="flex justify-center items-center h-64"><div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isRedTheme ? "border-[#dc2626]" : "border-[#2563eb]"}`}></div></div>) : (
           <div className="bg-[#161b22] rounded-2xl shadow-2xl overflow-hidden pb-6">
             <div className="w-full px-4 md:px-6 py-4 flex flex-wrap justify-between items-center gap-3">
-              <h1 className="text-lg font-bold text-white md:hidden">Daftar Isu Terkini</h1>
+              {/* KIRI - FILTER SEDERHANA: Filter : 6 Jam | 12 Jam | 24 Jam | 48 Jam */}
+              <div className="flex items-center gap-2 text-[12px] font-bold">
+                <span className="text-gray-500">Filter :</span>
+                <div className="flex items-center gap-1.5">
+                  {hoursOptions.map((h, i) => (
+                    <React.Fragment key={h}>
+                      <button onClick={() => setSelectedHours(h)} className={`transition-all ${selectedHours === h ? "text-white" : "text-gray-500 hover:text-gray-300"}`}>{h} Jam</button>
+                      {i < hoursOptions.length - 1 && <span className="text-gray-600 font-normal">|</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-center gap-3 md:ml-auto">
                 <button onClick={() => setIsTopNewsFilter(!isTopNewsFilter)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isTopNewsFilter ? "bg-[#331c0b] text-orange-500" : "bg-[#1c2128] text-gray-400 hover:text-orange-400"}`}><Flame size={14} className={isTopNewsFilter ? "text-white" : "text-orange-500"} /> Filter Top News {isTopNewsFilter ? `(${tableData.filter(d=>d.isTrending).length})` : `(${terkiniData.filter(d=> (d.clusterSize>=3 || d.sourcesCount>=3 || d.volume>=70)).length})`}</button>
                 <span className="text-xs font-medium text-gray-500 hidden md:block">Total: {tableData.length} / {terkiniData.length} | HOT: {terkiniData.filter(d=>d.topLevel===1).length} | Potential: {terkiniData.filter(d=>d.topLevel===2).length} | Global: {terkiniData.filter(d=>d.kategori==="Global").length} | Skor Tertinggi: {terkiniData[0]?.compositeScore || 0}</span>
