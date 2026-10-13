@@ -140,7 +140,7 @@ function computeClusterScore(cl) {
     topLabel = "HOT News";
   } else if (compositeScore >= 75 || velocity >= 2 || sourceWeightScore >= 4 || tier1Count >= 1) {
     topLevel = 2;
-    topLabel = "TOP 2 - Naik";
+    topLabel = "Tier 2";
   }
   return { velocity, sourceWeightScore, tier1Count, tier2Count, distinctSources, recencyBonus, crossPlatform, crossPlatformBonus, compositeScore, topLevel, topLabel, isTop: topLevel > 0 };
 }
