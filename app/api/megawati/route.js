@@ -83,42 +83,43 @@ function getSourceTier(link, sourceName) {
 }
 function computeClusterScore(cl) {
   const latest = cl.latestTimestamp;
-  let velocity = 0; // nominal: jumlah berita dalam 2 jam terakhir
+  let velocity = 0;
+  const seenSources = new Map();
   cl.items.forEach(it => {
     const diffMs = latest - it.timestamp;
     if (diffMs <= 7200000) velocity++;
-  });
-  const seen = new Set();
-  let sourceWeightScore = 0;
-  let tier1Count = 0;
-  let tier2Count = 0;
-  const distinctSources = [];
-  cl.items.forEach(it => {
-    if (!seen.has(it.source)) {
-      seen.add(it.source);
-      const tierInfo = getSourceTier(it.link, it.source);
-      sourceWeightScore += tierInfo.weight;
-      distinctSources.push({ source: it.source, tier: tierInfo.tier, weight: tierInfo.weight });
-      if (tierInfo.tier === 1) tier1Count++;
-      if (tierInfo.tier === 2) tier2Count++;
+    const tierInfo = getSourceTier(it.link, it.source);
+    const key = (it.source || it.link || "").toLowerCase();
+    if (!seenSources.has(key)) {
+      seenSources.set(key, tierInfo);
     }
   });
-  const hoursSinceLatest = (Date.now() - latest) / (1000*60*60);
-  const recencyBonus = hoursSinceLatest < 1 ? 20 : hoursSinceLatest < 3 ? 15 : hoursSinceLatest < 6 ? 10 : hoursSinceLatest < 12 ? 5 : 0;
-  const crossPlatform = !!cl.crossPlatform;
-  const crossPlatformBonus = crossPlatform ? 30 : 0;
-  const volumeBase = cl.items.length * 25;
-  const compositeScore = volumeBase + velocity + (sourceWeightScore * 12) + recencyBonus + crossPlatformBonus;
-  let topLevel = 0;
-  let topLabel = "-";
-  if (compositeScore >= 140 || (velocity >= 3 && sourceWeightScore >= 7) || (tier1Count >= 2 && velocity >= 2) || (crossPlatform && sourceWeightScore >= 5)) {
-    topLevel = 1;
-    topLabel = "HOT News";
-  } else if (compositeScore >= 75 || velocity >= 2 || sourceWeightScore >= 4 || tier1Count >= 1) {
-    topLevel = 2;
-    topLabel = "Tier 2";
+  let tier1Count = 0, tier2Count = 0, tier3Count = 0;
+  let sourceWeightScore = 0;
+  for (const tierInfo of seenSources.values()) {
+    if (tierInfo.tier === 1) { tier1Count++; sourceWeightScore += 3; }
+    else if (tierInfo.tier === 2) { tier2Count++; sourceWeightScore += 2; }
+    else { tier3Count++; sourceWeightScore += 1; }
   }
-  return { velocity, sourceWeightScore, tier1Count, tier2Count, distinctSources, recencyBonus, crossPlatform, crossPlatformBonus, compositeScore, topLevel, topLabel, isTop: topLevel > 0 };
+  const distinctSources = seenSources.size;
+  const clusterSize = cl.items.length;
+  const volumeBase = clusterSize * 1;
+  const recencyBonus = 0;
+  const crossPlatform = false;
+  const crossPlatformBonus = 0;
+  // Simple addition only: total = Tier1*3 + Tier2*2 + Tier3*1 + velocity (Data dalam 2 jam)
+  const compositeScore = sourceWeightScore + velocity;
+  // Thresholds: HOT NEWS >=8, Potential >=4
+  let topLevel = 0;
+  let topLabel = "";
+  if (compositeScore >= 8) {
+    topLevel = 1;
+    topLabel = "HOT NEWS";
+  } else if (compositeScore >= 4) {
+    topLevel = 2;
+    topLabel = "Potential";
+  }
+  return { velocity, sourceWeightScore, tier1Count, tier2Count, tier3Count, distinctSources, recencyBonus, crossPlatform, crossPlatformBonus, compositeScore, topLevel, topLabel, isTop: topLevel > 0 };
 }
 
 
@@ -244,8 +245,8 @@ export async function GET(request) {
           const recencyBonus = recencyH < 1 ? 20 : recencyH < 3 ? 15 : recencyH < 6 ? 10 : recencyH < 12 ? 5 : 0;
           const compositeScore = (volumeData * 25) + (tierInfo.weight * 12) + recencyBonus;
           let topLevel = 0; let topLabel = "-";
-          if (compositeScore >= 100 || tierInfo.tier === 1) { topLevel = compositeScore >= 140 ? 1 : 2; topLabel = topLevel===1 ? "HOT News" : "Tier 2"; }
-          else if (compositeScore >= 60) { topLevel = 2; topLabel = "Tier 2"; }
+          if (compositeScore >= 100 || tierInfo.tier === 1) { topLevel = compositeScore >= 140 ? 1 : 2; topLabel = topLevel===1 ? "TOP 1 - Darurat" : "TOP 2 - Naik"; }
+          else if (compositeScore >= 60) { topLevel = 2; topLabel = "TOP 2 - Naik"; }
           const mainKeyword = item.topik.substring(0, 15).toLowerCase();
           if (!seenTopics.has(mainKeyword)) {
             seenTopics.add(mainKeyword);
