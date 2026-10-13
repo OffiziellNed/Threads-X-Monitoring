@@ -807,7 +807,7 @@ export default function SocialMediaMonitoring() {
                 {selectedTierInfo === 1 && (
                   <div>
                     <div className="text-green-400 font-black mb-1">Tier 1 — 3 Point — Media Kredibel Utama</div>
-                    <div className="text-gray-300">Berita diambil dari site: <span className="text-white">kompas.com, detik.com, cnnindonesia.com, antaranews.com, tempo.co, liputan6.com, kompas.tv, cnbcindonesia.com, republika.co.id, beritasatu.com, kumparan.com</span></div>
+                    <div className="text-gray-300">Berita diambil dari site: <span className="text-white">kompas.com, detik.com, cnnindonesia.com, antaranews.com, tempo.co, liputan6.com, kompas.tv, cnbcindonesia.com, republika.co.id, beritasatu.com, kumparan.com, kontan.co.id (KONTAN, CNN Indonesia, CNBC Indonesia, ANTARA News masuk Tier 1)</span></div>
                   </div>
                 )}
                 {selectedTierInfo === 2 && (
@@ -819,7 +819,7 @@ export default function SocialMediaMonitoring() {
                 {selectedTierInfo === 3 && (
                   <div>
                     <div className="text-gray-300 font-black mb-1">Tier 3 — 1 Point — Situs Lainnya</div>
-                    <div className="text-gray-400">Berita diambil dari site selain Tier 1 & Tier 2: blog, portal daerah, media lokal. Contoh di tabel: RRI.co.id, KONTAN, CNN Indonesia, ANTARA News Bali, ANTARA News Gorontalo, CNBC Indonesia, OG INDONESIA, detikoto, Kalbar News, Antara News jatim</div>
+                    <div className="text-gray-400">Berita diambil dari site selain Tier 1 & Tier 2: blog, portal daerah, media lokal. Contoh: OG INDONESIA, detikoto, Kalbar News, portal lokal lainnya. (RRI.co.id = Tier 2, KONTAN/CNN Indonesia/CNBC Indonesia/ANTARA News = Tier 1)</div>
                   </div>
                 )}
               </div>
